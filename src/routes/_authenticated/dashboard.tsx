@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { useAccounts, useCategories, useSubcategories } from "@/hooks/use-lookups";
+import { useAccounts, useCategories, useSubcategories, useExpenseTypes } from "@/hooks/use-lookups";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
   PieChart, Pie, Cell,
@@ -33,6 +33,7 @@ type Tx = {
   transaction_date: string;
   amount: number;
   account_id: string;
+  expense_type_id: string | null;
   category_id: string | null;
   subcategory_id: string | null;
 };
@@ -41,10 +42,12 @@ function DashboardPage() {
   const { data: accounts = [] } = useAccounts();
   const { data: categories = [] } = useCategories();
   const { data: subcategories = [] } = useSubcategories();
+  const { data: expenseTypes = [] } = useExpenseTypes();
 
   const [from, setFrom] = useState<Date | undefined>();
   const [to, setTo] = useState<Date | undefined>();
   const [accountId, setAccountId] = useState<string>(ALL);
+  const [expenseTypeId, setExpenseTypeId] = useState<string>(ALL);
   const [categoryId, setCategoryId] = useState<string>(ALL);
   const [subcategoryId, setSubcategoryId] = useState<string>(ALL);
 
@@ -53,7 +56,7 @@ function DashboardPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("transactions")
-        .select("id, transaction_date, amount, account_id, category_id, subcategory_id");
+        .select("id, transaction_date, amount, account_id, expense_type_id, category_id, subcategory_id");
       if (error) throw error;
       return data as Tx[];
     },
@@ -71,16 +74,17 @@ function DashboardPage() {
       if (fromStr && t.transaction_date < fromStr) return false;
       if (toStr && t.transaction_date > toStr) return false;
       if (accountId !== ALL && t.account_id !== accountId) return false;
+      if (expenseTypeId !== ALL && t.expense_type_id !== expenseTypeId) return false;
       if (categoryId !== ALL && t.category_id !== categoryId) return false;
       if (subcategoryId !== ALL && t.subcategory_id !== subcategoryId) return false;
       return true;
     });
-  }, [txs, from, to, accountId, categoryId, subcategoryId]);
+  }, [txs, from, to, accountId, expenseTypeId, categoryId, subcategoryId]);
 
-  const hasFilters = !!from || !!to || accountId !== ALL || categoryId !== ALL || subcategoryId !== ALL;
+  const hasFilters = !!from || !!to || accountId !== ALL || expenseTypeId !== ALL || categoryId !== ALL || subcategoryId !== ALL;
   const resetFilters = () => {
     setFrom(undefined); setTo(undefined);
-    setAccountId(ALL); setCategoryId(ALL); setSubcategoryId(ALL);
+    setAccountId(ALL); setExpenseTypeId(ALL); setCategoryId(ALL); setSubcategoryId(ALL);
   };
 
   const income = filtered.filter((t) => t.amount > 0).reduce((s, t) => s + Number(t.amount), 0);
@@ -140,7 +144,7 @@ function DashboardPage() {
       <div className="space-y-6">
         <Card>
           <CardContent className="p-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
               <DateField label="מתאריך" value={from} onChange={setFrom} />
               <DateField label="עד תאריך" value={to} onChange={setTo} />
               <FilterSelect
@@ -148,6 +152,12 @@ function DashboardPage() {
                 value={accountId}
                 onChange={setAccountId}
                 options={accounts.map((a) => ({ value: a.id, label: a.name }))}
+              />
+              <FilterSelect
+                label="סוג"
+                value={expenseTypeId}
+                onChange={setExpenseTypeId}
+                options={expenseTypes.map((e) => ({ value: e.id, label: e.name }))}
               />
               <FilterSelect
                 label="קטגוריה"
