@@ -81,10 +81,10 @@ function DashboardPage() {
     });
   }, [txs, from, to, accountId, expenseTypeId, categoryId, subcategoryId]);
 
-  const hasFilters = !!from || !!to || accountId !== ALL || categoryId !== ALL || subcategoryId !== ALL;
+  const hasFilters = !!from || !!to || accountId !== ALL || expenseTypeId !== ALL || categoryId !== ALL || subcategoryId !== ALL;
   const resetFilters = () => {
     setFrom(undefined); setTo(undefined);
-    setAccountId(ALL); setCategoryId(ALL); setSubcategoryId(ALL);
+    setAccountId(ALL); setExpenseTypeId(ALL); setCategoryId(ALL); setSubcategoryId(ALL);
   };
 
   const income = filtered.filter((t) => t.amount > 0).reduce((s, t) => s + Number(t.amount), 0);
