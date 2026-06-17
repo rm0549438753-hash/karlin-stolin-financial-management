@@ -33,6 +33,7 @@ type Tx = {
   transaction_date: string;
   amount: number;
   account_id: string;
+  expense_type_id: string | null;
   category_id: string | null;
   subcategory_id: string | null;
 };
