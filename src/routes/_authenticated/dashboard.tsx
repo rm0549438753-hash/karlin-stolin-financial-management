@@ -7,7 +7,7 @@ import { formatCurrency } from "@/lib/format";
 import { useAccounts } from "@/hooks/use-lookups";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
-  PieChart, Pie, Cell, LineChart, Line,
+  PieChart, Pie, Cell,
 } from "recharts";
 import { TrendingUp, TrendingDown, Scale, Wallet } from "lucide-react";
 
