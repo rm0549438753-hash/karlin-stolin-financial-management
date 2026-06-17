@@ -42,10 +42,12 @@ function DashboardPage() {
   const { data: accounts = [] } = useAccounts();
   const { data: categories = [] } = useCategories();
   const { data: subcategories = [] } = useSubcategories();
+  const { data: expenseTypes = [] } = useExpenseTypes();
 
   const [from, setFrom] = useState<Date | undefined>();
   const [to, setTo] = useState<Date | undefined>();
   const [accountId, setAccountId] = useState<string>(ALL);
+  const [expenseTypeId, setExpenseTypeId] = useState<string>(ALL);
   const [categoryId, setCategoryId] = useState<string>(ALL);
   const [subcategoryId, setSubcategoryId] = useState<string>(ALL);
 
