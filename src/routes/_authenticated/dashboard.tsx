@@ -1,10 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { format } from "date-fns";
+import { he } from "date-fns/locale";
+import { CalendarIcon, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { formatCurrency } from "@/lib/format";
-import { useAccounts } from "@/hooks/use-lookups";
+import { cn } from "@/lib/utils";
+import { useAccounts, useCategories, useSubcategories } from "@/hooks/use-lookups";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
   PieChart, Pie, Cell,
@@ -16,6 +26,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 const CHART_COLORS = ["hsl(220 70% 55%)", "hsl(155 60% 45%)", "hsl(75 80% 55%)", "hsl(25 80% 55%)", "hsl(295 60% 55%)", "hsl(200 70% 50%)", "hsl(340 70% 55%)"];
+const ALL = "__all__";
 
 type Tx = {
   id: string;
@@ -23,57 +34,95 @@ type Tx = {
   amount: number;
   account_id: string;
   category_id: string | null;
+  subcategory_id: string | null;
 };
 
 function DashboardPage() {
   const { data: accounts = [] } = useAccounts();
+  const { data: categories = [] } = useCategories();
+  const { data: subcategories = [] } = useSubcategories();
+
+  const [from, setFrom] = useState<Date | undefined>();
+  const [to, setTo] = useState<Date | undefined>();
+  const [accountId, setAccountId] = useState<string>(ALL);
+  const [categoryId, setCategoryId] = useState<string>(ALL);
+  const [subcategoryId, setSubcategoryId] = useState<string>(ALL);
+
   const { data: txs = [], isLoading } = useQuery({
     queryKey: ["tx-dashboard"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("transactions")
-        .select("id, transaction_date, amount, account_id, category_id");
+        .select("id, transaction_date, amount, account_id, category_id, subcategory_id");
       if (error) throw error;
       return data as Tx[];
     },
   });
-  const { data: categories = [] } = useQuery({
-    queryKey: ["categories"],
-    queryFn: async () => {
-      const { data } = await supabase.from("categories").select("id,name");
-      return data ?? [];
-    },
-  });
 
-  const now = new Date();
-  const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const thisMonth = txs.filter((t) => t.transaction_date.startsWith(ym));
-  const income = thisMonth.filter((t) => t.amount > 0).reduce((s, t) => s + Number(t.amount), 0);
-  const expense = thisMonth.filter((t) => t.amount < 0).reduce((s, t) => s + Number(t.amount), 0);
+  const filteredSubcategories = useMemo(
+    () => subcategories.filter((s) => categoryId === ALL || s.category_id === categoryId),
+    [subcategories, categoryId],
+  );
+
+  const filtered = useMemo(() => {
+    const fromStr = from ? format(from, "yyyy-MM-dd") : null;
+    const toStr = to ? format(to, "yyyy-MM-dd") : null;
+    return txs.filter((t) => {
+      if (fromStr && t.transaction_date < fromStr) return false;
+      if (toStr && t.transaction_date > toStr) return false;
+      if (accountId !== ALL && t.account_id !== accountId) return false;
+      if (categoryId !== ALL && t.category_id !== categoryId) return false;
+      if (subcategoryId !== ALL && t.subcategory_id !== subcategoryId) return false;
+      return true;
+    });
+  }, [txs, from, to, accountId, categoryId, subcategoryId]);
+
+  const hasFilters = !!from || !!to || accountId !== ALL || categoryId !== ALL || subcategoryId !== ALL;
+  const resetFilters = () => {
+    setFrom(undefined); setTo(undefined);
+    setAccountId(ALL); setCategoryId(ALL); setSubcategoryId(ALL);
+  };
+
+  const income = filtered.filter((t) => t.amount > 0).reduce((s, t) => s + Number(t.amount), 0);
+  const expense = filtered.filter((t) => t.amount < 0).reduce((s, t) => s + Number(t.amount), 0);
   const net = income + expense;
   const total = txs.reduce((s, t) => s + Number(t.amount), 0);
 
-  // monthly series last 12
-  const months: { key: string; label: string }[] = [];
-  for (let i = 11; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    months.push({
-      key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
-      label: d.toLocaleDateString("he-IL", { month: "short", year: "2-digit" }),
+  // monthly series — span of filtered range, or last 12 months by default
+  const monthly = useMemo(() => {
+    const now = new Date();
+    let start: Date, end: Date;
+    if (from || to) {
+      start = from ?? new Date(Math.min(...filtered.map((t) => +new Date(t.transaction_date))));
+      end = to ?? new Date(Math.max(...filtered.map((t) => +new Date(t.transaction_date))));
+      if (!isFinite(+start)) start = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+      if (!isFinite(+end)) end = now;
+    } else {
+      start = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+      end = now;
+    }
+    const buckets: { key: string; label: string }[] = [];
+    const cur = new Date(start.getFullYear(), start.getMonth(), 1);
+    while (cur <= end) {
+      buckets.push({
+        key: `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}`,
+        label: cur.toLocaleDateString("he-IL", { month: "short", year: "2-digit" }),
+      });
+      cur.setMonth(cur.getMonth() + 1);
+    }
+    return buckets.slice(-24).map((m) => {
+      const arr = filtered.filter((t) => t.transaction_date.startsWith(m.key));
+      return {
+        label: m.label,
+        הכנסות: arr.filter((t) => t.amount > 0).reduce((s, t) => s + Number(t.amount), 0),
+        הוצאות: -arr.filter((t) => t.amount < 0).reduce((s, t) => s + Number(t.amount), 0),
+      };
     });
-  }
-  const monthly = months.map((m) => {
-    const arr = txs.filter((t) => t.transaction_date.startsWith(m.key));
-    return {
-      label: m.label,
-      הכנסות: arr.filter((t) => t.amount > 0).reduce((s, t) => s + Number(t.amount), 0),
-      הוצאות: -arr.filter((t) => t.amount < 0).reduce((s, t) => s + Number(t.amount), 0),
-    };
-  });
+  }, [filtered, from, to]);
 
-  const catMap = new Map(categories.map((c: any) => [c.id, c.name]));
+  const catMap = new Map(categories.map((c) => [c.id, c.name]));
   const byCat = new Map<string, number>();
-  thisMonth.filter((t) => t.amount < 0).forEach((t) => {
+  filtered.filter((t) => t.amount < 0).forEach((t) => {
     const name = t.category_id ? (catMap.get(t.category_id) ?? "ללא קטגוריה") : "ללא קטגוריה";
     byCat.set(name, (byCat.get(name) ?? 0) + Math.abs(Number(t.amount)));
   });
@@ -82,23 +131,59 @@ function DashboardPage() {
     .sort((a, b) => b.value - a.value)
     .slice(0, 7);
 
-  // balance per account
+  // balance per account — always over ALL transactions (true running balance)
   const balByAcct = new Map<string, number>();
   txs.forEach((t) => balByAcct.set(t.account_id, (balByAcct.get(t.account_id) ?? 0) + Number(t.amount)));
 
   return (
     <AppShell title="לוח בקרה">
       <div className="space-y-6">
+        <Card>
+          <CardContent className="p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+              <DateField label="מתאריך" value={from} onChange={setFrom} />
+              <DateField label="עד תאריך" value={to} onChange={setTo} />
+              <FilterSelect
+                label="קופה"
+                value={accountId}
+                onChange={setAccountId}
+                options={accounts.map((a) => ({ value: a.id, label: a.name }))}
+              />
+              <FilterSelect
+                label="קטגוריה"
+                value={categoryId}
+                onChange={(v) => { setCategoryId(v); setSubcategoryId(ALL); }}
+                options={categories.map((c) => ({ value: c.id, label: c.name }))}
+              />
+              <FilterSelect
+                label="תת-קטגוריה"
+                value={subcategoryId}
+                onChange={setSubcategoryId}
+                options={filteredSubcategories.map((s) => ({ value: s.id, label: s.name }))}
+              />
+            </div>
+            {hasFilters && (
+              <div className="mt-3 flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">{filtered.length.toLocaleString("he-IL")} תנועות תואמות</span>
+                <Button variant="ghost" size="sm" onClick={resetFilters}>
+                  <X className="w-4 h-4 ms-1" />
+                  נקה פילטרים
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <KPI title="הכנסות החודש" value={formatCurrency(income)} icon={TrendingUp} tone="income" />
-          <KPI title="הוצאות החודש" value={formatCurrency(Math.abs(expense))} icon={TrendingDown} tone="expense" />
-          <KPI title="מאזן החודש" value={formatCurrency(net)} icon={Scale} tone={net >= 0 ? "income" : "expense"} />
+          <KPI title="הכנסות" value={formatCurrency(income)} icon={TrendingUp} tone="income" />
+          <KPI title="הוצאות" value={formatCurrency(Math.abs(expense))} icon={TrendingDown} tone="expense" />
+          <KPI title="מאזן" value={formatCurrency(net)} icon={Scale} tone={net >= 0 ? "income" : "expense"} />
           <KPI title="יתרה כוללת" value={formatCurrency(total)} icon={Wallet} tone="primary" />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <Card className="lg:col-span-2">
-            <CardHeader><CardTitle>הכנסות מול הוצאות (12 חודשים)</CardTitle></CardHeader>
+            <CardHeader><CardTitle>הכנסות מול הוצאות</CardTitle></CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={monthly}>
@@ -115,7 +200,7 @@ function DashboardPage() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>פילוח הוצאות החודש</CardTitle></CardHeader>
+            <CardHeader><CardTitle>פילוח הוצאות</CardTitle></CardHeader>
             <CardContent>
               {categoryData.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-12 text-center">אין נתונים</p>
@@ -137,7 +222,7 @@ function DashboardPage() {
         </div>
 
         <Card>
-          <CardHeader><CardTitle>יתרה לפי חשבון</CardTitle></CardHeader>
+          <CardHeader><CardTitle>יתרה לפי קופה</CardTitle></CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {accounts.map((a) => {
@@ -161,6 +246,48 @@ function DashboardPage() {
         )}
       </div>
     </AppShell>
+  );
+}
+
+function DateField({ label, value, onChange }: { label: string; value?: Date; onChange: (d?: Date) => void }) {
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs text-muted-foreground">{label}</Label>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" className={cn("w-full justify-start text-right font-normal", !value && "text-muted-foreground")}>
+            <CalendarIcon className="w-4 h-4 ms-2" />
+            {value ? format(value, "dd/MM/yyyy", { locale: he }) : "בחר תאריך"}
+            {value && (
+              <X
+                className="w-3.5 h-3.5 me-auto opacity-60 hover:opacity-100"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onChange(undefined); }}
+              />
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar mode="single" selected={value} onSelect={onChange} initialFocus className={cn("p-3 pointer-events-auto")} />
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+
+function FilterSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string }[] }) {
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs text-muted-foreground">{label}</Label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL}>הכל</SelectItem>
+          {options.map((o) => (
+            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
 
