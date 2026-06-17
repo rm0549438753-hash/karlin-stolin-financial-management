@@ -74,11 +74,12 @@ function DashboardPage() {
       if (fromStr && t.transaction_date < fromStr) return false;
       if (toStr && t.transaction_date > toStr) return false;
       if (accountId !== ALL && t.account_id !== accountId) return false;
+      if (expenseTypeId !== ALL && t.expense_type_id !== expenseTypeId) return false;
       if (categoryId !== ALL && t.category_id !== categoryId) return false;
       if (subcategoryId !== ALL && t.subcategory_id !== subcategoryId) return false;
       return true;
     });
-  }, [txs, from, to, accountId, categoryId, subcategoryId]);
+  }, [txs, from, to, accountId, expenseTypeId, categoryId, subcategoryId]);
 
   const hasFilters = !!from || !!to || accountId !== ALL || categoryId !== ALL || subcategoryId !== ALL;
   const resetFilters = () => {
