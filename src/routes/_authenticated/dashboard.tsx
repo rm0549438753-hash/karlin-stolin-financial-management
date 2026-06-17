@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { useAccounts, useCategories, useSubcategories } from "@/hooks/use-lookups";
+import { useAccounts, useCategories, useSubcategories, useExpenseTypes } from "@/hooks/use-lookups";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
   PieChart, Pie, Cell,
