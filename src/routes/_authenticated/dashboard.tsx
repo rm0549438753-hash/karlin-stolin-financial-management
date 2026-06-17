@@ -54,7 +54,7 @@ function DashboardPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("transactions")
-        .select("id, transaction_date, amount, account_id, category_id, subcategory_id");
+        .select("id, transaction_date, amount, account_id, expense_type_id, category_id, subcategory_id");
       if (error) throw error;
       return data as Tx[];
     },
