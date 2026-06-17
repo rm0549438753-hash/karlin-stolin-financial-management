@@ -144,7 +144,7 @@ function DashboardPage() {
       <div className="space-y-6">
         <Card>
           <CardContent className="p-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
               <DateField label="מתאריך" value={from} onChange={setFrom} />
               <DateField label="עד תאריך" value={to} onChange={setTo} />
               <FilterSelect
@@ -152,6 +152,12 @@ function DashboardPage() {
                 value={accountId}
                 onChange={setAccountId}
                 options={accounts.map((a) => ({ value: a.id, label: a.name }))}
+              />
+              <FilterSelect
+                label="סוג"
+                value={expenseTypeId}
+                onChange={setExpenseTypeId}
+                options={expenseTypes.map((e) => ({ value: e.id, label: e.name }))}
               />
               <FilterSelect
                 label="קטגוריה"
