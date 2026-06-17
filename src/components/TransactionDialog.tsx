@@ -67,7 +67,7 @@ export function TransactionDialog({
   });
 
   // when dialog opens, reset
-  useMemo(() => {
+  useEffect(() => {
     if (open) reset(getDefaults(initial, defaultAccount));
   }, [open, initial, defaultAccount, reset]);
 
