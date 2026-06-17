@@ -35,7 +35,7 @@ function ReportsPage() {
 
   const { data: accounts = [] } = useAccounts();
   const { data: categories = [] } = useCategories();
-  const { data: funds = [] } = useFunds();
+  
 
   const { data: txs = [] } = useQuery({
     queryKey: ["tx-reports", from, to],
