@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useAccounts, useCategories, useFunds } from "@/hooks/use-lookups";
+import { useAccounts, useCategories } from "@/hooks/use-lookups";
 import { formatCurrency } from "@/lib/format";
 import { AlertTriangle } from "lucide-react";
 
