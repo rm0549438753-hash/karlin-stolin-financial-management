@@ -132,7 +132,10 @@ function LookupCRUD({ table, label, hasKind, hasCategory }: { table: string; lab
 
 function UsersPanel() {
   const qc = useQueryClient();
+  const { user: me } = useAuthUser();
   const createUser = useServerFn(adminCreateUser);
+  const deleteUser = useServerFn(adminDeleteUser);
+  const setBlocked = useServerFn(adminSetUserBlocked);
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newName, setNewName] = useState("");
@@ -141,7 +144,7 @@ function UsersPanel() {
   const { data = [] } = useQuery({
     queryKey: ["users-with-roles"],
     queryFn: async () => {
-      const { data: profiles } = await supabase.from("profiles").select("id, email, full_name");
+      const { data: profiles } = await supabase.from("profiles").select("id, email, full_name, blocked");
       const { data: roles } = await supabase.from("user_roles").select("user_id, role");
       const rolesByUser = new Map<string, string[]>();
       (roles ?? []).forEach((r) => {
@@ -176,6 +179,20 @@ function UsersPanel() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const block = useMutation({
+    mutationFn: async ({ userId, blocked }: { userId: string; blocked: boolean }) => {
+      await setBlocked({ data: { userId, blocked } });
+    },
+    onSuccess: (_d, v) => { toast.success(v.blocked ? "המשתמש נחסם" : "החסימה הוסרה"); qc.invalidateQueries({ queryKey: ["users-with-roles"] }); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const del = useMutation({
+    mutationFn: async (userId: string) => { await deleteUser({ data: { userId } }); },
+    onSuccess: () => { toast.success("המשתמש נמחק"); qc.invalidateQueries({ queryKey: ["users-with-roles"] }); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   return (
     <Card>
       <CardHeader><CardTitle>משתמשים והרשאות</CardTitle></CardHeader>
@@ -204,20 +221,58 @@ function UsersPanel() {
         <div className="border rounded-lg divide-y">
           {data.map((u: any) => {
             const current = u.roles.includes("admin") ? "admin" : "editor";
+            const isMe = me?.id === u.id;
             return (
-              <div key={u.id} className="flex items-center justify-between gap-3 p-3">
-                <div className="min-w-0">
-                  <div className="font-medium truncate">{u.full_name || u.email}</div>
+              <div key={u.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium truncate flex items-center gap-2">
+                    {u.full_name || u.email}
+                    {u.blocked && <Badge variant="destructive" className="text-[10px]">חסום</Badge>}
+                    {isMe && <Badge variant="outline" className="text-[10px]">אני</Badge>}
+                  </div>
                   <div className="text-xs text-muted-foreground truncate">{u.email}</div>
                 </div>
-                <Select value={current} onValueChange={(v) => setRole.mutate({ userId: u.id, role: v as any })}>
-                  <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">מנהל</SelectItem>
-                    <SelectItem value="editor">עורך</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center gap-2">
+                  <Select value={current} onValueChange={(v) => setRole.mutate({ userId: u.id, role: v as any })} disabled={isMe}>
+                    <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">מנהל</SelectItem>
+                      <SelectItem value="editor">עורך</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={isMe || block.isPending}
+                    onClick={() => block.mutate({ userId: u.id, blocked: !u.blocked })}
+                  >
+                    {u.blocked ? <ShieldCheck className="w-4 h-4 ml-1" /> : <Ban className="w-4 h-4 ml-1" />}
+                    {u.blocked ? "שחרור" : "חסום"}
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="icon" variant="ghost" className="text-destructive" disabled={isMe} title="מחיקה">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent dir="rtl">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>למחוק את המשתמש?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {u.full_name || u.email} יוסר לצמיתות מהמערכת. פעולה זו אינה הפיכה.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>ביטול</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => del.mutate(u.id)} className="bg-destructive text-destructive-foreground">
+                          מחיקה
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>
+
             );
           })}
           {data.length === 0 && <div className="p-4 text-center text-sm text-muted-foreground">אין משתמשים</div>}
