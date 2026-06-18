@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Wallet } from "lucide-react";
+import logoAsset from "@/assets/karlin-logo.png.asset.json";
 
 export const Route = createFileRoute("/auth")({
   beforeLoad: async () => {
@@ -37,9 +37,7 @@ function AuthPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-secondary to-accent/30 p-4">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center space-y-2">
-          <div className="mx-auto w-14 h-14 rounded-2xl bg-primary text-primary-foreground grid place-items-center shadow-md">
-            <Wallet className="w-7 h-7" />
-          </div>
+          <img src={logoAsset.url} alt="מוסדות קרלין" className="mx-auto h-24 w-auto object-contain" />
           <CardTitle className="text-2xl">מוסדות קרלין</CardTitle>
           <CardDescription>מערכת ניהול הכנסות והוצאות</CardDescription>
         </CardHeader>
@@ -58,9 +56,6 @@ function AuthPage() {
             </Button>
           </form>
           <p className="text-xs text-muted-foreground text-center mt-4">
-            אין הרשמה עצמית. לקבלת חשבון פנה למנהל המערכת.
-          </p>
-          <p className="text-xs text-muted-foreground text-center mt-2">
             <Link to="/dashboard" className="hover:underline">חזרה</Link>
           </p>
         </CardContent>

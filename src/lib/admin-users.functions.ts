@@ -2,6 +2,15 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+async function assertAdmin(context: any) {
+  const { data: isAdmin, error } = await context.supabase.rpc("has_role", {
+    _user_id: context.userId,
+    _role: "admin",
+  });
+  if (error) throw new Error(error.message);
+  if (!isAdmin) throw new Error("Forbidden");
+}
+
 export const adminCreateUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(
@@ -13,14 +22,7 @@ export const adminCreateUser = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data, context }) => {
-    // Verify caller is admin
-    const { data: isAdmin, error: roleErr } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (roleErr) throw new Error(roleErr.message);
-    if (!isAdmin) throw new Error("Forbidden");
-
+    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
@@ -32,8 +34,6 @@ export const adminCreateUser = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
 
     const userId = created.user!.id;
-
-    // Set requested role (handle_new_user trigger inserts a default; overwrite it)
     await supabaseAdmin.from("user_roles").delete().eq("user_id", userId);
     const { error: roleInsertErr } = await supabaseAdmin
       .from("user_roles")
@@ -41,4 +41,35 @@ export const adminCreateUser = createServerFn({ method: "POST" })
     if (roleInsertErr) throw new Error(roleInsertErr.message);
 
     return { ok: true, userId };
+  });
+
+export const adminDeleteUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(z.object({ userId: z.string().uuid() }))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    if (data.userId === context.userId) throw new Error("לא ניתן למחוק את עצמך");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const adminSetUserBlocked = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(z.object({ userId: z.string().uuid(), blocked: z.boolean() }))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    if (data.userId === context.userId) throw new Error("לא ניתן לחסום את עצמך");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
+      ban_duration: data.blocked ? "876600h" : "none",
+    });
+    if (error) throw new Error(error.message);
+    const { error: profErr } = await supabaseAdmin
+      .from("profiles")
+      .update({ blocked: data.blocked })
+      .eq("id", data.userId);
+    if (profErr) throw new Error(profErr.message);
+    return { ok: true };
   });
