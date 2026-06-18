@@ -18,7 +18,7 @@ import logoAsset from "@/assets/karlin-logo.png.asset.json";
 
 function AppSidebar() {
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const search = useRouterState({ select: (s) => s.location.search }) as Record<string, unknown>;
+  const search = useRouterState({ select: (s) => s.location.search as Record<string, unknown> });
   const { data: role } = useUserRole();
   const { data: accounts = [] } = useAccounts();
   const { state } = useSidebar();
