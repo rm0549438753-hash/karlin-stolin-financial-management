@@ -1,11 +1,11 @@
 {
-  "version": 1,
   "asset_id": "02d6725e-e3af-4747-8a0c-310141d16c91",
-  "project_id": "8456490f-cc50-429b-a075-32bed4ab6420",
-  "url": "/__l5e/assets-v1/02d6725e-e3af-4747-8a0c-310141d16c91/karlin-logo.png",
-  "r2_key": "a/v1/8456490f-cc50-429b-a075-32bed4ab6420/02d6725e-e3af-4747-8a0c-310141d16c91/karlin-logo.png",
-  "original_filename": "karlin-logo.png",
-  "size": 230302,
   "content_type": "image/png",
-  "created_at": "2026-06-18T10:56:27Z"
+  "created_at": "2026-06-18T10:56:27Z",
+  "original_filename": "karlin-logo.png",
+  "project_id": "fc9530c9-4ee2-43bc-9557-a23bae98cfae",
+  "r2_key": "a/v1/fc9530c9-4ee2-43bc-9557-a23bae98cfae/02d6725e-e3af-4747-8a0c-310141d16c91/karlin-logo.png",
+  "size": 230302,
+  "url": "/__l5e/assets-v1/02d6725e-e3af-4747-8a0c-310141d16c91/karlin-logo.png",
+  "version": 1
 }
