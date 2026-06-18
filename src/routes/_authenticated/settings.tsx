@@ -7,12 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2, Plus, UserPlus } from "lucide-react";
+import { Trash2, Plus, UserPlus, Ban, ShieldCheck } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { useUserRole } from "@/hooks/use-auth";
+import { useUserRole, useAuthUser } from "@/hooks/use-auth";
 import { useServerFn } from "@tanstack/react-start";
-import { adminCreateUser } from "@/lib/admin-users.functions";
+import { adminCreateUser, adminDeleteUser, adminSetUserBlocked } from "@/lib/admin-users.functions";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
