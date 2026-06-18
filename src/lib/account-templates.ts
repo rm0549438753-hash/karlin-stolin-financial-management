@@ -49,7 +49,7 @@ export function columnsForKind(kind: AccountKind): ColumnDef[] {
     case "mercantile":
       return [
         { key: "transaction_date", label: "תאריך" },
-        { key: "value_date", label: "תאריך ערך" },
+        { key: "value_date", label: "יום ערך" },
         { key: "description", label: "תיאור התנועה" },
         { key: "credit_debit", label: "זכות / חוב", align: "left" },
         { key: "balance", label: "יתרה", align: "left" },
@@ -57,6 +57,7 @@ export function columnsForKind(kind: AccountKind): ColumnDef[] {
         { key: "fee", label: "עמלה", align: "left" },
         { key: "channel", label: "ערוץ ביצוע" },
         ...COMMON_TAIL,
+        { key: "note", label: "הערות" },
         { key: "actions", label: "", align: "center", className: "w-20" },
       ];
     case "pagi":
