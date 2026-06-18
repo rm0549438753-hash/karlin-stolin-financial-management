@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem,
-  SidebarProvider, SidebarTrigger, SidebarHeader, SidebarFooter, useSidebar,
+  SidebarProvider, SidebarTrigger, SidebarHeader, SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import logoAsset from "@/assets/karlin-logo.png.asset.json";
@@ -21,8 +21,6 @@ function AppSidebar() {
   const search = useRouterState({ select: (s) => s.location.search as Record<string, unknown> });
   const { data: role } = useUserRole();
   const { data: accounts = [] } = useAccounts();
-  const { state: _sbState } = useSidebar();
-  void _sbState;
   const [txOpen, setTxOpen] = useState(true);
 
   const activeAccount = typeof search?.account === "string" ? (search.account as string) : null;
