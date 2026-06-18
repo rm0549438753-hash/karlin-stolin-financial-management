@@ -7,10 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, UserPlus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/use-auth";
+import { useServerFn } from "@tanstack/react-start";
+import { adminCreateUser } from "@/lib/admin-users.functions";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
@@ -128,6 +130,12 @@ function LookupCRUD({ table, label, hasKind, hasCategory }: { table: string; lab
 
 function UsersPanel() {
   const qc = useQueryClient();
+  const createUser = useServerFn(adminCreateUser);
+  const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newName, setNewName] = useState("");
+  const [newRole, setNewRole] = useState<"admin" | "editor">("editor");
+
   const { data = [] } = useQuery({
     queryKey: ["users-with-roles"],
     queryFn: async () => {
@@ -143,9 +151,21 @@ function UsersPanel() {
     },
   });
 
+  const add = useMutation({
+    mutationFn: async () => {
+      if (!newEmail.trim() || newPassword.length < 6) throw new Error("יש למלא אימייל וסיסמה (6 תווים לפחות)");
+      await createUser({ data: { email: newEmail.trim(), password: newPassword, fullName: newName.trim(), role: newRole } });
+    },
+    onSuccess: () => {
+      toast.success("המשתמש נוצר");
+      setNewEmail(""); setNewPassword(""); setNewName(""); setNewRole("editor");
+      qc.invalidateQueries({ queryKey: ["users-with-roles"] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "שגיאה ביצירת משתמש"),
+  });
+
   const setRole = useMutation({
     mutationFn: async ({ userId, role }: { userId: string; role: "admin" | "editor" }) => {
-      // Remove existing then insert single
       await supabase.from("user_roles").delete().eq("user_id", userId);
       const { error } = await supabase.from("user_roles").insert({ user_id: userId, role });
       if (error) throw error;
@@ -157,7 +177,28 @@ function UsersPanel() {
   return (
     <Card>
       <CardHeader><CardTitle>משתמשים והרשאות</CardTitle></CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
+        <div className="rounded-lg border p-3 space-y-2 bg-muted/30">
+          <div className="text-sm font-medium">הוספת משתמש חדש</div>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+            <Input placeholder="שם מלא" value={newName} onChange={(e) => setNewName(e.target.value)} />
+            <Input placeholder="אימייל" type="email" dir="ltr" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
+            <Input placeholder="סיסמה (6+)" type="text" dir="ltr" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+            <Select value={newRole} onValueChange={(v) => setNewRole(v as any)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="editor">עורך</SelectItem>
+                <SelectItem value="admin">מנהל</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={() => add.mutate()} disabled={add.isPending}>
+              <UserPlus className="w-4 h-4 ml-1" />
+              {add.isPending ? "יוצר..." : "צור משתמש"}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">המשתמש ייווצר מאומת ויוכל להתחבר מיד עם הסיסמה.</p>
+        </div>
+
         <div className="border rounded-lg divide-y">
           {data.map((u: any) => {
             const current = u.roles.includes("admin") ? "admin" : "editor";
@@ -179,7 +220,7 @@ function UsersPanel() {
           })}
           {data.length === 0 && <div className="p-4 text-center text-sm text-muted-foreground">אין משתמשים</div>}
         </div>
-        <p className="text-xs text-muted-foreground mt-3">משתמשים חדשים נוצרים כעורכים. ניתן לקדם למנהל כאן.</p>
+        <p className="text-xs text-muted-foreground">הרשמה עצמית מהדף הציבורי מבוטלת. רק מנהל יכול להוסיף משתמשים מכאן.</p>
       </CardContent>
     </Card>
   );
