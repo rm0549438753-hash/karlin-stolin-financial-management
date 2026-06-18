@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
@@ -18,6 +18,9 @@ import { toast } from "sonner";
 import { useUserRole } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_authenticated/transactions")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    account: typeof s.account === "string" ? s.account : undefined,
+  }),
   component: TransactionsPage,
 });
 
@@ -25,6 +28,8 @@ const ALL = "__all__";
 
 function TransactionsPage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
+  const urlSearch = useSearch({ from: "/_authenticated/transactions" });
   const { data: role } = useUserRole();
   const { data: accounts = [] } = useAccounts();
   const { data: categories = [] } = useCategories();
@@ -32,12 +37,28 @@ function TransactionsPage() {
   const { data: expTypes = [] } = useExpenseTypes();
 
   const [search, setSearch] = useState("");
-  const [account, setAccount] = useState(ALL);
+  const [account, setAccount] = useState<string>(urlSearch.account ?? ALL);
   const [category, setCategory] = useState(ALL);
   const [fund, setFund] = useState(ALL);
   const [expType, setExpType] = useState(ALL);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+
+  // Sync local filter ↔ URL when sidebar links change the search param
+  useEffect(() => {
+    const next = urlSearch.account ?? ALL;
+    setAccount((prev) => (prev === next ? prev : next));
+  }, [urlSearch.account]);
+
+  function changeAccount(v: string) {
+    setAccount(v);
+    navigate({
+      to: "/transactions",
+      search: v === ALL ? {} : { account: v },
+      replace: true,
+    });
+  }
+
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<TransactionRow | null>(null);
@@ -137,13 +158,13 @@ function TransactionsPage() {
                 <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="חיפוש בתיאור / אסמכתה / הערה" className="pr-9" />
               </div>
-              <FilterSelect value={account} onValueChange={setAccount} placeholder="כל החשבונות" items={accounts} />
+              <FilterSelect value={account} onValueChange={changeAccount} placeholder="כל החשבונות" items={accounts} />
               <FilterSelect value={category} onValueChange={setCategory} placeholder="כל הקטגוריות" items={categories} />
               <FilterSelect value={fund} onValueChange={setFund} placeholder="כל הקופות" items={funds} />
               <FilterSelect value={expType} onValueChange={setExpType} placeholder="כל הסוגים" items={expTypes} />
               <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} dir="ltr" placeholder="מתאריך" />
               <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} dir="ltr" placeholder="עד תאריך" />
-              <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setAccount(ALL); setCategory(ALL); setFund(ALL); setExpType(ALL); setFrom(""); setTo(""); }}>איפוס</Button>
+              <Button variant="ghost" size="sm" onClick={() => { setSearch(""); changeAccount(ALL); setCategory(ALL); setFund(ALL); setExpType(ALL); setFrom(""); setTo(""); }}>איפוס</Button>
             </div>
           </CardContent>
         </Card>
