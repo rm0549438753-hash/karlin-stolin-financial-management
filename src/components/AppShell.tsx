@@ -53,7 +53,7 @@ function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              <Collapsible open={txOpen || collapsed} onOpenChange={setTxOpen} asChild>
+              <Collapsible open={txOpen} onOpenChange={setTxOpen} asChild>
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton isActive={onTransactions} tooltip="תנועות">
