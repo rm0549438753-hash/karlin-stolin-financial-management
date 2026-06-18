@@ -21,8 +21,8 @@ function AppSidebar() {
   const search = useRouterState({ select: (s) => s.location.search as Record<string, unknown> });
   const { data: role } = useUserRole();
   const { data: accounts = [] } = useAccounts();
-  const { state } = useSidebar();
-  const collapsed = state === "collapsed";
+  const { state: _sbState } = useSidebar();
+  void _sbState;
   const [txOpen, setTxOpen] = useState(true);
 
   const activeAccount = typeof search?.account === "string" ? (search.account as string) : null;
