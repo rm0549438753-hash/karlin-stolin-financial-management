@@ -62,6 +62,11 @@ function AppSidebar() {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <SidebarMenuSub>
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton asChild isActive={onTransactions && !activeAccount}>
+                          <Link to="/transactions" className="font-medium">כל התנועות</Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
                       {accounts.map((a) => (
                         <SidebarMenuSubItem key={a.id}>
                           <SidebarMenuSubButton asChild isActive={onTransactions && activeAccount === a.id}>

@@ -152,6 +152,12 @@ function DashboardPage() {
               <DateField label="מתאריך" value={from} onChange={setFrom} />
               <DateField label="עד תאריך" value={to} onChange={setTo} />
               <FilterSelect
+                label="חשבון"
+                value={accountId}
+                onChange={setAccountId}
+                options={accounts.map((a) => ({ value: a.id, label: a.name }))}
+              />
+              <FilterSelect
                 label="קופה"
                 value={fundId}
                 onChange={setFundId}
