@@ -178,6 +178,9 @@ export type Database = {
           fund_id: string | null
           id: string
           note: string | null
+          operation_code: string | null
+          payee: string | null
+          payer_name: string | null
           reference: string | null
           subcategory_id: string | null
           transaction_date: string
@@ -199,6 +202,9 @@ export type Database = {
           fund_id?: string | null
           id?: string
           note?: string | null
+          operation_code?: string | null
+          payee?: string | null
+          payer_name?: string | null
           reference?: string | null
           subcategory_id?: string | null
           transaction_date: string
@@ -220,6 +226,9 @@ export type Database = {
           fund_id?: string | null
           id?: string
           note?: string | null
+          operation_code?: string | null
+          payee?: string | null
+          payer_name?: string | null
           reference?: string | null
           subcategory_id?: string | null
           transaction_date?: string
