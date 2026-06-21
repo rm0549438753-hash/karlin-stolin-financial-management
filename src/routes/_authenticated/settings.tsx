@@ -215,7 +215,7 @@ function UsersPanel() {
               {add.isPending ? "יוצר..." : "צור משתמש"}
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground">המשתמש ייווצר מאומת ויוכל להתחבר מיד עם הסיסמה.</p>
+          
         </div>
 
         <div className="border rounded-lg divide-y">
@@ -277,7 +277,7 @@ function UsersPanel() {
           })}
           {data.length === 0 && <div className="p-4 text-center text-sm text-muted-foreground">אין משתמשים</div>}
         </div>
-        <p className="text-xs text-muted-foreground">הרשמה עצמית מהדף הציבורי מבוטלת. רק מנהל יכול להוסיף משתמשים מכאן.</p>
+        
       </CardContent>
     </Card>
   );

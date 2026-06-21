@@ -21,6 +21,8 @@ export type Database = {
           is_active: boolean
           kind: string
           name: string
+          schema_type: string
+          sheet_key: string | null
           sort_order: number
         }
         Insert: {
@@ -29,6 +31,8 @@ export type Database = {
           is_active?: boolean
           kind?: string
           name: string
+          schema_type?: string
+          sheet_key?: string | null
           sort_order?: number
         }
         Update: {
@@ -37,6 +41,8 @@ export type Database = {
           is_active?: boolean
           kind?: string
           name?: string
+          schema_type?: string
+          sheet_key?: string | null
           sort_order?: number
         }
         Relationships: []
@@ -167,18 +173,23 @@ export type Database = {
         Row: {
           account_id: string
           amount: number
+          association: string | null
           balance: number | null
           category_id: string | null
           channel: string | null
           created_at: string
           created_by: string | null
+          credit: number | null
+          debit: number | null
           description: string | null
           expense_type_id: string | null
           fee: number | null
           fund_id: string | null
+          future_check: boolean | null
           id: string
           note: string | null
           operation_code: string | null
+          operation_type: string | null
           payee: string | null
           payer_name: string | null
           reference: string | null
@@ -191,18 +202,23 @@ export type Database = {
         Insert: {
           account_id: string
           amount: number
+          association?: string | null
           balance?: number | null
           category_id?: string | null
           channel?: string | null
           created_at?: string
           created_by?: string | null
+          credit?: number | null
+          debit?: number | null
           description?: string | null
           expense_type_id?: string | null
           fee?: number | null
           fund_id?: string | null
+          future_check?: boolean | null
           id?: string
           note?: string | null
           operation_code?: string | null
+          operation_type?: string | null
           payee?: string | null
           payer_name?: string | null
           reference?: string | null
@@ -215,18 +231,23 @@ export type Database = {
         Update: {
           account_id?: string
           amount?: number
+          association?: string | null
           balance?: number | null
           category_id?: string | null
           channel?: string | null
           created_at?: string
           created_by?: string | null
+          credit?: number | null
+          debit?: number | null
           description?: string | null
           expense_type_id?: string | null
           fee?: number | null
           fund_id?: string | null
+          future_check?: boolean | null
           id?: string
           note?: string | null
           operation_code?: string | null
+          operation_type?: string | null
           payee?: string | null
           payer_name?: string | null
           reference?: string | null

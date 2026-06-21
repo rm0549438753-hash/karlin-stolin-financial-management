@@ -37,9 +37,9 @@ function AuthPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-secondary to-accent/30 p-4">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center space-y-2">
-          <img src={logoAsset.url} alt="מוסדות קרלין" className="mx-auto h-24 w-auto object-contain" />
-          <CardTitle className="text-2xl">מוסדות קרלין</CardTitle>
-          <CardDescription>מערכת ניהול הכנסות והוצאות</CardDescription>
+          <img src={logoAsset.url} alt="מרכז קארלין סטאלין" className="mx-auto h-32 w-auto object-contain" />
+          <CardTitle className="text-2xl">מרכז קארלין סטאלין</CardTitle>
+          <CardDescription>ממשק ניהול פיננסי</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignIn} className="space-y-4 mt-2">
