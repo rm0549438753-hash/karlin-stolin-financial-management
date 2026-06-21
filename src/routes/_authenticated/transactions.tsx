@@ -7,13 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Trash2, Download, Search, Upload, AlertTriangle, History, Undo2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Search, Upload, AlertTriangle, History, Undo2, X } from "lucide-react";
 import { useAccounts, useCategories, useFunds, useExpenseTypes, useSubcategories, type Account } from "@/hooks/use-lookups";
 import { formatDate } from "@/lib/format";
 import { TransactionDialog, type TransactionRow } from "@/components/TransactionDialog";
 import { ImportDialog } from "@/components/ImportDialog";
+import { BulkEditDialog } from "@/components/BulkEditDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/use-auth";
 
