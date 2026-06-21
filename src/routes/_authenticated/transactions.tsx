@@ -393,13 +393,15 @@ function TransactionsPage() {
                 <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="חיפוש בתיאור / אסמכתה / הערה / שם" className="pr-9 bg-card" />
               </div>
-              <FilterSelect value={category} onValueChange={setCategory} placeholder="כל הקטגוריות" items={categories} />
-              <FilterSelect value={fund} onValueChange={setFund} placeholder="כל הקופות" items={funds} />
+              <DateInput value={from} onChange={setFrom} placeholder="מתאריך" />
+              <DateInput value={to} onChange={setTo} placeholder="עד תאריך" />
               <FilterSelect value={expType} onValueChange={setExpType} placeholder="כל הסוגים" items={expTypes} />
-              <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} dir="ltr" className="w-[150px] bg-card" />
-              <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} dir="ltr" className="w-[150px] bg-card" />
-              <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setCategory(ALL); setFund(ALL); setExpType(ALL); setFrom(""); setTo(""); setOnlyUncat(false); }}>איפוס</Button>
+              <FilterSelect value={fund} onValueChange={setFund} placeholder="כל הקופות" items={funds} />
+              <FilterSelect value={category} onValueChange={(v) => { setCategory(v); setSubcategory(ALL); }} placeholder="כל הקטגוריות" items={categories} />
+              <FilterSelect value={subcategory} onValueChange={setSubcategory} placeholder="כל תתי הקטגוריות" items={category === ALL ? subcats : subcats.filter((s) => s.category_id === category)} />
+              <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setCategory(ALL); setSubcategory(ALL); setFund(ALL); setExpType(ALL); setFrom(""); setTo(""); setOnlyUncat(false); }}>איפוס</Button>
             </div>
+
 
 
             {selectedIds.size > 0 && (
