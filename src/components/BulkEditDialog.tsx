@@ -32,7 +32,12 @@ export function BulkEditDialog({
 
   const apply = useMutation({
     mutationFn: async () => {
-      const patch: Record<string, any> = {};
+      const patch: {
+        fund_id?: string | null;
+        expense_type_id?: string | null;
+        category_id?: string | null;
+        subcategory_id?: string | null;
+      } = {};
       if (fund !== KEEP) patch.fund_id = fund === CLEAR ? null : fund;
       if (exp !== KEEP) patch.expense_type_id = exp === CLEAR ? null : exp;
       if (cat !== KEEP) patch.category_id = cat === CLEAR ? null : cat;
