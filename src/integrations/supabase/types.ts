@@ -110,6 +110,41 @@ export type Database = {
         }
         Relationships: []
       }
+      import_batches: {
+        Row: {
+          account_id: string
+          created_at: string
+          created_by: string | null
+          file_name: string
+          id: string
+          row_count: number
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          created_by?: string | null
+          file_name: string
+          id?: string
+          row_count?: number
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          created_by?: string | null
+          file_name?: string
+          id?: string
+          row_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_batches_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           blocked: boolean
@@ -187,6 +222,7 @@ export type Database = {
           fund_id: string | null
           future_check: boolean | null
           id: string
+          import_batch_id: string | null
           note: string | null
           operation_code: string | null
           operation_type: string | null
@@ -216,6 +252,7 @@ export type Database = {
           fund_id?: string | null
           future_check?: boolean | null
           id?: string
+          import_batch_id?: string | null
           note?: string | null
           operation_code?: string | null
           operation_type?: string | null
@@ -245,6 +282,7 @@ export type Database = {
           fund_id?: string | null
           future_check?: boolean | null
           id?: string
+          import_batch_id?: string | null
           note?: string | null
           operation_code?: string | null
           operation_type?: string | null
@@ -284,6 +322,13 @@ export type Database = {
             columns: ["fund_id"]
             isOneToOne: false
             referencedRelation: "funds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_import_batch_id_fkey"
+            columns: ["import_batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
             referencedColumns: ["id"]
           },
           {
