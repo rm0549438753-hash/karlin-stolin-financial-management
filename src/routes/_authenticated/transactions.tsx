@@ -138,6 +138,14 @@ function TransactionsPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<TransactionRow | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+
+  // Reset selection when account/filters change
+  useEffect(() => { setSelectedIds(new Set()); }, [account, search, category, fund, expType, from, to, onlyUncat]);
+
+
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["transactions", { account, category, fund, expType, from, to }],
