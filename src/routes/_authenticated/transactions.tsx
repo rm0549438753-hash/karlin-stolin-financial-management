@@ -272,7 +272,7 @@ function TransactionsPage() {
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" disabled={!selectedAccount}>
-                <History className="w-4 h-4 ml-1" />ייבואים
+                <History className="w-4 h-4 ml-1" />ייבואים אחרונים
               </Button>
             </PopoverTrigger>
             <PopoverContent dir="rtl" className="w-80 p-0">
