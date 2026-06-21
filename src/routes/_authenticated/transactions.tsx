@@ -161,7 +161,8 @@ function TransactionsPage() {
         .from("transactions")
         .select("*", { count: "exact", head: true })
         .eq("account_id", account)
-        .or("fund_id.is.null,expense_type_id.is.null");
+        .is("fund_id", null)
+        .is("expense_type_id", null);
       if (error) throw error;
       return count ?? 0;
     },
@@ -207,7 +208,7 @@ function TransactionsPage() {
 
   const filtered = useMemo(() => {
     let r: any[] = rows;
-    if (onlyUncat) r = r.filter((x) => !x.fund_id || !x.expense_type_id);
+    if (onlyUncat) r = r.filter((x) => !x.fund_id && !x.expense_type_id);
     if (!search.trim()) return r;
     const q = search.toLowerCase();
     return r.filter((x) =>
@@ -271,7 +272,7 @@ function TransactionsPage() {
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" disabled={!selectedAccount}>
-                <History className="w-4 h-4 ml-1" />ייבואים
+                <History className="w-4 h-4 ml-1" />ייבואים אחרונים
               </Button>
             </PopoverTrigger>
             <PopoverContent dir="rtl" className="w-80 p-0">
@@ -369,7 +370,7 @@ function TransactionsPage() {
                     <TableRow><TableCell colSpan={columns.length + 1} className="text-center py-12 text-muted-foreground">אין תנועות להצגה</TableCell></TableRow>
                   )}
                   {filtered.map((r, idx) => {
-                    const isUncat = !r.fund_id || !r.expense_type_id;
+                    const isUncat = !r.fund_id && !r.expense_type_id;
                     return (
                       <TableRow
                         key={r.id}
