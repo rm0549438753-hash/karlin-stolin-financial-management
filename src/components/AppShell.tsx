@@ -147,7 +147,7 @@ export function AppShell({ children, title, actions }: { children: ReactNode; ti
         <div className="flex-1 flex flex-col min-w-0">
           <header className="h-14 border-b bg-card/50 backdrop-blur flex items-center px-4 gap-3 sticky top-0 z-10">
             <SidebarTrigger />
-            <img src={logoAsset.url} alt="" className="h-8 w-8 object-contain" />
+            <img src={logoAsset.url} alt="" className="h-9 w-auto object-contain" />
             <h1 className="text-base font-semibold">{title}</h1>
             <div className="mr-auto flex items-center gap-2">{actions}</div>
           </header>
