@@ -155,11 +155,12 @@ function TransactionsPage() {
 
 
   const { data: rows = [], isLoading } = useQuery({
-    queryKey: ["transactions", { account, category, fund, expType, from, to }],
+    queryKey: ["transactions", { account, category, subcategory, fund, expType, from, to }],
     enabled: !!account,
     queryFn: async () => {
       let q = supabase.from("transactions").select("*").eq("account_id", account).order("transaction_date", { ascending: false }).limit(3000);
       if (category !== ALL) q = q.eq("category_id", category);
+      if (subcategory !== ALL) q = q.eq("subcategory_id", subcategory);
       if (fund !== ALL) q = q.eq("fund_id", fund);
       if (expType !== ALL) q = q.eq("expense_type_id", expType);
       if (from) q = q.gte("transaction_date", from);
