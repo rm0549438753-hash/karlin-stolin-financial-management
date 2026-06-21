@@ -28,13 +28,13 @@ function AppSidebar() {
 
   return (
     <Sidebar side="right" collapsible="icon">
-      <SidebarHeader className="p-4">
-        <Link to="/dashboard" className="flex items-center gap-3">
-          <img src={logoAsset.url} alt="מוסדות קרלין" className="w-10 h-10 object-contain shrink-0" />
-          <div className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden">
-            <span className="font-bold text-sm">מוסדות קרלין</span>
-            <span className="text-xs text-muted-foreground">ניהול כספים</span>
-          </div>
+      <SidebarHeader className="p-3">
+        <Link to="/dashboard" className="flex items-center justify-center">
+          <img
+            src={logoAsset.url}
+            alt="מרכז קארלין סטאלין"
+            className="h-16 w-auto object-contain group-data-[collapsible=icon]:h-8"
+          />
         </Link>
       </SidebarHeader>
       <SidebarContent>
