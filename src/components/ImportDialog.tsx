@@ -117,7 +117,7 @@ export function ImportDialog({ open, onOpenChange, account }: { open: boolean; o
       // insert in chunks of 500
       for (let i = 0; i < txRows.length; i += 500) {
         const chunk = txRows.slice(i, i + 500);
-        const { error } = await supabase.from("transactions").insert(chunk);
+        const { error } = await supabase.from("transactions").insert(chunk as any);
         if (error) throw error;
       }
       return { count: txRows.length };
