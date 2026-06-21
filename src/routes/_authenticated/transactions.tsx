@@ -393,10 +393,43 @@ function TransactionsPage() {
               <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setCategory(ALL); setFund(ALL); setExpType(ALL); setFrom(""); setTo(""); setOnlyUncat(false); }}>איפוס</Button>
             </div>
 
+
+            {selectedIds.size > 0 && (
+              <div className="px-4 py-2.5 bg-primary/10 border-y border-primary/30 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-10">
+                <div className="flex items-center gap-2 text-sm font-bold text-primary">
+                  <Checkbox checked={true} onCheckedChange={() => setSelectedIds(new Set())} />
+                  נבחרו {selectedIds.size} תנועות
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="default" onClick={() => setBulkEditOpen(true)}>
+                    <Pencil className="w-3.5 h-3.5 ml-1" />שינוי נבחרות
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={exportSelected}>
+                    <Download className="w-3.5 h-3.5 ml-1" />ייצוא נבחרות
+                  </Button>
+                  {role?.isAdmin && (
+                    <Button size="sm" variant="outline" className="text-destructive border-destructive/40" onClick={() => setBulkDeleteOpen(true)}>
+                      <Trash2 className="w-3.5 h-3.5 ml-1" />מחיקה
+                    </Button>
+                  )}
+                  <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
+                    <X className="w-3.5 h-3.5 ml-1" />בטל בחירה
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div className="overflow-x-auto">
               <Table className="border-collapse">
                 <TableHeader>
                   <TableRow className="bg-muted/30 hover:bg-muted/30">
+                    <TableHead className="w-10 px-3 border-l border-border">
+                      <Checkbox
+                        checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                        onCheckedChange={toggleAll}
+                        aria-label="בחר הכל"
+                      />
+                    </TableHead>
                     {columns.map((c) => (
                       <TableHead
                         key={c.header}
@@ -413,21 +446,25 @@ function TransactionsPage() {
                 </TableHeader>
                 <TableBody>
                   {isLoading && (
-                    <TableRow><TableCell colSpan={columns.length + 1} className="text-center py-10 text-muted-foreground">טוען…</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={columns.length + 2} className="text-center py-10 text-muted-foreground">טוען…</TableCell></TableRow>
                   )}
                   {!isLoading && filtered.length === 0 && (
-                    <TableRow><TableCell colSpan={columns.length + 1} className="text-center py-12 text-muted-foreground">אין תנועות להצגה</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={columns.length + 2} className="text-center py-12 text-muted-foreground">אין תנועות להצגה</TableCell></TableRow>
                   )}
                   {filtered.map((r, idx) => {
                     const isUncat = !r.fund_id && !r.expense_type_id;
+                    const isChecked = selectedIds.has(r.id);
                     return (
                       <TableRow
                         key={r.id}
                         className={
                           "group border-b border-border transition-colors hover:bg-primary/5 " +
-                          (isUncat ? "bg-amber-50/30 " : idx % 2 ? "bg-muted/20 " : "")
+                          (isChecked ? "bg-primary/5 " : isUncat ? "bg-amber-50/30 " : idx % 2 ? "bg-muted/20 " : "")
                         }
                       >
+                        <TableCell className="px-3 border-l border-border/60">
+                          <Checkbox checked={isChecked} onCheckedChange={() => toggleOne(r.id)} aria-label="בחר תנועה" />
+                        </TableCell>
                         {columns.map((col) => (
                           <TableCell
                             key={col.header}
