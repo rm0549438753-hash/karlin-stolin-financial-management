@@ -49,8 +49,8 @@ function UncatBadge() {
 }
 
 const COMMON_LOOKUPS: ColumnDef[] = [
-  { header: "קופה", render: (r, c) => (r.fund_id ? c.fundMap.get(r.fund_id) : !r.expense_type_id ? <UncatBadge /> : "") },
-  { header: "סוג", render: (r, c) => (r.expense_type_id ? c.expMap.get(r.expense_type_id) : !r.fund_id ? <UncatBadge /> : "") },
+  { header: "קופה", render: (r, c) => (r.fund_id ? c.fundMap.get(r.fund_id) : (!r.fund_id && !r.expense_type_id) ? <UncatBadge /> : "") },
+  { header: "סוג", render: (r, c) => (r.expense_type_id ? c.expMap.get(r.expense_type_id) : (!r.fund_id && !r.expense_type_id) ? <UncatBadge /> : "") },
   { header: "קטגוריה", render: (r, c) => (r.category_id ? c.catMap.get(r.category_id) : "") },
   { header: "תת קטגוריה", render: (r, c) => (r.subcategory_id ? c.subMap.get(r.subcategory_id) : "") },
   { header: "הערה", render: (r) => r.note ?? "" },
