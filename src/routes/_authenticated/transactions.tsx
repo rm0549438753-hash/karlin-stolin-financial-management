@@ -7,13 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Trash2, Download, Search, Upload, AlertTriangle, History, Undo2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Search, Upload, AlertTriangle, History, Undo2, X } from "lucide-react";
 import { useAccounts, useCategories, useFunds, useExpenseTypes, useSubcategories, type Account } from "@/hooks/use-lookups";
 import { formatDate } from "@/lib/format";
 import { TransactionDialog, type TransactionRow } from "@/components/TransactionDialog";
 import { ImportDialog } from "@/components/ImportDialog";
+import { BulkEditDialog } from "@/components/BulkEditDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/use-auth";
 
@@ -49,8 +51,8 @@ function UncatBadge() {
 }
 
 const COMMON_LOOKUPS: ColumnDef[] = [
-  { header: "קופה", render: (r, c) => (r.fund_id ? c.fundMap.get(r.fund_id) : !r.expense_type_id ? <UncatBadge /> : "") },
-  { header: "סוג", render: (r, c) => (r.expense_type_id ? c.expMap.get(r.expense_type_id) : !r.fund_id ? <UncatBadge /> : "") },
+  { header: "קופה", render: (r, c) => (r.fund_id ? c.fundMap.get(r.fund_id) : (!r.fund_id && !r.expense_type_id) ? <UncatBadge /> : "") },
+  { header: "סוג", render: (r, c) => (r.expense_type_id ? c.expMap.get(r.expense_type_id) : (!r.fund_id && !r.expense_type_id) ? <UncatBadge /> : "") },
   { header: "קטגוריה", render: (r, c) => (r.category_id ? c.catMap.get(r.category_id) : "") },
   { header: "תת קטגוריה", render: (r, c) => (r.subcategory_id ? c.subMap.get(r.subcategory_id) : "") },
   { header: "הערה", render: (r) => r.note ?? "" },
@@ -95,8 +97,8 @@ const COLUMNS_BY_SCHEMA: Record<SchemaType, ColumnDef[]> = {
     { header: "סכום הכנסה", align: "left", render: (r) => <span className="text-income font-semibold tabular-nums">{fmtNum(r.credit)}</span> },
     { header: "סכום הוצאה", align: "left", render: (r) => <span className="text-expense font-semibold tabular-nums">{fmtNum(r.debit)}</span> },
     { header: "הערה", render: (r) => r.note ?? "" },
-    { header: "קופה", render: (r, c) => (r.fund_id ? c.fundMap.get(r.fund_id) : !r.expense_type_id ? <UncatBadge /> : "") },
-    { header: "סוג", render: (r, c) => (r.expense_type_id ? c.expMap.get(r.expense_type_id) : !r.fund_id ? <UncatBadge /> : "") },
+    { header: "קופה", render: (r, c) => (r.fund_id ? c.fundMap.get(r.fund_id) : (!r.fund_id && !r.expense_type_id) ? <UncatBadge /> : "") },
+    { header: "סוג", render: (r, c) => (r.expense_type_id ? c.expMap.get(r.expense_type_id) : (!r.fund_id && !r.expense_type_id) ? <UncatBadge /> : "") },
     { header: "קטגוריה", render: (r, c) => (r.category_id ? c.catMap.get(r.category_id) : "") },
     { header: "תת קטגוריה", render: (r, c) => (r.subcategory_id ? c.subMap.get(r.subcategory_id) : "") },
   ],
@@ -136,6 +138,14 @@ function TransactionsPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<TransactionRow | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+
+  // Reset selection when account/filters change
+  useEffect(() => { setSelectedIds(new Set()); }, [account, search, category, fund, expType, from, to, onlyUncat]);
+
+
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["transactions", { account, category, fund, expType, from, to }],
@@ -245,9 +255,40 @@ function TransactionsPage() {
     onError: (e: any) => toast.error(e.message ?? "שגיאה"),
   });
 
-  function exportCSV() {
+  const bulkDel = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase.from("transactions").delete().in("id", ids);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(`${selectedIds.size} תנועות נמחקו`);
+      setSelectedIds(new Set());
+      qc.invalidateQueries({ queryKey: ["transactions"] });
+      qc.invalidateQueries({ queryKey: ["tx-dashboard"] });
+      qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "שגיאה"),
+  });
+
+  // Selection state derived from current filtered view
+  const filteredIds = useMemo(() => filtered.map((r: any) => r.id as string), [filtered]);
+  const allSelected = filteredIds.length > 0 && filteredIds.every((id) => selectedIds.has(id));
+  const someSelected = !allSelected && filteredIds.some((id) => selectedIds.has(id));
+  const toggleAll = () => {
+    const next = new Set(selectedIds);
+    if (allSelected) filteredIds.forEach((id) => next.delete(id));
+    else filteredIds.forEach((id) => next.add(id));
+    setSelectedIds(next);
+  };
+  const toggleOne = (id: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    setSelectedIds(next);
+  };
+
+  function exportRows(list: any[], filename: string) {
     const headers = columns.map((c) => c.header);
-    const rowsCsv = filtered.map((r) => columns.map((col) => {
+    const rowsCsv = list.map((r) => columns.map((col) => {
       const v = col.render(r as any, ctx);
       return typeof v === "string" || typeof v === "number" ? String(v) : "";
     }));
@@ -255,9 +296,17 @@ function TransactionsPage() {
     const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = `transactions_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.href = url; a.download = filename;
     a.click(); URL.revokeObjectURL(url);
   }
+  function exportCSV() {
+    exportRows(filtered, `transactions_${new Date().toISOString().slice(0, 10)}.csv`);
+  }
+  function exportSelected() {
+    const list = filtered.filter((r: any) => selectedIds.has(r.id));
+    exportRows(list, `transactions_selected_${new Date().toISOString().slice(0, 10)}.csv`);
+  }
+
 
   const title = selectedAccount ? selectedAccount.name : "תנועות";
 
@@ -344,10 +393,43 @@ function TransactionsPage() {
               <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setCategory(ALL); setFund(ALL); setExpType(ALL); setFrom(""); setTo(""); setOnlyUncat(false); }}>איפוס</Button>
             </div>
 
+
+            {selectedIds.size > 0 && (
+              <div className="px-4 py-2.5 bg-primary/10 border-y border-primary/30 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-10">
+                <div className="flex items-center gap-2 text-sm font-bold text-primary">
+                  <Checkbox checked={true} onCheckedChange={() => setSelectedIds(new Set())} />
+                  נבחרו {selectedIds.size} תנועות
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="default" onClick={() => setBulkEditOpen(true)}>
+                    <Pencil className="w-3.5 h-3.5 ml-1" />שינוי נבחרות
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={exportSelected}>
+                    <Download className="w-3.5 h-3.5 ml-1" />ייצוא נבחרות
+                  </Button>
+                  {role?.isAdmin && (
+                    <Button size="sm" variant="outline" className="text-destructive border-destructive/40" onClick={() => setBulkDeleteOpen(true)}>
+                      <Trash2 className="w-3.5 h-3.5 ml-1" />מחיקה
+                    </Button>
+                  )}
+                  <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
+                    <X className="w-3.5 h-3.5 ml-1" />בטל בחירה
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div className="overflow-x-auto">
               <Table className="border-collapse">
                 <TableHeader>
                   <TableRow className="bg-muted/30 hover:bg-muted/30">
+                    <TableHead className="w-10 px-3 border-l border-border">
+                      <Checkbox
+                        checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                        onCheckedChange={toggleAll}
+                        aria-label="בחר הכל"
+                      />
+                    </TableHead>
                     {columns.map((c) => (
                       <TableHead
                         key={c.header}
@@ -364,21 +446,25 @@ function TransactionsPage() {
                 </TableHeader>
                 <TableBody>
                   {isLoading && (
-                    <TableRow><TableCell colSpan={columns.length + 1} className="text-center py-10 text-muted-foreground">טוען…</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={columns.length + 2} className="text-center py-10 text-muted-foreground">טוען…</TableCell></TableRow>
                   )}
                   {!isLoading && filtered.length === 0 && (
-                    <TableRow><TableCell colSpan={columns.length + 1} className="text-center py-12 text-muted-foreground">אין תנועות להצגה</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={columns.length + 2} className="text-center py-12 text-muted-foreground">אין תנועות להצגה</TableCell></TableRow>
                   )}
                   {filtered.map((r, idx) => {
                     const isUncat = !r.fund_id && !r.expense_type_id;
+                    const isChecked = selectedIds.has(r.id);
                     return (
                       <TableRow
                         key={r.id}
                         className={
                           "group border-b border-border transition-colors hover:bg-primary/5 " +
-                          (isUncat ? "bg-amber-50/30 " : idx % 2 ? "bg-muted/20 " : "")
+                          (isChecked ? "bg-primary/5 " : isUncat ? "bg-amber-50/30 " : idx % 2 ? "bg-muted/20 " : "")
                         }
                       >
+                        <TableCell className="px-3 border-l border-border/60">
+                          <Checkbox checked={isChecked} onCheckedChange={() => toggleOne(r.id)} aria-label="בחר תנועה" />
+                        </TableCell>
                         {columns.map((col) => (
                           <TableCell
                             key={col.header}
@@ -424,6 +510,7 @@ function TransactionsPage() {
 
       <TransactionDialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) setEditing(null); }} initial={editing} />
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} account={selectedAccount} />
+      <BulkEditDialog open={bulkEditOpen} onOpenChange={setBulkEditOpen} ids={Array.from(selectedIds)} onDone={() => setSelectedIds(new Set())} />
 
       <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
         <AlertDialogContent dir="rtl">
@@ -434,6 +521,19 @@ function TransactionsPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>ביטול</AlertDialogCancel>
             <AlertDialogAction onClick={() => { if (deleteId) del.mutate(deleteId); setDeleteId(null); }} className="bg-destructive text-destructive-foreground">מחיקה</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>למחוק {selectedIds.size} תנועות?</AlertDialogTitle>
+            <AlertDialogDescription>פעולה זו אינה הפיכה ותמחק את כל התנועות שנבחרו.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { bulkDel.mutate(Array.from(selectedIds)); setBulkDeleteOpen(false); }} className="bg-destructive text-destructive-foreground">מחיקה</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
