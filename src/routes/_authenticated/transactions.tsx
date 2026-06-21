@@ -117,6 +117,7 @@ function TransactionsPage() {
 
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState(ALL);
+  const [subcategory, setSubcategory] = useState(ALL);
   const [fund, setFund] = useState(ALL);
   const [expType, setExpType] = useState(ALL);
   const [from, setFrom] = useState("");
@@ -142,17 +143,24 @@ function TransactionsPage() {
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
-  // Reset selection when account/filters change
-  useEffect(() => { setSelectedIds(new Set()); }, [account, search, category, fund, expType, from, to, onlyUncat]);
+  // Reset selection + uncategorized filter when account changes (banner is per-account)
+  useEffect(() => {
+    setSelectedIds(new Set());
+    setOnlyUncat(false);
+    setSearch(""); setCategory(ALL); setSubcategory(ALL); setFund(ALL); setExpType(ALL); setFrom(""); setTo("");
+  }, [account]);
+  // Reset selection when filters change
+  useEffect(() => { setSelectedIds(new Set()); }, [search, category, subcategory, fund, expType, from, to, onlyUncat]);
 
 
 
   const { data: rows = [], isLoading } = useQuery({
-    queryKey: ["transactions", { account, category, fund, expType, from, to }],
+    queryKey: ["transactions", { account, category, subcategory, fund, expType, from, to }],
     enabled: !!account,
     queryFn: async () => {
       let q = supabase.from("transactions").select("*").eq("account_id", account).order("transaction_date", { ascending: false }).limit(3000);
       if (category !== ALL) q = q.eq("category_id", category);
+      if (subcategory !== ALL) q = q.eq("subcategory_id", subcategory);
       if (fund !== ALL) q = q.eq("fund_id", fund);
       if (expType !== ALL) q = q.eq("expense_type_id", expType);
       if (from) q = q.gte("transaction_date", from);
@@ -367,7 +375,7 @@ function TransactionsPage() {
                   <AlertTriangle className="w-4 h-4" />
                 </div>
                 <p className="text-sm text-amber-900 font-medium truncate">
-                  ישנן <b>{uncatCount}</b> תנועות שטרם סווגו לקופה או לסוג בחשבון זה
+                  בחשבון <b>{selectedAccount?.name}</b>: <b>{uncatCount}</b> תנועות ללא קופה וללא סוג
                 </p>
               </div>
               <button
@@ -385,13 +393,15 @@ function TransactionsPage() {
                 <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="חיפוש בתיאור / אסמכתה / הערה / שם" className="pr-9 bg-card" />
               </div>
-              <FilterSelect value={category} onValueChange={setCategory} placeholder="כל הקטגוריות" items={categories} />
-              <FilterSelect value={fund} onValueChange={setFund} placeholder="כל הקופות" items={funds} />
+              <DateInput value={from} onChange={setFrom} placeholder="מתאריך" />
+              <DateInput value={to} onChange={setTo} placeholder="עד תאריך" />
               <FilterSelect value={expType} onValueChange={setExpType} placeholder="כל הסוגים" items={expTypes} />
-              <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} dir="ltr" className="w-[150px] bg-card" />
-              <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} dir="ltr" className="w-[150px] bg-card" />
-              <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setCategory(ALL); setFund(ALL); setExpType(ALL); setFrom(""); setTo(""); setOnlyUncat(false); }}>איפוס</Button>
+              <FilterSelect value={fund} onValueChange={setFund} placeholder="כל הקופות" items={funds} />
+              <FilterSelect value={category} onValueChange={(v) => { setCategory(v); setSubcategory(ALL); }} placeholder="כל הקטגוריות" items={categories} />
+              <FilterSelect value={subcategory} onValueChange={setSubcategory} placeholder="כל תתי הקטגוריות" items={category === ALL ? subcats : subcats.filter((s) => s.category_id === category)} />
+              <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setCategory(ALL); setSubcategory(ALL); setFund(ALL); setExpType(ALL); setFrom(""); setTo(""); setOnlyUncat(false); }}>איפוס</Button>
             </div>
+
 
 
             {selectedIds.size > 0 && (
@@ -423,12 +433,15 @@ function TransactionsPage() {
               <Table className="border-collapse">
                 <TableHeader>
                   <TableRow className="bg-muted/30 hover:bg-muted/30">
-                    <TableHead className="w-10 px-3 border-l border-border">
-                      <Checkbox
-                        checked={allSelected ? true : someSelected ? "indeterminate" : false}
-                        onCheckedChange={toggleAll}
-                        aria-label="בחר הכל"
-                      />
+                    <TableHead className="w-32 px-3 border-l border-border">
+                      <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <Checkbox
+                          checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                          onCheckedChange={toggleAll}
+                          aria-label="בחר הכל"
+                        />
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">בחר הכל</span>
+                      </label>
                     </TableHead>
                     {columns.map((c) => (
                       <TableHead
@@ -508,7 +521,7 @@ function TransactionsPage() {
         </div>
       )}
 
-      <TransactionDialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) setEditing(null); }} initial={editing} />
+      <TransactionDialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) setEditing(null); }} initial={editing} account={selectedAccount} />
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} account={selectedAccount} />
       <BulkEditDialog open={bulkEditOpen} onOpenChange={setBulkEditOpen} ids={Array.from(selectedIds)} onDone={() => setSelectedIds(new Set())} />
 
@@ -550,5 +563,22 @@ function FilterSelect({ value, onValueChange, placeholder, items }: { value: str
         {items.map((i) => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}
       </SelectContent>
     </Select>
+  );
+}
+
+function DateInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
+  return (
+    <div className="relative">
+      {!value && (
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">{placeholder}</span>
+      )}
+      <Input
+        type="date"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        dir="ltr"
+        className={"w-[150px] bg-card " + (!value ? "text-transparent" : "")}
+      />
+    </div>
   );
 }
