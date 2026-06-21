@@ -5,20 +5,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Trash2, Download, Search, Filter } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Search, Upload, AlertTriangle, History, Undo2 } from "lucide-react";
 import { useAccounts, useCategories, useFunds, useExpenseTypes, useSubcategories, type Account } from "@/hooks/use-lookups";
 import { formatDate } from "@/lib/format";
 import { TransactionDialog, type TransactionRow } from "@/components/TransactionDialog";
+import { ImportDialog } from "@/components/ImportDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_authenticated/transactions")({
   validateSearch: (s: Record<string, unknown>) => ({
     account: typeof s.account === "string" ? s.account : undefined,
+    uncategorized: s.uncategorized === true || s.uncategorized === "true" ? true : undefined,
   }),
   component: TransactionsPage,
 });
@@ -34,7 +36,6 @@ type ColumnDef = {
 };
 
 type RenderCtx = {
-  acctMap: Map<string, string>;
   fundMap: Map<string, string>;
   expMap: Map<string, string>;
   catMap: Map<string, string>;
@@ -43,9 +44,13 @@ type RenderCtx = {
 
 const fmtNum = (v: any) => (v === null || v === undefined || v === "" ? "" : Number(v).toLocaleString("he-IL", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 
+function UncatBadge() {
+  return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-dashed border-amber-300">לא מסווג</span>;
+}
+
 const COMMON_LOOKUPS: ColumnDef[] = [
-  { header: "קופה", render: (r, c) => (r.fund_id ? c.fundMap.get(r.fund_id) : "") },
-  { header: "סוג", render: (r, c) => (r.expense_type_id ? c.expMap.get(r.expense_type_id) : "") },
+  { header: "קופה", render: (r, c) => (r.fund_id ? c.fundMap.get(r.fund_id) : <UncatBadge />) },
+  { header: "סוג", render: (r, c) => (r.expense_type_id ? c.expMap.get(r.expense_type_id) : <UncatBadge />) },
   { header: "קטגוריה", render: (r, c) => (r.category_id ? c.catMap.get(r.category_id) : "") },
   { header: "תת קטגוריה", render: (r, c) => (r.subcategory_id ? c.subMap.get(r.subcategory_id) : "") },
   { header: "הערה", render: (r) => r.note ?? "" },
@@ -53,61 +58,49 @@ const COMMON_LOOKUPS: ColumnDef[] = [
 
 const COLUMNS_BY_SCHEMA: Record<SchemaType, ColumnDef[]> = {
   mercantile: [
-    { header: "זכות", align: "left", render: (r) => fmtNum(r.credit) },
-    { header: "חובה", align: "left", render: (r) => fmtNum(r.debit) },
     { header: "תאריך", render: (r) => formatDate(r.transaction_date) },
     { header: "יום ערך", render: (r) => (r.value_date ? formatDate(r.value_date) : "") },
     { header: "תיאור התנועה", render: (r) => r.description ?? "" },
-    { header: "₪ זכות/חובה", align: "left", render: (r) => fmtNum(r.amount) },
-    { header: "₪ יתרה", align: "left", render: (r) => fmtNum(r.balance) },
     { header: "אסמכתה", render: (r) => r.reference ?? "" },
+    { header: "זכות", align: "left", render: (r) => <span className="text-income font-semibold tabular-nums">{fmtNum(r.credit)}</span> },
+    { header: "חובה", align: "left", render: (r) => <span className="text-expense font-semibold tabular-nums">{fmtNum(r.debit)}</span> },
+    { header: "₪ יתרה", align: "left", render: (r) => <span className="tabular-nums">{fmtNum(r.balance)}</span> },
     { header: "עמלה", align: "left", render: (r) => fmtNum(r.fee) },
     { header: "ערוץ ביצוע", render: (r) => r.channel ?? "" },
     ...COMMON_LOOKUPS,
   ],
   pagi: [
-    { header: "יתרה", align: "left", render: (r) => fmtNum(r.balance) },
+    { header: "תאריך", render: (r) => formatDate(r.transaction_date) },
     { header: "תאריך ערך", render: (r) => (r.value_date ? formatDate(r.value_date) : "") },
-    { header: "זכות", align: "left", render: (r) => fmtNum(r.credit) },
-    { header: "חובה", align: "left", render: (r) => fmtNum(r.debit) },
     { header: "תאור", render: (r) => r.description ?? "" },
     { header: "אסמכתא", render: (r) => r.reference ?? "" },
     { header: "סוג פעולה", render: (r) => r.operation_type ?? "" },
-    { header: "תאריך", render: (r) => formatDate(r.transaction_date) },
+    { header: "זכות", align: "left", render: (r) => <span className="text-income font-semibold tabular-nums">{fmtNum(r.credit)}</span> },
+    { header: "חובה", align: "left", render: (r) => <span className="text-expense font-semibold tabular-nums">{fmtNum(r.debit)}</span> },
+    { header: "יתרה", align: "left", render: (r) => <span className="tabular-nums">{fmtNum(r.balance)}</span> },
     ...COMMON_LOOKUPS,
   ],
   checks: [
     { header: "תאריך", render: (r) => formatDate(r.transaction_date) },
-    { header: "עמותה", render: (r) => r.association ?? "" },
-    { header: "סכום", align: "left", render: (r) => fmtNum(r.amount) },
-    { header: "שם", render: (r) => r.payee ?? "" },
     { header: "תאריך ערך", render: (r) => (r.value_date ? formatDate(r.value_date) : "") },
+    { header: "שם", render: (r) => r.payee ?? "" },
+    { header: "עמותה", render: (r) => r.association ?? "" },
+    { header: "סכום", align: "left", render: (r) => <span className="font-semibold tabular-nums">{fmtNum(r.amount)}</span> },
+    { header: "צ'ק עתידי", align: "center", render: (r) => (r.future_check === true ? "✓" : "") },
     ...COMMON_LOOKUPS,
-    { header: "צ'ק עתידי ?", align: "center", render: (r) => (r.future_check === true ? "✓" : r.future_check === false ? "—" : "") },
   ],
   cash: [
     { header: "תאריך", render: (r) => formatDate(r.transaction_date) },
     { header: "פירוט", render: (r) => r.description ?? "" },
-    { header: "סכום הוצאה", align: "left", render: (r) => fmtNum(r.debit) },
-    { header: "סכום הכנסה", align: "left", render: (r) => fmtNum(r.credit) },
+    { header: "סכום הכנסה", align: "left", render: (r) => <span className="text-income font-semibold tabular-nums">{fmtNum(r.credit)}</span> },
+    { header: "סכום הוצאה", align: "left", render: (r) => <span className="text-expense font-semibold tabular-nums">{fmtNum(r.debit)}</span> },
     { header: "הערה", render: (r) => r.note ?? "" },
-    { header: "קופה", render: (r, c) => (r.fund_id ? c.fundMap.get(r.fund_id) : "") },
-    { header: "סוג", render: (r, c) => (r.expense_type_id ? c.expMap.get(r.expense_type_id) : "") },
+    { header: "קופה", render: (r, c) => (r.fund_id ? c.fundMap.get(r.fund_id) : <UncatBadge />) },
+    { header: "סוג", render: (r, c) => (r.expense_type_id ? c.expMap.get(r.expense_type_id) : <UncatBadge />) },
     { header: "קטגוריה", render: (r, c) => (r.category_id ? c.catMap.get(r.category_id) : "") },
     { header: "תת קטגוריה", render: (r, c) => (r.subcategory_id ? c.subMap.get(r.subcategory_id) : "") },
   ],
 };
-
-const ALL_COLUMNS: ColumnDef[] = [
-  { header: "תאריך", render: (r) => formatDate(r.transaction_date) },
-  { header: "חשבון", render: (r, c) => c.acctMap.get(r.account_id) ?? "" },
-  { header: "תיאור", render: (r) => r.description ?? r.association ?? "" },
-  { header: "אסמכתה", render: (r) => r.reference ?? "" },
-  { header: "זכות", align: "left", render: (r) => fmtNum(r.credit) },
-  { header: "חובה", align: "left", render: (r) => fmtNum(r.debit) },
-  { header: "סכום", align: "left", render: (r) => fmtNum(r.amount) },
-  ...COMMON_LOOKUPS,
-];
 
 function TransactionsPage() {
   const qc = useQueryClient();
@@ -121,36 +114,34 @@ function TransactionsPage() {
   const { data: subcats = [] } = useSubcategories();
 
   const [search, setSearch] = useState("");
-  const [account, setAccount] = useState<string>(urlSearch.account ?? ALL);
   const [category, setCategory] = useState(ALL);
   const [fund, setFund] = useState(ALL);
   const [expType, setExpType] = useState(ALL);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [onlyUncat, setOnlyUncat] = useState<boolean>(urlSearch.uncategorized ?? false);
+
+  useEffect(() => { setOnlyUncat(urlSearch.uncategorized ?? false); }, [urlSearch.uncategorized]);
 
   useEffect(() => {
-    const next = urlSearch.account ?? ALL;
-    setAccount((prev) => (prev === next ? prev : next));
-  }, [urlSearch.account]);
+    if (!urlSearch.account && accounts.length > 0) {
+      navigate({ to: "/transactions", search: { account: accounts[0].id }, replace: true });
+    }
+  }, [urlSearch.account, accounts, navigate]);
 
-  function changeAccount(v: string) {
-    setAccount(v);
-    navigate({
-      to: "/transactions",
-      search: v === ALL ? {} : { account: v },
-      replace: true,
-    });
-  }
+  const account = urlSearch.account ?? "";
+  const selectedAccount = useMemo(() => accounts.find((a) => a.id === account) ?? null, [accounts, account]);
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<TransactionRow | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["transactions", { account, category, fund, expType, from, to }],
+    enabled: !!account,
     queryFn: async () => {
-      let q = supabase.from("transactions").select("*").order("transaction_date", { ascending: false }).limit(3000);
-      if (account !== ALL) q = q.eq("account_id", account);
+      let q = supabase.from("transactions").select("*").eq("account_id", account).order("transaction_date", { ascending: false }).limit(3000);
       if (category !== ALL) q = q.eq("category_id", category);
       if (fund !== ALL) q = q.eq("fund_id", fund);
       if (expType !== ALL) q = q.eq("expense_type_id", expType);
@@ -162,33 +153,78 @@ function TransactionsPage() {
     },
   });
 
+  const { data: uncatCount = 0 } = useQuery({
+    queryKey: ["uncategorized-count", account],
+    enabled: !!account,
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("transactions")
+        .select("*", { count: "exact", head: true })
+        .eq("account_id", account)
+        .or("fund_id.is.null,expense_type_id.is.null");
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
+  const { data: batches = [] } = useQuery({
+    queryKey: ["import-batches", account],
+    enabled: !!account,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("import_batches")
+        .select("*")
+        .eq("account_id", account)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const undoBatch = useMutation({
+    mutationFn: async (batchId: string) => {
+      const { error: e1 } = await supabase.from("transactions").delete().eq("import_batch_id", batchId);
+      if (e1) throw e1;
+      const { error: e2 } = await supabase.from("import_batches").delete().eq("id", batchId);
+      if (e2) throw e2;
+    },
+    onSuccess: () => {
+      toast.success("הייבוא בוטל");
+      qc.invalidateQueries({ queryKey: ["transactions"] });
+      qc.invalidateQueries({ queryKey: ["import-batches"] });
+      qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "שגיאה בביטול"),
+  });
+
   const ctx: RenderCtx = useMemo(() => ({
-    acctMap: new Map(accounts.map((a) => [a.id, a.name])),
     fundMap: new Map(funds.map((f) => [f.id, f.name])),
     expMap: new Map(expTypes.map((e) => [e.id, e.name])),
     catMap: new Map(categories.map((c) => [c.id, c.name])),
     subMap: new Map(subcats.map((s) => [s.id, s.name])),
-  }), [accounts, funds, expTypes, categories, subcats]);
+  }), [funds, expTypes, categories, subcats]);
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return rows;
+    let r: any[] = rows;
+    if (onlyUncat) r = r.filter((x) => !x.fund_id || !x.expense_type_id);
+    if (!search.trim()) return r;
     const q = search.toLowerCase();
-    return rows.filter((r: any) =>
-      (r.description ?? "").toLowerCase().includes(q) ||
-      (r.reference ?? "").toLowerCase().includes(q) ||
-      (r.note ?? "").toLowerCase().includes(q) ||
-      (r.payee ?? "").toLowerCase().includes(q) ||
-      (r.association ?? "").toLowerCase().includes(q),
+    return r.filter((x) =>
+      (x.description ?? "").toLowerCase().includes(q) ||
+      (x.reference ?? "").toLowerCase().includes(q) ||
+      (x.note ?? "").toLowerCase().includes(q) ||
+      (x.payee ?? "").toLowerCase().includes(q) ||
+      (x.association ?? "").toLowerCase().includes(q),
     );
-  }, [rows, search]);
+  }, [rows, search, onlyUncat]);
 
-  const selectedAccount = useMemo(() => accounts.find((a) => a.id === account), [accounts, account]);
-  const columns: ColumnDef[] = selectedAccount ? COLUMNS_BY_SCHEMA[selectedAccount.schema_type] : ALL_COLUMNS;
+  const columns: ColumnDef[] = selectedAccount ? COLUMNS_BY_SCHEMA[selectedAccount.schema_type] : [];
 
   const totals = useMemo(() => {
     let inc = 0, exp = 0;
     for (const r of filtered as any[]) {
-      const a = Number(r.amount) || 0;
+      const a = Number(r.amount) || (Number(r.credit) || 0) - (Number(r.debit) || 0);
       if (a > 0) inc += a; else exp += a;
     }
     return { inc, exp, net: inc + exp, count: filtered.length };
@@ -203,6 +239,7 @@ function TransactionsPage() {
       toast.success("התנועה נמחקה");
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["tx-dashboard"] });
+      qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאה"),
   });
@@ -221,54 +258,107 @@ function TransactionsPage() {
     a.click(); URL.revokeObjectURL(url);
   }
 
-  const title = selectedAccount ? selectedAccount.name : "כל התנועות";
+  const title = selectedAccount ? selectedAccount.name : "תנועות";
 
   return (
     <AppShell
       title={title}
       actions={
         <>
-          <Button variant="outline" size="sm" onClick={exportCSV}><Download className="w-4 h-4 ml-1" />ייצוא</Button>
-          <Button size="sm" onClick={() => { setEditing(null); setDialogOpen(true); }}>
+          <Button variant="outline" size="sm" onClick={exportCSV} disabled={!selectedAccount}>
+            <Download className="w-4 h-4 ml-1" />ייצוא
+          </Button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" disabled={!selectedAccount}>
+                <History className="w-4 h-4 ml-1" />ייבואים
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent dir="rtl" className="w-80 p-0">
+              <div className="px-3 py-2 text-sm font-semibold border-b">היסטוריית ייבואים</div>
+              {batches.length === 0 ? (
+                <div className="p-4 text-xs text-muted-foreground text-center">אין ייבואים</div>
+              ) : (
+                <ul className="max-h-80 overflow-auto divide-y">
+                  {batches.map((b: any) => (
+                    <li key={b.id} className="p-3 flex items-start justify-between gap-2 hover:bg-muted/40">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium truncate">{b.file_name}</div>
+                        <div className="text-[11px] text-muted-foreground">
+                          {new Date(b.created_at).toLocaleString("he-IL")} · {b.row_count} שורות
+                        </div>
+                      </div>
+                      <Button size="sm" variant="ghost" className="text-destructive shrink-0" onClick={() => { if (confirm("לבטל ייבוא זה ולמחוק את כל התנועות שלו?")) undoBatch.mutate(b.id); }}>
+                        <Undo2 className="w-3.5 h-3.5 ml-1" />בטל
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </PopoverContent>
+          </Popover>
+          <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} disabled={!selectedAccount}>
+            <Upload className="w-4 h-4 ml-1" />ייבוא קובץ
+          </Button>
+          <Button size="sm" onClick={() => { setEditing(null); setDialogOpen(true); }} disabled={!selectedAccount}>
             <Plus className="w-4 h-4 ml-1" />תנועה חדשה
           </Button>
         </>
       }
     >
-      <div className="space-y-4">
-        <Card>
-          <CardContent className="p-4 space-y-3">
-            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-              <Filter className="w-4 h-4" /> סינון
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-2">
-              <div className="lg:col-span-2 relative">
-                <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="חיפוש בתיאור / אסמכתה / הערה" className="pr-9" />
+      {!selectedAccount ? (
+        <div className="rounded-2xl border bg-card p-12 text-center text-muted-foreground">בחר חשבון מהתפריט הצדדי כדי להציג תנועות.</div>
+      ) : (
+        <div className="space-y-4">
+          {uncatCount > 0 && (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-full bg-amber-200 grid place-items-center text-amber-800 shrink-0">
+                  <AlertTriangle className="w-4 h-4" />
+                </div>
+                <p className="text-sm text-amber-900 font-medium truncate">
+                  ישנן <b>{uncatCount}</b> תנועות שטרם סווגו לקופה או לסוג בחשבון זה
+                </p>
               </div>
-              <FilterSelect value={account} onValueChange={changeAccount} placeholder="כל החשבונות" items={accounts} />
+              <button
+                className="text-sm font-bold text-amber-800 hover:underline shrink-0"
+                onClick={() => setOnlyUncat((v) => !v)}
+              >
+                {onlyUncat ? "הצג הכל" : "הצג רק לא מסווגות ←"}
+              </button>
+            </div>
+          )}
+
+          <div className="rounded-2xl border bg-card overflow-hidden">
+            <div className="px-4 py-3 bg-muted/40 flex flex-wrap gap-2 items-center">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="חיפוש בתיאור / אסמכתה / הערה / שם" className="pr-9 bg-card" />
+              </div>
               <FilterSelect value={category} onValueChange={setCategory} placeholder="כל הקטגוריות" items={categories} />
               <FilterSelect value={fund} onValueChange={setFund} placeholder="כל הקופות" items={funds} />
               <FilterSelect value={expType} onValueChange={setExpType} placeholder="כל הסוגים" items={expTypes} />
-              <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} dir="ltr" placeholder="מתאריך" />
-              <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} dir="ltr" placeholder="עד תאריך" />
-              <Button variant="ghost" size="sm" onClick={() => { setSearch(""); changeAccount(ALL); setCategory(ALL); setFund(ALL); setExpType(ALL); setFrom(""); setTo(""); }}>איפוס</Button>
+              <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} dir="ltr" className="w-[150px] bg-card" />
+              <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} dir="ltr" className="w-[150px] bg-card" />
+              <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setCategory(ALL); setFund(ALL); setExpType(ALL); setFrom(""); setTo(""); setOnlyUncat(false); }}>איפוס</Button>
             </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <Table>
+              <Table className="border-collapse">
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="bg-muted/30 hover:bg-muted/30">
                     {columns.map((c) => (
-                      <TableHead key={c.header} className={c.align === "left" ? "text-left" : c.align === "center" ? "text-center" : "text-right"}>
+                      <TableHead
+                        key={c.header}
+                        className={
+                          "text-xs font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-4 py-3 " +
+                          (c.align === "left" ? "text-left" : c.align === "center" ? "text-center" : "text-right")
+                        }
+                      >
                         {c.header}
                       </TableHead>
                     ))}
-                    <TableHead className="text-center w-24">פעולות</TableHead>
+                    <TableHead className="text-center w-24 border-l border-border last:border-l-0 px-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">פעולות</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -278,49 +368,61 @@ function TransactionsPage() {
                   {!isLoading && filtered.length === 0 && (
                     <TableRow><TableCell colSpan={columns.length + 1} className="text-center py-12 text-muted-foreground">אין תנועות להצגה</TableCell></TableRow>
                   )}
-                  {filtered.map((r, idx) => (
-                    <TableRow key={r.id} className={idx % 2 ? "bg-muted/30" : ""}>
-                      {columns.map((col) => (
-                        <TableCell
-                          key={col.header}
-                          className={
-                            (col.align === "left" ? "text-left font-mono whitespace-nowrap " : col.align === "center" ? "text-center " : "text-right ") +
-                            "max-w-[260px] truncate"
-                          }
-                        >
-                          {col.render(r as any, ctx)}
-                        </TableCell>
-                      ))}
-                      <TableCell>
-                        <div className="flex items-center justify-center gap-1">
-                          <Button size="icon" variant="ghost" onClick={() => { setEditing(r); setDialogOpen(true); }}>
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          {role?.isAdmin && (
-                            <Button size="icon" variant="ghost" className="text-destructive" onClick={() => setDeleteId(r.id)}>
-                              <Trash2 className="w-4 h-4" />
+                  {filtered.map((r, idx) => {
+                    const isUncat = !r.fund_id || !r.expense_type_id;
+                    return (
+                      <TableRow
+                        key={r.id}
+                        className={
+                          "group border-b border-border transition-colors hover:bg-primary/5 " +
+                          (isUncat ? "bg-amber-50/30 " : idx % 2 ? "bg-muted/20 " : "")
+                        }
+                      >
+                        {columns.map((col) => (
+                          <TableCell
+                            key={col.header}
+                            className={
+                              "border-l border-border/60 last:border-l-0 px-4 py-3 text-sm align-middle " +
+                              (col.align === "left" ? "text-left whitespace-nowrap " : col.align === "center" ? "text-center " : "text-right ") +
+                              "max-w-[260px] truncate"
+                            }
+                          >
+                            {col.render(r as any, ctx)}
+                          </TableCell>
+                        ))}
+                        <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-2">
+                          <div className="flex items-center justify-center gap-1">
+                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setEditing(r); setDialogOpen(true); }}>
+                              <Pencil className="w-3.5 h-3.5" />
                             </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                            {role?.isAdmin && (
+                              <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => setDeleteId(r.id)}>
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-t bg-muted/30 text-sm">
+
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t bg-muted/30 text-sm">
               <div>סך תנועות: <b>{totals.count}</b></div>
               <div className="flex gap-4">
-                <span>הכנסות: <b className="text-income">{fmtNum(totals.inc)} ₪</b></span>
-                <span>הוצאות: <b className="text-expense">{fmtNum(Math.abs(totals.exp))} ₪</b></span>
-                <span>מאזן: <b className={totals.net >= 0 ? "text-income" : "text-expense"}>{fmtNum(totals.net)} ₪</b></span>
+                <span>הכנסות: <b className="text-income tabular-nums">{fmtNum(totals.inc)} ₪</b></span>
+                <span>הוצאות: <b className="text-expense tabular-nums">{fmtNum(Math.abs(totals.exp))} ₪</b></span>
+                <span>מאזן: <b className={(totals.net >= 0 ? "text-income " : "text-expense ") + "tabular-nums"}>{fmtNum(totals.net)} ₪</b></span>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </div>
+      )}
 
       <TransactionDialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) setEditing(null); }} initial={editing} />
+      <ImportDialog open={importOpen} onOpenChange={setImportOpen} account={selectedAccount} />
 
       <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
         <AlertDialogContent dir="rtl">
@@ -341,7 +443,7 @@ function TransactionsPage() {
 function FilterSelect({ value, onValueChange, placeholder, items }: { value: string; onValueChange: (v: string) => void; placeholder: string; items: { id: string; name: string }[] }) {
   return (
     <Select value={value} onValueChange={onValueChange}>
-      <SelectTrigger><SelectValue placeholder={placeholder} /></SelectTrigger>
+      <SelectTrigger className="w-[160px] bg-card"><SelectValue placeholder={placeholder} /></SelectTrigger>
       <SelectContent>
         <SelectItem value={ALL}>{placeholder}</SelectItem>
         {items.map((i) => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}
