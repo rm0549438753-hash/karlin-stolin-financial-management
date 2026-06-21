@@ -370,7 +370,7 @@ function TransactionsPage() {
                     <TableRow><TableCell colSpan={columns.length + 1} className="text-center py-12 text-muted-foreground">אין תנועות להצגה</TableCell></TableRow>
                   )}
                   {filtered.map((r, idx) => {
-                    const isUncat = !r.fund_id || !r.expense_type_id;
+                    const isUncat = !r.fund_id && !r.expense_type_id;
                     return (
                       <TableRow
                         key={r.id}
