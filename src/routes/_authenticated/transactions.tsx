@@ -208,7 +208,7 @@ function TransactionsPage() {
 
   const filtered = useMemo(() => {
     let r: any[] = rows;
-    if (onlyUncat) r = r.filter((x) => !x.fund_id || !x.expense_type_id);
+    if (onlyUncat) r = r.filter((x) => !x.fund_id && !x.expense_type_id);
     if (!search.trim()) return r;
     const q = search.toLowerCase();
     return r.filter((x) =>
