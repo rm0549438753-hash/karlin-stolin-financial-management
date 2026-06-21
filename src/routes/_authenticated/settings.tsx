@@ -215,7 +215,7 @@ function UsersPanel() {
               {add.isPending ? "יוצר..." : "צור משתמש"}
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground">המשתמש ייווצר מאומת ויוכל להתחבר מיד עם הסיסמה.</p>
+          
         </div>
 
         <div className="border rounded-lg divide-y">
