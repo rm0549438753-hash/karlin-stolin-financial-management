@@ -565,3 +565,20 @@ function FilterSelect({ value, onValueChange, placeholder, items }: { value: str
     </Select>
   );
 }
+
+function DateInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
+  return (
+    <div className="relative">
+      {!value && (
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">{placeholder}</span>
+      )}
+      <Input
+        type="date"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        dir="ltr"
+        className={"w-[150px] bg-card " + (!value ? "text-transparent" : "")}
+      />
+    </div>
+  );
+}
