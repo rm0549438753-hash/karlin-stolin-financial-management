@@ -255,9 +255,40 @@ function TransactionsPage() {
     onError: (e: any) => toast.error(e.message ?? "שגיאה"),
   });
 
-  function exportCSV() {
+  const bulkDel = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase.from("transactions").delete().in("id", ids);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(`${selectedIds.size} תנועות נמחקו`);
+      setSelectedIds(new Set());
+      qc.invalidateQueries({ queryKey: ["transactions"] });
+      qc.invalidateQueries({ queryKey: ["tx-dashboard"] });
+      qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "שגיאה"),
+  });
+
+  // Selection state derived from current filtered view
+  const filteredIds = useMemo(() => filtered.map((r: any) => r.id as string), [filtered]);
+  const allSelected = filteredIds.length > 0 && filteredIds.every((id) => selectedIds.has(id));
+  const someSelected = !allSelected && filteredIds.some((id) => selectedIds.has(id));
+  const toggleAll = () => {
+    const next = new Set(selectedIds);
+    if (allSelected) filteredIds.forEach((id) => next.delete(id));
+    else filteredIds.forEach((id) => next.add(id));
+    setSelectedIds(next);
+  };
+  const toggleOne = (id: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    setSelectedIds(next);
+  };
+
+  function exportRows(list: any[], filename: string) {
     const headers = columns.map((c) => c.header);
-    const rowsCsv = filtered.map((r) => columns.map((col) => {
+    const rowsCsv = list.map((r) => columns.map((col) => {
       const v = col.render(r as any, ctx);
       return typeof v === "string" || typeof v === "number" ? String(v) : "";
     }));
@@ -265,9 +296,17 @@ function TransactionsPage() {
     const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = `transactions_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.href = url; a.download = filename;
     a.click(); URL.revokeObjectURL(url);
   }
+  function exportCSV() {
+    exportRows(filtered, `transactions_${new Date().toISOString().slice(0, 10)}.csv`);
+  }
+  function exportSelected() {
+    const list = filtered.filter((r: any) => selectedIds.has(r.id));
+    exportRows(list, `transactions_selected_${new Date().toISOString().slice(0, 10)}.csv`);
+  }
+
 
   const title = selectedAccount ? selectedAccount.name : "תנועות";
 
