@@ -30,6 +30,12 @@ export type TransactionRow = {
   category_id: string | null;
   subcategory_id: string | null;
   note: string | null;
+  credit?: number | null;
+  debit?: number | null;
+  association?: string | null;
+  future_check?: boolean | null;
+  operation_type?: string | null;
+  payee?: string | null;
 };
 
 type FormValues = {
