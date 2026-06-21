@@ -510,6 +510,7 @@ function TransactionsPage() {
 
       <TransactionDialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) setEditing(null); }} initial={editing} />
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} account={selectedAccount} />
+      <BulkEditDialog open={bulkEditOpen} onOpenChange={setBulkEditOpen} ids={Array.from(selectedIds)} onDone={() => setSelectedIds(new Set())} />
 
       <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
         <AlertDialogContent dir="rtl">
@@ -520,6 +521,19 @@ function TransactionsPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>ביטול</AlertDialogCancel>
             <AlertDialogAction onClick={() => { if (deleteId) del.mutate(deleteId); setDeleteId(null); }} className="bg-destructive text-destructive-foreground">מחיקה</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>למחוק {selectedIds.size} תנועות?</AlertDialogTitle>
+            <AlertDialogDescription>פעולה זו אינה הפיכה ותמחק את כל התנועות שנבחרו.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { bulkDel.mutate(Array.from(selectedIds)); setBulkDeleteOpen(false); }} className="bg-destructive text-destructive-foreground">מחיקה</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
