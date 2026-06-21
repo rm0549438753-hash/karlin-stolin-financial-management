@@ -375,7 +375,7 @@ function TransactionsPage() {
                   <AlertTriangle className="w-4 h-4" />
                 </div>
                 <p className="text-sm text-amber-900 font-medium truncate">
-                  ישנן <b>{uncatCount}</b> תנועות שטרם סווגו לקופה או לסוג בחשבון זה
+                  בחשבון <b>{selectedAccount?.name}</b>: <b>{uncatCount}</b> תנועות ללא קופה וללא סוג
                 </p>
               </div>
               <button
