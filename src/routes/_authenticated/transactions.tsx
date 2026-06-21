@@ -161,7 +161,8 @@ function TransactionsPage() {
         .from("transactions")
         .select("*", { count: "exact", head: true })
         .eq("account_id", account)
-        .or("fund_id.is.null,expense_type_id.is.null");
+        .is("fund_id", null)
+        .is("expense_type_id", null);
       if (error) throw error;
       return count ?? 0;
     },
