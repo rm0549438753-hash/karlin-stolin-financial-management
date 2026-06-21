@@ -8,10 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2, Download, Search, Filter } from "lucide-react";
-import { useAccounts, useCategories, useFunds, useExpenseTypes } from "@/hooks/use-lookups";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { useAccounts, useCategories, useFunds, useExpenseTypes, useSubcategories, type Account } from "@/hooks/use-lookups";
+import { formatDate } from "@/lib/format";
 import { TransactionDialog, type TransactionRow } from "@/components/TransactionDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
@@ -26,6 +25,90 @@ export const Route = createFileRoute("/_authenticated/transactions")({
 
 const ALL = "__all__";
 
+type SchemaType = Account["schema_type"];
+
+type ColumnDef = {
+  header: string;
+  align?: "right" | "left" | "center";
+  render: (r: TransactionRow & Record<string, any>, ctx: RenderCtx) => React.ReactNode;
+};
+
+type RenderCtx = {
+  acctMap: Map<string, string>;
+  fundMap: Map<string, string>;
+  expMap: Map<string, string>;
+  catMap: Map<string, string>;
+  subMap: Map<string, string>;
+};
+
+const fmtNum = (v: any) => (v === null || v === undefined || v === "" ? "" : Number(v).toLocaleString("he-IL", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+
+const COMMON_LOOKUPS: ColumnDef[] = [
+  { header: "קופה", render: (r, c) => (r.fund_id ? c.fundMap.get(r.fund_id) : "") },
+  { header: "סוג", render: (r, c) => (r.expense_type_id ? c.expMap.get(r.expense_type_id) : "") },
+  { header: "קטגוריה", render: (r, c) => (r.category_id ? c.catMap.get(r.category_id) : "") },
+  { header: "תת קטגוריה", render: (r, c) => (r.subcategory_id ? c.subMap.get(r.subcategory_id) : "") },
+  { header: "הערה", render: (r) => r.note ?? "" },
+];
+
+const COLUMNS_BY_SCHEMA: Record<SchemaType, ColumnDef[]> = {
+  mercantile: [
+    { header: "זכות", align: "left", render: (r) => fmtNum(r.credit) },
+    { header: "חובה", align: "left", render: (r) => fmtNum(r.debit) },
+    { header: "תאריך", render: (r) => formatDate(r.transaction_date) },
+    { header: "יום ערך", render: (r) => (r.value_date ? formatDate(r.value_date) : "") },
+    { header: "תיאור התנועה", render: (r) => r.description ?? "" },
+    { header: "₪ זכות/חובה", align: "left", render: (r) => fmtNum(r.amount) },
+    { header: "₪ יתרה", align: "left", render: (r) => fmtNum(r.balance) },
+    { header: "אסמכתה", render: (r) => r.reference ?? "" },
+    { header: "עמלה", align: "left", render: (r) => fmtNum(r.fee) },
+    { header: "ערוץ ביצוע", render: (r) => r.channel ?? "" },
+    ...COMMON_LOOKUPS,
+  ],
+  pagi: [
+    { header: "יתרה", align: "left", render: (r) => fmtNum(r.balance) },
+    { header: "תאריך ערך", render: (r) => (r.value_date ? formatDate(r.value_date) : "") },
+    { header: "זכות", align: "left", render: (r) => fmtNum(r.credit) },
+    { header: "חובה", align: "left", render: (r) => fmtNum(r.debit) },
+    { header: "תאור", render: (r) => r.description ?? "" },
+    { header: "אסמכתא", render: (r) => r.reference ?? "" },
+    { header: "סוג פעולה", render: (r) => r.operation_type ?? "" },
+    { header: "תאריך", render: (r) => formatDate(r.transaction_date) },
+    ...COMMON_LOOKUPS,
+  ],
+  checks: [
+    { header: "תאריך", render: (r) => formatDate(r.transaction_date) },
+    { header: "עמותה", render: (r) => r.association ?? "" },
+    { header: "סכום", align: "left", render: (r) => fmtNum(r.amount) },
+    { header: "שם", render: (r) => r.payee ?? "" },
+    { header: "תאריך ערך", render: (r) => (r.value_date ? formatDate(r.value_date) : "") },
+    ...COMMON_LOOKUPS,
+    { header: "צ'ק עתידי ?", align: "center", render: (r) => (r.future_check === true ? "✓" : r.future_check === false ? "—" : "") },
+  ],
+  cash: [
+    { header: "תאריך", render: (r) => formatDate(r.transaction_date) },
+    { header: "פירוט", render: (r) => r.description ?? "" },
+    { header: "סכום הוצאה", align: "left", render: (r) => fmtNum(r.debit) },
+    { header: "סכום הכנסה", align: "left", render: (r) => fmtNum(r.credit) },
+    { header: "הערה", render: (r) => r.note ?? "" },
+    { header: "קופה", render: (r, c) => (r.fund_id ? c.fundMap.get(r.fund_id) : "") },
+    { header: "סוג", render: (r, c) => (r.expense_type_id ? c.expMap.get(r.expense_type_id) : "") },
+    { header: "קטגוריה", render: (r, c) => (r.category_id ? c.catMap.get(r.category_id) : "") },
+    { header: "תת קטגוריה", render: (r, c) => (r.subcategory_id ? c.subMap.get(r.subcategory_id) : "") },
+  ],
+};
+
+const ALL_COLUMNS: ColumnDef[] = [
+  { header: "תאריך", render: (r) => formatDate(r.transaction_date) },
+  { header: "חשבון", render: (r, c) => c.acctMap.get(r.account_id) ?? "" },
+  { header: "תיאור", render: (r) => r.description ?? r.association ?? "" },
+  { header: "אסמכתה", render: (r) => r.reference ?? "" },
+  { header: "זכות", align: "left", render: (r) => fmtNum(r.credit) },
+  { header: "חובה", align: "left", render: (r) => fmtNum(r.debit) },
+  { header: "סכום", align: "left", render: (r) => fmtNum(r.amount) },
+  ...COMMON_LOOKUPS,
+];
+
 function TransactionsPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -35,6 +118,7 @@ function TransactionsPage() {
   const { data: categories = [] } = useCategories();
   const { data: funds = [] } = useFunds();
   const { data: expTypes = [] } = useExpenseTypes();
+  const { data: subcats = [] } = useSubcategories();
 
   const [search, setSearch] = useState("");
   const [account, setAccount] = useState<string>(urlSearch.account ?? ALL);
@@ -44,7 +128,6 @@ function TransactionsPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
-  // Sync local filter ↔ URL when sidebar links change the search param
   useEffect(() => {
     const next = urlSearch.account ?? ALL;
     setAccount((prev) => (prev === next ? prev : next));
@@ -59,7 +142,6 @@ function TransactionsPage() {
     });
   }
 
-
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<TransactionRow | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -67,7 +149,7 @@ function TransactionsPage() {
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["transactions", { account, category, fund, expType, from, to }],
     queryFn: async () => {
-      let q = supabase.from("transactions").select("*").order("transaction_date", { ascending: false }).limit(2000);
+      let q = supabase.from("transactions").select("*").order("transaction_date", { ascending: false }).limit(3000);
       if (account !== ALL) q = q.eq("account_id", account);
       if (category !== ALL) q = q.eq("category_id", category);
       if (fund !== ALL) q = q.eq("fund_id", fund);
@@ -80,24 +162,35 @@ function TransactionsPage() {
     },
   });
 
-  const acctMap = useMemo(() => new Map(accounts.map((a) => [a.id, a.name])), [accounts]);
-  const catMap = useMemo(() => new Map(categories.map((c) => [c.id, c.name])), [categories]);
-  const fundMap = useMemo(() => new Map(funds.map((f) => [f.id, f.name])), [funds]);
-  const expMap = useMemo(() => new Map(expTypes.map((e) => [e.id, e.name])), [expTypes]);
+  const ctx: RenderCtx = useMemo(() => ({
+    acctMap: new Map(accounts.map((a) => [a.id, a.name])),
+    fundMap: new Map(funds.map((f) => [f.id, f.name])),
+    expMap: new Map(expTypes.map((e) => [e.id, e.name])),
+    catMap: new Map(categories.map((c) => [c.id, c.name])),
+    subMap: new Map(subcats.map((s) => [s.id, s.name])),
+  }), [accounts, funds, expTypes, categories, subcats]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return rows;
     const q = search.toLowerCase();
-    return rows.filter((r) =>
+    return rows.filter((r: any) =>
       (r.description ?? "").toLowerCase().includes(q) ||
       (r.reference ?? "").toLowerCase().includes(q) ||
-      (r.note ?? "").toLowerCase().includes(q),
+      (r.note ?? "").toLowerCase().includes(q) ||
+      (r.payee ?? "").toLowerCase().includes(q) ||
+      (r.association ?? "").toLowerCase().includes(q),
     );
   }, [rows, search]);
 
+  const selectedAccount = useMemo(() => accounts.find((a) => a.id === account), [accounts, account]);
+  const columns: ColumnDef[] = selectedAccount ? COLUMNS_BY_SCHEMA[selectedAccount.schema_type] : ALL_COLUMNS;
+
   const totals = useMemo(() => {
-    const inc = filtered.filter((r) => r.amount > 0).reduce((s, r) => s + Number(r.amount), 0);
-    const exp = filtered.filter((r) => r.amount < 0).reduce((s, r) => s + Number(r.amount), 0);
+    let inc = 0, exp = 0;
+    for (const r of filtered as any[]) {
+      const a = Number(r.amount) || 0;
+      if (a > 0) inc += a; else exp += a;
+    }
     return { inc, exp, net: inc + exp, count: filtered.length };
   }, [filtered]);
 
@@ -115,18 +208,11 @@ function TransactionsPage() {
   });
 
   function exportCSV() {
-    const headers = ["תאריך", "חשבון", "תיאור", "אסמכתה", "סכום", "קופה", "סוג", "קטגוריה", "הערה"];
-    const rowsCsv = filtered.map((r) => [
-      r.transaction_date,
-      acctMap.get(r.account_id) ?? "",
-      (r.description ?? "").replace(/[\r\n]+/g, " "),
-      r.reference ?? "",
-      Number(r.amount).toFixed(2),
-      r.fund_id ? fundMap.get(r.fund_id) ?? "" : "",
-      r.expense_type_id ? expMap.get(r.expense_type_id) ?? "" : "",
-      r.category_id ? catMap.get(r.category_id) ?? "" : "",
-      (r.note ?? "").replace(/[\r\n]+/g, " "),
-    ]);
+    const headers = columns.map((c) => c.header);
+    const rowsCsv = filtered.map((r) => columns.map((col) => {
+      const v = col.render(r as any, ctx);
+      return typeof v === "string" || typeof v === "number" ? String(v) : "";
+    }));
     const csv = [headers, ...rowsCsv].map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -135,9 +221,11 @@ function TransactionsPage() {
     a.click(); URL.revokeObjectURL(url);
   }
 
+  const title = selectedAccount ? selectedAccount.name : "כל התנועות";
+
   return (
     <AppShell
-      title="תנועות"
+      title={title}
       actions={
         <>
           <Button variant="outline" size="sm" onClick={exportCSV}><Download className="w-4 h-4 ml-1" />ייצוא</Button>
@@ -175,65 +263,57 @@ function TransactionsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-right">תאריך</TableHead>
-                    <TableHead className="text-right">חשבון</TableHead>
-                    <TableHead className="text-right">תיאור</TableHead>
-                    <TableHead className="text-right">קטגוריה</TableHead>
-                    <TableHead className="text-right">קופה</TableHead>
-                    <TableHead className="text-right">סוג</TableHead>
-                    <TableHead className="text-left">סכום</TableHead>
+                    {columns.map((c) => (
+                      <TableHead key={c.header} className={c.align === "left" ? "text-left" : c.align === "center" ? "text-center" : "text-right"}>
+                        {c.header}
+                      </TableHead>
+                    ))}
                     <TableHead className="text-center w-24">פעולות</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading && (
-                    <TableRow><TableCell colSpan={8} className="text-center py-10 text-muted-foreground">טוען…</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={columns.length + 1} className="text-center py-10 text-muted-foreground">טוען…</TableCell></TableRow>
                   )}
                   {!isLoading && filtered.length === 0 && (
-                    <TableRow><TableCell colSpan={8} className="text-center py-12 text-muted-foreground">אין תנועות להצגה</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={columns.length + 1} className="text-center py-12 text-muted-foreground">אין תנועות להצגה</TableCell></TableRow>
                   )}
-                  {filtered.map((r, idx) => {
-                    const isInc = Number(r.amount) >= 0;
-                    return (
-                      <TableRow key={r.id} className={idx % 2 ? "bg-muted/30" : ""}>
-                        <TableCell className="whitespace-nowrap">{formatDate(r.transaction_date)}</TableCell>
-                        <TableCell className="max-w-[160px] truncate">{acctMap.get(r.account_id)}</TableCell>
-                        <TableCell className="max-w-[260px]">
-                          <div className="truncate">{r.description || "—"}</div>
-                          {r.reference && <div className="text-xs text-muted-foreground">{r.reference}</div>}
+                  {filtered.map((r, idx) => (
+                    <TableRow key={r.id} className={idx % 2 ? "bg-muted/30" : ""}>
+                      {columns.map((col) => (
+                        <TableCell
+                          key={col.header}
+                          className={
+                            (col.align === "left" ? "text-left font-mono whitespace-nowrap " : col.align === "center" ? "text-center " : "text-right ") +
+                            "max-w-[260px] truncate"
+                          }
+                        >
+                          {col.render(r as any, ctx)}
                         </TableCell>
-                        <TableCell>{r.category_id ? catMap.get(r.category_id) : <span className="text-muted-foreground">—</span>}</TableCell>
-                        <TableCell>{r.fund_id ? fundMap.get(r.fund_id) : <span className="text-muted-foreground">—</span>}</TableCell>
-                        <TableCell>{r.expense_type_id ? expMap.get(r.expense_type_id) : <span className="text-muted-foreground">—</span>}</TableCell>
-                        <TableCell className="text-left font-mono font-semibold whitespace-nowrap">
-                          <Badge variant="outline" className={isInc ? "border-income/30 text-income bg-income/5" : "border-expense/30 text-expense bg-expense/5"}>
-                            {formatCurrency(Number(r.amount), true)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center justify-center gap-1">
-                            <Button size="icon" variant="ghost" onClick={() => { setEditing(r); setDialogOpen(true); }}>
-                              <Pencil className="w-4 h-4" />
+                      ))}
+                      <TableCell>
+                        <div className="flex items-center justify-center gap-1">
+                          <Button size="icon" variant="ghost" onClick={() => { setEditing(r); setDialogOpen(true); }}>
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          {role?.isAdmin && (
+                            <Button size="icon" variant="ghost" className="text-destructive" onClick={() => setDeleteId(r.id)}>
+                              <Trash2 className="w-4 h-4" />
                             </Button>
-                            {role?.isAdmin && (
-                              <Button size="icon" variant="ghost" className="text-destructive" onClick={() => setDeleteId(r.id)}>
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </div>
             <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-t bg-muted/30 text-sm">
               <div>סך תנועות: <b>{totals.count}</b></div>
               <div className="flex gap-4">
-                <span>הכנסות: <b className="text-income">{formatCurrency(totals.inc)}</b></span>
-                <span>הוצאות: <b className="text-expense">{formatCurrency(Math.abs(totals.exp))}</b></span>
-                <span>מאזן: <b className={totals.net >= 0 ? "text-income" : "text-expense"}>{formatCurrency(totals.net)}</b></span>
+                <span>הכנסות: <b className="text-income">{fmtNum(totals.inc)} ₪</b></span>
+                <span>הוצאות: <b className="text-expense">{fmtNum(Math.abs(totals.exp))} ₪</b></span>
+                <span>מאזן: <b className={totals.net >= 0 ? "text-income" : "text-expense"}>{fmtNum(totals.net)} ₪</b></span>
               </div>
             </div>
           </CardContent>
