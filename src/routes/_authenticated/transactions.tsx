@@ -117,6 +117,7 @@ function TransactionsPage() {
 
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState(ALL);
+  const [subcategory, setSubcategory] = useState(ALL);
   const [fund, setFund] = useState(ALL);
   const [expType, setExpType] = useState(ALL);
   const [from, setFrom] = useState("");
@@ -142,8 +143,14 @@ function TransactionsPage() {
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
-  // Reset selection when account/filters change
-  useEffect(() => { setSelectedIds(new Set()); }, [account, search, category, fund, expType, from, to, onlyUncat]);
+  // Reset selection + uncategorized filter when account changes (banner is per-account)
+  useEffect(() => {
+    setSelectedIds(new Set());
+    setOnlyUncat(false);
+    setSearch(""); setCategory(ALL); setSubcategory(ALL); setFund(ALL); setExpType(ALL); setFrom(""); setTo("");
+  }, [account]);
+  // Reset selection when filters change
+  useEffect(() => { setSelectedIds(new Set()); }, [search, category, subcategory, fund, expType, from, to, onlyUncat]);
 
 
 
