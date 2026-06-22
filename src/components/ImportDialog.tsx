@@ -94,7 +94,14 @@ export function ImportDialog({ open, onOpenChange, account }: { open: boolean; o
     const rawHeaders = (aoa[headerIdx] ?? []).map((h: any, i: number) =>
       h == null || String(h).trim() === "" ? `__col_${i}` : String(h).trim()
     );
-    const dataRows = aoa.slice(headerIdx + 1).filter((r) => r.some((c) => c != null && String(c).trim() !== ""));
+    // index of the transaction-date column (required for a real transaction row)
+    const dateColIdx = rawHeaders.findIndex((h) => HEADER_MAP[h] === "transaction_date");
+    const dataRows = aoa.slice(headerIdx + 1).filter((r) => {
+      if (!r.some((c) => c != null && String(c).trim() !== "")) return false;
+      // require a parseable date in the date column — filters out totals/notes/footer rows
+      if (dateColIdx >= 0) return toDateStr(r[dateColIdx]) != null;
+      return true;
+    });
     const rows = dataRows.map((r) => {
       const obj: Record<string, any> = {};
       rawHeaders.forEach((h, i) => { obj[h] = r[i] ?? null; });
