@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,13 +9,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/format";
 import { useAccounts, useCategories, useSubcategories, useExpenseTypes, useFunds } from "@/hooks/use-lookups";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
   PieChart, Pie, Cell,
 } from "recharts";
-import { TrendingUp, TrendingDown, Scale, Wallet, Building2, HardHat, PiggyBank } from "lucide-react";
+import { TrendingUp, TrendingDown, Scale, Building2, HardHat, PiggyBank, Download } from "lucide-react";
 import { format } from "date-fns";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -72,7 +74,6 @@ function DashboardPage() {
     [funds],
   );
 
-  // Base: exclude "לא רלוונטי" fund from everything
   const baseTxs = useMemo(
     () => txs.filter((t) => !irrelevantFundId || t.fund_id !== irrelevantFundId),
     [txs, irrelevantFundId],
@@ -117,10 +118,10 @@ function DashboardPage() {
         </TabsList>
 
         <TabsContent value="institution">
-          <OverviewTab txs={institutionTxs} lookups={lookups} title="מוסד" />
+          <OverviewTab txs={institutionTxs} lookups={lookups} />
         </TabsContent>
         <TabsContent value="project">
-          <OverviewTab txs={projectTxs} lookups={lookups} title="פרויקט בנייה" />
+          <OverviewTab txs={projectTxs} lookups={lookups} />
         </TabsContent>
         <TabsContent value="vaults">
           <VaultsTab txs={vaultTxs} lookups={lookups} />
@@ -131,17 +132,40 @@ function DashboardPage() {
   );
 }
 
-type Lookups = {
-  accounts: ReturnType<typeof useAccounts>["data"] extends infer A ? A : never;
-  categories: { id: string; name: string }[];
-  subcategories: { id: string; name: string; category_id: string | null }[];
-  expenseTypes: { id: string; name: string }[];
-  funds: { id: string; name: string; is_vault?: boolean }[];
-};
+/* ===================== Export helper ===================== */
+function exportTxsToExcel(rows: Tx[], lookups: any, filename: string) {
+  const catMap = new Map<string, string>(lookups.categories.map((c: any) => [c.id, c.name]));
+  const subMap = new Map<string, string>(lookups.subcategories.map((s: any) => [s.id, s.name]));
+  const etMap = new Map<string, string>(lookups.expenseTypes.map((e: any) => [e.id, e.name]));
+  const acctMap = new Map<string, string>(lookups.accounts.map((a: any) => [a.id, a.name]));
+  const fundMap = new Map<string, string>(lookups.funds.map((f: any) => [f.id, f.name]));
+
+  const data = rows.map((t) => {
+    const a = Number(t.amount);
+    const credit = t.credit != null ? Number(t.credit) : (a > 0 ? a : 0);
+    const debit = t.debit != null ? Number(t.debit) : (a < 0 ? -a : 0);
+    return {
+      "תאריך": format(new Date(t.transaction_date), "dd/MM/yyyy"),
+      "חשבון": acctMap.get(t.account_id) ?? "",
+      "פרטים": t.description ?? "",
+      "סוג": t.expense_type_id ? etMap.get(t.expense_type_id) ?? "" : "",
+      "קטגוריה": t.category_id ? catMap.get(t.category_id) ?? "" : "",
+      "תת-קטגוריה": t.subcategory_id ? subMap.get(t.subcategory_id) ?? "" : "",
+      "קופה": t.fund_id ? fundMap.get(t.fund_id) ?? "" : "",
+      "זכות": credit || "",
+      "חובה": debit || "",
+      "הערה": t.note ?? "",
+    };
+  });
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "פירוט");
+  XLSX.writeFile(wb, filename);
+}
 
 /* ===================== Overview (Tabs 1 + 2) ===================== */
-function OverviewTab({ txs, lookups, title }: { txs: Tx[]; lookups: any; title: string }) {
-  const catMap = useMemo(() => new Map<string, string>(lookups.categories.map((c: any) => [c.id, c.name])), [lookups.categories]);
+function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
+  const etMap = useMemo(() => new Map<string, string>(lookups.expenseTypes.map((e: any) => [e.id, e.name])), [lookups.expenseTypes]);
 
   const income = txs.filter((t) => Number(t.amount) > 0).reduce((s, t) => s + Number(t.amount), 0);
   const expense = txs.filter((t) => Number(t.amount) < 0).reduce((s, t) => s + Number(t.amount), 0);
@@ -164,46 +188,67 @@ function OverviewTab({ txs, lookups, title }: { txs: Tx[]; lookups: any; title: 
     return Array.from(map.values()).sort((a, b) => a.key.localeCompare(b.key)).slice(-12);
   }, [txs]);
 
-  const categoryData = useMemo(() => {
-    const by = new Map<string, { name: string; value: number; ids: Set<string> }>();
-    txs.filter((t) => Number(t.amount) < 0).forEach((t) => {
-      const name = t.category_id ? (catMap.get(t.category_id) as string ?? "ללא קטגוריה") : "ללא קטגוריה";
-      const key = t.category_id ?? "__none__";
-      if (!by.has(key)) by.set(key, { name, value: 0, ids: new Set() });
-      const e = by.get(key)!;
-      e.value += Math.abs(Number(t.amount));
-      e.ids.add(t.id);
+  // Pie filter (independent: year + month)
+  const yearsAvailable = useMemo(() => {
+    const ys = new Set<string>();
+    txs.forEach((t) => ys.add(t.transaction_date.slice(0, 4)));
+    return Array.from(ys).sort().reverse();
+  }, [txs]);
+  const currentYear = String(new Date().getFullYear());
+  const [pieYear, setPieYear] = useState<string>(currentYear);
+  const [pieMonth, setPieMonth] = useState<string>("all"); // "all" | "01".."12"
+
+  const pieFilteredTxs = useMemo(() => {
+    return txs.filter((t) => {
+      if (pieYear !== "all" && !t.transaction_date.startsWith(pieYear)) return false;
+      if (pieMonth !== "all") {
+        const mm = t.transaction_date.slice(5, 7);
+        if (mm !== pieMonth) return false;
+      }
+      return true;
     });
-    return Array.from(by.entries())
-      .map(([id, v]) => ({ id, name: v.name, value: v.value }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 8);
-  }, [txs, catMap]);
+  }, [txs, pieYear, pieMonth]);
+
+  const expenseTypeData = useMemo(() => {
+    const by = new Map<string, { id: string; name: string; value: number }>();
+    pieFilteredTxs.filter((t) => Number(t.amount) < 0).forEach((t) => {
+      const key = t.expense_type_id ?? "__none__";
+      const name = t.expense_type_id ? (etMap.get(t.expense_type_id) ?? "ללא סוג") : "ללא סוג";
+      if (!by.has(key)) by.set(key, { id: key, name, value: 0 });
+      by.get(key)!.value += Math.abs(Number(t.amount));
+    });
+    return Array.from(by.values()).sort((a, b) => b.value - a.value).slice(0, 10);
+  }, [pieFilteredTxs, etMap]);
 
   const [drill, setDrill] = useState<{ title: string; rows: Tx[] } | null>(null);
 
-  const openMonth = (monthKey: string, kind: "all" | "income" | "expense", label: string) => {
+  const openMonth = (monthKey: string, kind: "income" | "expense", label: string) => {
     const rows = txs.filter((t) => {
       if (!t.transaction_date.startsWith(monthKey)) return false;
-      if (kind === "income") return Number(t.amount) > 0;
-      if (kind === "expense") return Number(t.amount) < 0;
-      return true;
+      return kind === "income" ? Number(t.amount) > 0 : Number(t.amount) < 0;
     });
-    setDrill({ title: `${label} — ${kind === "income" ? "הכנסות" : kind === "expense" ? "הוצאות" : "כל התנועות"}`, rows });
+    setDrill({ title: `${label} — ${kind === "income" ? "הכנסות" : "הוצאות"}`, rows });
   };
 
-  const openCategory = (catId: string, name: string) => {
-    const rows = txs.filter((t) => Number(t.amount) < 0 && (t.category_id ?? "__none__") === catId);
+  const openExpenseType = (etId: string, name: string) => {
+    const rows = pieFilteredTxs.filter((t) => Number(t.amount) < 0 && (t.expense_type_id ?? "__none__") === etId);
     setDrill({ title: `${name} — פירוט הוצאות`, rows });
   };
 
+  const months = [
+    { v: "all", l: "כל השנה" },
+    { v: "01", l: "ינואר" }, { v: "02", l: "פברואר" }, { v: "03", l: "מרץ" },
+    { v: "04", l: "אפריל" }, { v: "05", l: "מאי" }, { v: "06", l: "יוני" },
+    { v: "07", l: "יולי" }, { v: "08", l: "אוגוסט" }, { v: "09", l: "ספטמבר" },
+    { v: "10", l: "אוקטובר" }, { v: "11", l: "נובמבר" }, { v: "12", l: "דצמבר" },
+  ];
+
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <KPI title="הכנסות" value={formatCurrency(income)} icon={TrendingUp} tone="income" />
         <KPI title="הוצאות" value={formatCurrency(Math.abs(expense))} icon={TrendingDown} tone="expense" />
         <KPI title="מאזן" value={formatCurrency(net)} icon={Scale} tone={net >= 0 ? "income" : "expense"} />
-        <KPI title={`סה"כ תנועות — ${title}`} value={txs.length.toLocaleString("he-IL")} icon={Wallet} tone="primary" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -214,19 +259,16 @@ function OverviewTab({ txs, lookups, title }: { txs: Tx[]; lookups: any; title: 
               <p className="text-sm text-muted-foreground py-12 text-center">אין נתונים</p>
             ) : (
               <ResponsiveContainer width="100%" height={320}>
-                <BarChart data={monthly} onClick={(e: any) => {
-                  if (!e?.activePayload?.length) return;
-                  const item = e.activePayload[0].payload;
-                  const dk = e.activePayload[0].dataKey;
-                  openMonth(item.key, dk === "הכנסות" ? "income" : "expense", item.label);
-                }}>
+                <BarChart data={monthly}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="label" fontSize={12} reversed />
                   <YAxis fontSize={12} orientation="right" tickFormatter={(v) => new Intl.NumberFormat("he-IL", { notation: "compact" }).format(v)} />
                   <Tooltip formatter={(v: number) => formatCurrency(v)} />
                   <Legend />
-                  <Bar dataKey="הכנסות" fill={CHART_COLORS[1]} radius={[4, 4, 0, 0]} cursor="pointer" />
-                  <Bar dataKey="הוצאות" fill={CHART_COLORS[3]} radius={[4, 4, 0, 0]} cursor="pointer" />
+                  <Bar dataKey="הכנסות" fill={CHART_COLORS[1]} radius={[4, 4, 0, 0]} cursor="pointer"
+                    onClick={(d: any) => openMonth(d.key, "income", d.label)} />
+                  <Bar dataKey="הוצאות" fill={CHART_COLORS[3]} radius={[4, 4, 0, 0]} cursor="pointer"
+                    onClick={(d: any) => openMonth(d.key, "expense", d.label)} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -234,23 +276,40 @@ function OverviewTab({ txs, lookups, title }: { txs: Tx[]; lookups: any; title: 
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>פילוח הוצאות לפי קטגוריה</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>פילוח הוצאות לפי סוג</CardTitle>
+            <div className="flex gap-2 mt-2">
+              <Select value={pieYear} onValueChange={setPieYear}>
+                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">כל השנים</SelectItem>
+                  {yearsAvailable.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={pieMonth} onValueChange={setPieMonth}>
+                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {months.map((m) => <SelectItem key={m.v} value={m.v}>{m.l}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
           <CardContent>
-            {categoryData.length === 0 ? (
+            {expenseTypeData.length === 0 ? (
               <p className="text-sm text-muted-foreground py-12 text-center">אין נתונים</p>
             ) : (
-              <ResponsiveContainer width="100%" height={320}>
+              <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
                   <Pie
-                    data={categoryData}
+                    data={expenseTypeData}
                     dataKey="value"
                     nameKey="name"
                     innerRadius={50}
                     outerRadius={100}
                     cursor="pointer"
-                    onClick={(d: any) => openCategory(d.id, d.name)}
+                    onClick={(d: any) => openExpenseType(d.id, d.name)}
                   >
-                    {categoryData.map((_, i) => (
+                    {expenseTypeData.map((_, i) => (
                       <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                     ))}
                   </Pie>
@@ -271,39 +330,56 @@ function OverviewTab({ txs, lookups, title }: { txs: Tx[]; lookups: any; title: 
 /* ===================== Drill-down Sheet ===================== */
 function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows: Tx[] } | null; onClose: () => void; lookups: any }) {
   const catMap = new Map<string, string>(lookups.categories.map((c: any) => [c.id, c.name]));
-  const subMap = new Map<string, string>(lookups.subcategories.map((s: any) => [s.id, s.name]));
+  const etMap = new Map<string, string>(lookups.expenseTypes.map((e: any) => [e.id, e.name]));
   const total = drill?.rows.reduce((s, t) => s + Number(t.amount), 0) ?? 0;
+
   return (
     <Sheet open={!!drill} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <SheetContent side="left" className="w-full sm:max-w-2xl overflow-y-auto">
+      <SheetContent side="left" className="w-full sm:max-w-3xl overflow-y-auto">
         <SheetHeader>
           <SheetTitle>{drill?.title}</SheetTitle>
         </SheetHeader>
-        <div className="mt-2 mb-4 text-sm text-muted-foreground">
-          {drill?.rows.length ?? 0} תנועות · סה"כ: <span className={total >= 0 ? "text-income" : "text-expense"}>{formatCurrency(total)}</span>
+        <div className="mt-2 mb-4 flex items-center justify-between gap-2 flex-wrap">
+          <div className="text-sm text-muted-foreground">
+            {drill?.rows.length ?? 0} תנועות · סה"כ:{" "}
+            <span className={total >= 0 ? "text-income" : "text-expense"}>{formatCurrency(total)}</span>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!drill?.rows.length}
+            onClick={() => drill && exportTxsToExcel(drill.rows, lookups, `${drill.title}.xlsx`)}
+          >
+            <Download className="w-4 h-4 ml-1" />
+            ייצוא לאקסל
+          </Button>
         </div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="text-right">תאריך</TableHead>
-              <TableHead className="text-right">תיאור</TableHead>
-              <TableHead className="text-right">קטגוריה</TableHead>
-              <TableHead className="text-left">סכום</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {drill?.rows.map((t) => (
-              <TableRow key={t.id}>
-                <TableCell className="whitespace-nowrap">{format(new Date(t.transaction_date), "dd/MM/yy")}</TableCell>
-                <TableCell className="text-right">{t.description ?? "—"}</TableCell>
-                <TableCell className="text-right">{t.category_id ? (catMap.get(t.category_id) as string) : "—"}</TableCell>
-                <TableCell className={`text-left whitespace-nowrap ${Number(t.amount) >= 0 ? "text-income" : "text-expense"}`}>
-                  {formatCurrency(Number(t.amount))}
-                </TableCell>
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-right">תאריך</TableHead>
+                <TableHead className="text-right">תיאור</TableHead>
+                <TableHead className="text-right">סוג</TableHead>
+                <TableHead className="text-right">קטגוריה</TableHead>
+                <TableHead className="text-left">סכום</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {drill?.rows.map((t) => (
+                <TableRow key={t.id} className="border-b">
+                  <TableCell className="whitespace-nowrap">{format(new Date(t.transaction_date), "dd/MM/yy")}</TableCell>
+                  <TableCell className="text-right">{t.description ?? "—"}</TableCell>
+                  <TableCell className="text-right">{t.expense_type_id ? (etMap.get(t.expense_type_id) as string) : "—"}</TableCell>
+                  <TableCell className="text-right">{t.category_id ? (catMap.get(t.category_id) as string) : "—"}</TableCell>
+                  <TableCell className={`text-left whitespace-nowrap ${Number(t.amount) >= 0 ? "text-income" : "text-expense"}`}>
+                    {formatCurrency(Number(t.amount))}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </SheetContent>
     </Sheet>
   );
@@ -315,6 +391,8 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     () => lookups.funds.filter((f: any) => f.is_vault).sort((a: any, b: any) => a.name.localeCompare(b.name, "he")),
     [lookups.funds],
   );
+
+  const [selectedVault, setSelectedVault] = useState<string>("");
 
   const summary = useMemo(() => {
     return vaultFunds.map((f: any) => {
@@ -330,7 +408,6 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     { credit: 0, debit: 0, balance: 0 },
   ), [summary]);
 
-  const [selectedVault, setSelectedVault] = useState<string>("");
   const selectedRows = useMemo(
     () => selectedVault ? txs.filter((t) => t.fund_id === selectedVault).sort((a, b) => b.transaction_date.localeCompare(a.transaction_date)) : [],
     [selectedVault, txs],
@@ -341,12 +418,33 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const etMap = new Map<string, string>(lookups.expenseTypes.map((e: any) => [e.id, e.name]));
   const acctMap = new Map<string, string>(lookups.accounts.map((a: any) => [a.id, a.name]));
 
+  const selectedVaultName = vaultFunds.find((f: any) => f.id === selectedVault)?.name ?? "";
+
   return (
     <div className="space-y-4">
+      {/* Vault selector at the top */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <CardTitle>בחר קופה</CardTitle>
+            <div className="min-w-[260px]">
+              <Select value={selectedVault} onValueChange={setSelectedVault}>
+                <SelectTrigger><SelectValue placeholder="בחר קופה להצגת פירוט…" /></SelectTrigger>
+                <SelectContent>
+                  {vaultFunds.map((f: any) => (
+                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
       <Card>
         <CardHeader><CardTitle>דוח קופות</CardTitle></CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -361,7 +459,7 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                 {summary.map((r: any) => (
                   <TableRow
                     key={r.id}
-                    className="cursor-pointer hover:bg-accent/50"
+                    className="cursor-pointer hover:bg-accent/50 border-b"
                     onClick={() => setSelectedVault(r.id)}
                   >
                     <TableCell className="text-right font-medium">{r.name}</TableCell>
@@ -396,17 +494,16 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between gap-4 flex-wrap">
-            <CardTitle>דוח קופה — פירוט</CardTitle>
-            <div className="min-w-[240px]">
-              <Select value={selectedVault} onValueChange={setSelectedVault}>
-                <SelectTrigger><SelectValue placeholder="בחר קופה…" /></SelectTrigger>
-                <SelectContent>
-                  {vaultFunds.map((f: any) => (
-                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <CardTitle>דוח קופה — פירוט {selectedVaultName && `· ${selectedVaultName}`}</CardTitle>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!selectedRows.length}
+              onClick={() => exportTxsToExcel(selectedRows, lookups, `דוח קופה - ${selectedVaultName || "פירוט"}.xlsx`)}
+            >
+              <Download className="w-4 h-4 ml-1" />
+              ייצוא לאקסל
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -415,7 +512,7 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           ) : selectedRows.length === 0 ? (
             <p className="text-sm text-muted-foreground py-12 text-center">אין תנועות עבור הקופה הנבחרת</p>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -436,7 +533,7 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                     const credit = t.credit != null ? Number(t.credit) : (a > 0 ? a : 0);
                     const debit = t.debit != null ? Number(t.debit) : (a < 0 ? -a : 0);
                     return (
-                      <TableRow key={t.id}>
+                      <TableRow key={t.id} className="border-b">
                         <TableCell className="text-right whitespace-nowrap">{acctMap.get(t.account_id) ?? "—"}</TableCell>
                         <TableCell className="text-left text-income whitespace-nowrap">{credit ? formatCurrency(credit) : ""}</TableCell>
                         <TableCell className="text-left text-expense whitespace-nowrap">{debit ? formatCurrency(debit) : ""}</TableCell>
