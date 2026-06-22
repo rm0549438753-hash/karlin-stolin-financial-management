@@ -116,10 +116,10 @@ function TransactionsPage() {
   const { data: subcats = [] } = useSubcategories();
 
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState(ALL);
-  const [subcategory, setSubcategory] = useState(ALL);
-  const [fund, setFund] = useState(ALL);
-  const [expType, setExpType] = useState(ALL);
+  const [category, setCategory] = useState<string[]>([]);
+  const [subcategory, setSubcategory] = useState<string[]>([]);
+  const [fund, setFund] = useState<string[]>([]);
+  const [expType, setExpType] = useState<string[]>([]);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [onlyUncat, setOnlyUncat] = useState<boolean>(urlSearch.uncategorized ?? false);
