@@ -141,7 +141,7 @@ type Lookups = {
 
 /* ===================== Overview (Tabs 1 + 2) ===================== */
 function OverviewTab({ txs, lookups, title }: { txs: Tx[]; lookups: any; title: string }) {
-  const catMap = useMemo(() => new Map(lookups.categories.map((c: any) => [c.id, c.name])), [lookups.categories]);
+  const catMap = useMemo(() => new Map<string, string>(lookups.categories.map((c: any) => [c.id, c.name])), [lookups.categories]);
 
   const income = txs.filter((t) => Number(t.amount) > 0).reduce((s, t) => s + Number(t.amount), 0);
   const expense = txs.filter((t) => Number(t.amount) < 0).reduce((s, t) => s + Number(t.amount), 0);
@@ -270,8 +270,8 @@ function OverviewTab({ txs, lookups, title }: { txs: Tx[]; lookups: any; title: 
 
 /* ===================== Drill-down Sheet ===================== */
 function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows: Tx[] } | null; onClose: () => void; lookups: any }) {
-  const catMap = new Map(lookups.categories.map((c: any) => [c.id, c.name]));
-  const subMap = new Map(lookups.subcategories.map((s: any) => [s.id, s.name]));
+  const catMap = new Map<string, string>(lookups.categories.map((c: any) => [c.id, c.name]));
+  const subMap = new Map<string, string>(lookups.subcategories.map((s: any) => [s.id, s.name]));
   const total = drill?.rows.reduce((s, t) => s + Number(t.amount), 0) ?? 0;
   return (
     <Sheet open={!!drill} onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -336,10 +336,10 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     [selectedVault, txs],
   );
 
-  const catMap = new Map(lookups.categories.map((c: any) => [c.id, c.name]));
-  const subMap = new Map(lookups.subcategories.map((s: any) => [s.id, s.name]));
-  const etMap = new Map(lookups.expenseTypes.map((e: any) => [e.id, e.name]));
-  const acctMap = new Map(lookups.accounts.map((a: any) => [a.id, a.name]));
+  const catMap = new Map<string, string>(lookups.categories.map((c: any) => [c.id, c.name]));
+  const subMap = new Map<string, string>(lookups.subcategories.map((s: any) => [s.id, s.name]));
+  const etMap = new Map<string, string>(lookups.expenseTypes.map((e: any) => [e.id, e.name]));
+  const acctMap = new Map<string, string>(lookups.accounts.map((a: any) => [a.id, a.name]));
 
   return (
     <div className="space-y-4">
