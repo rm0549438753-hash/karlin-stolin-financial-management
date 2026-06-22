@@ -193,34 +193,10 @@ export function ImportDialog({ open, onOpenChange, account }: { open: boolean; o
             </div>
           )}
 
-          {preview && preview.rows.length > 0 && (
-            <div className="border rounded-xl overflow-hidden">
-              <div className="text-xs font-medium px-3 py-2 bg-muted/50 border-b">תצוגה מקדימה (5 שורות ראשונות)</div>
-              <div className="overflow-x-auto max-h-64">
-                <table className="w-full text-xs">
-                  <thead className="bg-muted/30">
-                    <tr>
-                      {preview.headers.map((h) => (
-                        <th key={h} className="px-2 py-1.5 text-right whitespace-nowrap border-l last:border-l-0">
-                          {h}
-                          {HEADER_MAP[h.trim()] && <span className="block text-[10px] text-success">✓ מזוהה</span>}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {preview.rows.slice(0, 5).map((r, i) => (
-                      <tr key={i} className="border-t">
-                        {preview.headers.map((h) => (
-                          <td key={h} className="px-2 py-1.5 border-l last:border-l-0 whitespace-nowrap">
-                            {r[h] instanceof Date ? r[h].toLocaleDateString("he-IL") : String(r[h] ?? "")}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+          {preview && (
+            <div className="border rounded-xl p-4 bg-muted/30 text-center">
+              <div className="text-3xl font-bold text-primary">{preview.rows.length}</div>
+              <div className="text-sm text-muted-foreground mt-1">תנועות מוכנות לייבוא</div>
             </div>
           )}
         </div>
