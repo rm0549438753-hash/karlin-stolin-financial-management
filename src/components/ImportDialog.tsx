@@ -77,9 +77,30 @@ export function ImportDialog({ open, onOpenChange, account }: { open: boolean; o
     const buf = await f.arrayBuffer();
     const wb = XLSX.read(buf, { cellDates: true });
     const ws = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json<any>(ws, { defval: null });
-    const headers = rows.length ? Object.keys(rows[0]) : [];
-    setPreview({ rows, headers });
+    // read as array-of-arrays so we can locate the real header row
+    const aoa = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1, defval: null, blankrows: false });
+    // find the row with the most known headers (scan first 25 rows)
+    let headerIdx = 0;
+    let bestScore = 0;
+    const scanLimit = Math.min(25, aoa.length);
+    for (let i = 0; i < scanLimit; i++) {
+      const row = aoa[i] ?? [];
+      const score = row.reduce((acc: number, cell: any) => {
+        const key = cell == null ? "" : String(cell).trim();
+        return acc + (HEADER_MAP[key] ? 1 : 0);
+      }, 0);
+      if (score > bestScore) { bestScore = score; headerIdx = i; }
+    }
+    const rawHeaders = (aoa[headerIdx] ?? []).map((h: any, i: number) =>
+      h == null || String(h).trim() === "" ? `__col_${i}` : String(h).trim()
+    );
+    const dataRows = aoa.slice(headerIdx + 1).filter((r) => r.some((c) => c != null && String(c).trim() !== ""));
+    const rows = dataRows.map((r) => {
+      const obj: Record<string, any> = {};
+      rawHeaders.forEach((h, i) => { obj[h] = r[i] ?? null; });
+      return obj;
+    });
+    setPreview({ rows, headers: rawHeaders });
   }
 
   const importMut = useMutation({
@@ -166,40 +187,16 @@ export function ImportDialog({ open, onOpenChange, account }: { open: boolean; o
               <FileSpreadsheet className="w-8 h-8 text-primary" />
               <div className="flex-1 min-w-0">
                 <div className="font-medium truncate">{file.name}</div>
-                <div className="text-xs text-muted-foreground">{preview?.rows.length ?? 0} שורות · {preview?.headers.length ?? 0} עמודות</div>
+                <div className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</div>
               </div>
               <Button variant="ghost" size="sm" onClick={() => { setFile(null); setPreview(null); }}>החלפה</Button>
             </div>
           )}
 
-          {preview && preview.rows.length > 0 && (
-            <div className="border rounded-xl overflow-hidden">
-              <div className="text-xs font-medium px-3 py-2 bg-muted/50 border-b">תצוגה מקדימה (5 שורות ראשונות)</div>
-              <div className="overflow-x-auto max-h-64">
-                <table className="w-full text-xs">
-                  <thead className="bg-muted/30">
-                    <tr>
-                      {preview.headers.map((h) => (
-                        <th key={h} className="px-2 py-1.5 text-right whitespace-nowrap border-l last:border-l-0">
-                          {h}
-                          {HEADER_MAP[h.trim()] && <span className="block text-[10px] text-success">✓ מזוהה</span>}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {preview.rows.slice(0, 5).map((r, i) => (
-                      <tr key={i} className="border-t">
-                        {preview.headers.map((h) => (
-                          <td key={h} className="px-2 py-1.5 border-l last:border-l-0 whitespace-nowrap">
-                            {r[h] instanceof Date ? r[h].toLocaleDateString("he-IL") : String(r[h] ?? "")}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+          {preview && (
+            <div className="border rounded-xl p-4 bg-muted/30 text-center">
+              <div className="text-3xl font-bold text-primary">{preview.rows.length}</div>
+              <div className="text-sm text-muted-foreground mt-1">תנועות מוכנות לייבוא</div>
             </div>
           )}
         </div>
