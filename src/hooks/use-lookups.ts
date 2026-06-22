@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export type Account = { id: string; name: string; kind: string; is_active: boolean; sort_order: number; sheet_key: string | null; schema_type: "mercantile" | "pagi" | "checks" | "cash" };
-export type Fund = { id: string; name: string; is_active: boolean };
+export type Fund = { id: string; name: string; is_active: boolean; is_vault?: boolean };
 export type ExpenseType = { id: string; name: string; is_active: boolean };
 export type Category = { id: string; name: string; is_active: boolean };
 export type Subcategory = { id: string; name: string; category_id: string | null; is_active: boolean };
