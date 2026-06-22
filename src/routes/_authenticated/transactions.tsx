@@ -395,11 +395,11 @@ function TransactionsPage() {
               </div>
               <DateInput value={from} onChange={setFrom} placeholder="מתאריך" />
               <DateInput value={to} onChange={setTo} placeholder="עד תאריך" />
-              <FilterSelect value={expType} onValueChange={setExpType} placeholder="כל הסוגים" items={expTypes} />
-              <FilterSelect value={fund} onValueChange={setFund} placeholder="כל הקופות" items={funds} />
-              <FilterSelect value={category} onValueChange={(v) => { setCategory(v); setSubcategory(ALL); }} placeholder="כל הקטגוריות" items={categories} />
-              <FilterSelect value={subcategory} onValueChange={setSubcategory} placeholder="כל תתי הקטגוריות" items={category === ALL ? subcats : subcats.filter((s) => s.category_id === category)} />
-              <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setCategory(ALL); setSubcategory(ALL); setFund(ALL); setExpType(ALL); setFrom(""); setTo(""); setOnlyUncat(false); }}>איפוס</Button>
+              <MultiFilter value={expType} onChange={setExpType} placeholder="כל הסוגים" items={expTypes} />
+              <MultiFilter value={fund} onChange={setFund} placeholder="כל הקופות" items={funds} />
+              <MultiFilter value={category} onChange={(v) => { setCategory(v); setSubcategory([]); }} placeholder="כל הקטגוריות" items={categories} />
+              <MultiFilter value={subcategory} onChange={setSubcategory} placeholder="כל תתי הקטגוריות" items={category.length === 0 ? subcats : subcats.filter((s) => category.includes(s.category_id ?? ""))} />
+              <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setCategory([]); setSubcategory([]); setFund([]); setExpType([]); setFrom(""); setTo(""); setOnlyUncat(false); }}>איפוס</Button>
             </div>
 
 
