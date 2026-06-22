@@ -77,9 +77,30 @@ export function ImportDialog({ open, onOpenChange, account }: { open: boolean; o
     const buf = await f.arrayBuffer();
     const wb = XLSX.read(buf, { cellDates: true });
     const ws = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json<any>(ws, { defval: null });
-    const headers = rows.length ? Object.keys(rows[0]) : [];
-    setPreview({ rows, headers });
+    // read as array-of-arrays so we can locate the real header row
+    const aoa = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1, defval: null, blankrows: false });
+    // find the row with the most known headers (scan first 25 rows)
+    let headerIdx = 0;
+    let bestScore = 0;
+    const scanLimit = Math.min(25, aoa.length);
+    for (let i = 0; i < scanLimit; i++) {
+      const row = aoa[i] ?? [];
+      const score = row.reduce((acc: number, cell: any) => {
+        const key = cell == null ? "" : String(cell).trim();
+        return acc + (HEADER_MAP[key] ? 1 : 0);
+      }, 0);
+      if (score > bestScore) { bestScore = score; headerIdx = i; }
+    }
+    const rawHeaders = (aoa[headerIdx] ?? []).map((h: any, i: number) =>
+      h == null || String(h).trim() === "" ? `__col_${i}` : String(h).trim()
+    );
+    const dataRows = aoa.slice(headerIdx + 1).filter((r) => r.some((c) => c != null && String(c).trim() !== ""));
+    const rows = dataRows.map((r) => {
+      const obj: Record<string, any> = {};
+      rawHeaders.forEach((h, i) => { obj[h] = r[i] ?? null; });
+      return obj;
+    });
+    setPreview({ rows, headers: rawHeaders });
   }
 
   const importMut = useMutation({
