@@ -147,7 +147,7 @@ function TransactionsPage() {
   useEffect(() => {
     setSelectedIds(new Set());
     setOnlyUncat(false);
-    setSearch(""); setCategory(ALL); setSubcategory(ALL); setFund(ALL); setExpType(ALL); setFrom(""); setTo("");
+    setSearch(""); setCategory([]); setSubcategory([]); setFund([]); setExpType([]); setFrom(""); setTo("");
   }, [account]);
   // Reset selection when filters change
   useEffect(() => { setSelectedIds(new Set()); }, [search, category, subcategory, fund, expType, from, to, onlyUncat]);
@@ -159,10 +159,10 @@ function TransactionsPage() {
     enabled: !!account,
     queryFn: async () => {
       let q = supabase.from("transactions").select("*").eq("account_id", account).order("transaction_date", { ascending: false }).limit(3000);
-      if (category !== ALL) q = q.eq("category_id", category);
-      if (subcategory !== ALL) q = q.eq("subcategory_id", subcategory);
-      if (fund !== ALL) q = q.eq("fund_id", fund);
-      if (expType !== ALL) q = q.eq("expense_type_id", expType);
+      if (category.length) q = q.in("category_id", category);
+      if (subcategory.length) q = q.in("subcategory_id", subcategory);
+      if (fund.length) q = q.in("fund_id", fund);
+      if (expType.length) q = q.in("expense_type_id", expType);
       if (from) q = q.gte("transaction_date", from);
       if (to) q = q.lte("transaction_date", to);
       const { data, error } = await q;
