@@ -554,15 +554,69 @@ function TransactionsPage() {
   );
 }
 
-function FilterSelect({ value, onValueChange, placeholder, items }: { value: string; onValueChange: (v: string) => void; placeholder: string; items: { id: string; name: string }[] }) {
+function MultiFilter({ value, onChange, placeholder, items }: { value: string[]; onChange: (v: string[]) => void; placeholder: string; items: { id: string; name: string }[] }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const selectedItems = items.filter((i) => value.includes(i.id));
+  const filtered = q.trim() ? items.filter((i) => i.name.toLowerCase().includes(q.toLowerCase())) : items;
+  const toggle = (id: string) => {
+    if (value.includes(id)) onChange(value.filter((v) => v !== id));
+    else onChange([...value, id]);
+  };
   return (
-    <Select value={value} onValueChange={onValueChange}>
-      <SelectTrigger className="w-[160px] bg-card"><SelectValue placeholder={placeholder} /></SelectTrigger>
-      <SelectContent>
-        <SelectItem value={ALL}>{placeholder}</SelectItem>
-        {items.map((i) => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}
-      </SelectContent>
-    </Select>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="min-w-[160px] max-w-[320px] min-h-9 px-2 py-1 rounded-md border bg-card text-right flex flex-wrap items-center gap-1 hover:border-primary/40 transition"
+        >
+          {selectedItems.length === 0 ? (
+            <span className="text-sm text-muted-foreground px-1">{placeholder}</span>
+          ) : (
+            <>
+              {selectedItems.slice(0, 3).map((i) => (
+                <span key={i.id} className="inline-flex items-center gap-1 bg-primary/10 text-primary text-xs font-medium px-2 py-0.5 rounded">
+                  {i.name}
+                  <X
+                    className="w-3 h-3 cursor-pointer hover:text-destructive"
+                    onClick={(e) => { e.stopPropagation(); toggle(i.id); }}
+                  />
+                </span>
+              ))}
+              {selectedItems.length > 3 && (
+                <span className="text-xs text-muted-foreground">+{selectedItems.length - 3}</span>
+              )}
+            </>
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent dir="rtl" className="w-64 p-0" align="start">
+        <div className="p-2 border-b">
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="חיפוש…" className="h-8 text-sm" />
+        </div>
+        <div className="max-h-64 overflow-auto py-1">
+          {filtered.length === 0 ? (
+            <div className="px-3 py-4 text-xs text-muted-foreground text-center">אין תוצאות</div>
+          ) : (
+            filtered.map((i) => {
+              const checked = value.includes(i.id);
+              return (
+                <label key={i.id} className="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-muted/60 text-sm">
+                  <Checkbox checked={checked} onCheckedChange={() => toggle(i.id)} />
+                  <span className="flex-1 truncate">{i.name}</span>
+                </label>
+              );
+            })
+          )}
+        </div>
+        {value.length > 0 && (
+          <div className="border-t p-2 flex justify-between items-center">
+            <span className="text-xs text-muted-foreground">{value.length} נבחרו</span>
+            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => onChange([])}>נקה</Button>
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }
 
