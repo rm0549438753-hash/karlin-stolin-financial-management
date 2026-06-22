@@ -187,7 +187,7 @@ export function ImportDialog({ open, onOpenChange, account }: { open: boolean; o
               <FileSpreadsheet className="w-8 h-8 text-primary" />
               <div className="flex-1 min-w-0">
                 <div className="font-medium truncate">{file.name}</div>
-                <div className="text-xs text-muted-foreground">{preview?.rows.length ?? 0} שורות · {preview?.headers.length ?? 0} עמודות</div>
+                <div className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</div>
               </div>
               <Button variant="ghost" size="sm" onClick={() => { setFile(null); setPreview(null); }}>החלפה</Button>
             </div>
