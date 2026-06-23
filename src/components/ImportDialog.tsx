@@ -35,10 +35,23 @@ const HEADER_MAP: Record<string, string> = {
   "הערה": "note",
   "צ'ק עתידי ?": "future_check",
   "צ'ק עתידי": "future_check",
+  // classification columns (resolved to *_id after lookup)
+  "קופה": "_fund_name",
+  "סוג": "_expense_type_name",
+  "קטגוריה": "_category_name",
+  "תת קטגוריה": "_subcategory_name",
+  "תת-קטגוריה": "_subcategory_name",
 };
 
 const DATE_FIELDS = new Set(["transaction_date", "value_date"]);
 const NUM_FIELDS = new Set(["credit", "debit", "amount", "balance", "fee"]);
+const NAME_FIELDS = new Set(["_fund_name", "_expense_type_name", "_category_name", "_subcategory_name"]);
+
+function normName(v: any): string | null {
+  if (v == null) return null;
+  const s = String(v).trim().replace(/\s+/g, " ");
+  return s === "" ? null : s;
+}
 
 function toDateStr(v: any): string | null {
   if (!v) return null;
