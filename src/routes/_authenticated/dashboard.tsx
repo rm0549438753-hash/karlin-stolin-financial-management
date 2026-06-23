@@ -257,25 +257,35 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
-          <CardHeader><CardTitle>הכנסות מול הוצאות (חודשי)</CardTitle></CardHeader>
+          <CardHeader className="flex-row items-center justify-between space-y-0">
+            <CardTitle>הכנסות מול הוצאות (חודשי)</CardTitle>
+            <Select value={barYear} onValueChange={setBarYear}>
+              <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {(yearsAvailable.length ? yearsAvailable : [currentYear]).map((y) => (
+                  <SelectItem key={y} value={y}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardHeader>
           <CardContent>
-            {monthly.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-12 text-center">אין נתונים</p>
-            ) : (
-              <ResponsiveContainer width="100%" height={320}>
-                <BarChart data={monthly}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="label" fontSize={12} reversed />
-                  <YAxis fontSize={12} orientation="right" tickFormatter={(v) => new Intl.NumberFormat("he-IL", { notation: "compact" }).format(v)} />
-                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                  <Legend />
-                  <Bar dataKey="הכנסות" fill={CHART_COLORS[1]} radius={[4, 4, 0, 0]} cursor="pointer"
-                    onClick={(d: any) => openMonth(d.key, "income", d.label)} />
-                  <Bar dataKey="הוצאות" fill={CHART_COLORS[3]} radius={[4, 4, 0, 0]} cursor="pointer"
-                    onClick={(d: any) => openMonth(d.key, "expense", d.label)} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
+            <ResponsiveContainer width="100%" height={340}>
+              <BarChart data={monthly} margin={{ top: 20, right: 8, left: 8, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="label" fontSize={12} reversed />
+                <YAxis fontSize={12} orientation="right" tickFormatter={compactFmt} />
+                <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                <Legend />
+                <Bar dataKey="הכנסות" fill="hsl(155 65% 42%)" radius={[4, 4, 0, 0]} cursor="pointer"
+                  onClick={(d: any) => openMonth(d.key, "income", d.label)}>
+                  <LabelList dataKey="הכנסות" position="top" fontSize={10} formatter={(v: number) => v ? compactFmt(v) : ""} />
+                </Bar>
+                <Bar dataKey="הוצאות" fill="hsl(0 75% 55%)" radius={[4, 4, 0, 0]} cursor="pointer"
+                  onClick={(d: any) => openMonth(d.key, "expense", d.label)}>
+                  <LabelList dataKey="הוצאות" position="top" fontSize={10} formatter={(v: number) => v ? compactFmt(v) : ""} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
 
@@ -302,29 +312,51 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
             {expenseTypeData.length === 0 ? (
               <p className="text-sm text-muted-foreground py-12 text-center">אין נתונים</p>
             ) : (
-              <ResponsiveContainer width="100%" height={280}>
-                <PieChart>
-                  <Pie
-                    data={expenseTypeData}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={50}
-                    outerRadius={100}
-                    cursor="pointer"
-                    onClick={(d: any) => openExpenseType(d.id, d.name)}
-                  >
-                    {expenseTypeData.map((_, i) => (
-                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                </PieChart>
-              </ResponsiveContainer>
+              <>
+                <ResponsiveContainer width="100%" height={240}>
+                  <PieChart>
+                    <Pie
+                      data={expenseTypeData}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={45}
+                      outerRadius={90}
+                      cursor="pointer"
+                      onClick={(d: any) => openExpenseType(d.id, d.name)}
+                    >
+                      {expenseTypeData.map((_, i) => (
+                        <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <ul className="mt-3 space-y-1.5 text-xs max-h-44 overflow-y-auto pr-1">
+                  {expenseTypeData.map((d, i) => {
+                    const pct = pieTotal ? ((d.value / pieTotal) * 100).toFixed(1) : "0";
+                    return (
+                      <li
+                        key={d.id}
+                        className="flex items-center justify-between gap-2 cursor-pointer hover:bg-muted/50 rounded px-1.5 py-1"
+                        onClick={() => openExpenseType(d.id, d.name)}
+                      >
+                        <span className="flex items-center gap-2 min-w-0">
+                          <span className="inline-block w-3 h-3 rounded-sm shrink-0" style={{ background: CHART_COLORS[i % CHART_COLORS.length] }} />
+                          <span className="truncate">{d.name}</span>
+                        </span>
+                        <span className="font-semibold tabular-nums whitespace-nowrap">
+                          {formatCurrency(d.value)} <span className="text-muted-foreground font-normal">({pct}%)</span>
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
             )}
           </CardContent>
         </Card>
       </div>
+
 
       <DrillSheet drill={drill} onClose={() => setDrill(null)} lookups={lookups} />
     </div>
