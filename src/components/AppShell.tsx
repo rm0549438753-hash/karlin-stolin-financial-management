@@ -33,14 +33,14 @@ function AppSidebar() {
       <SidebarHeader className="p-0 bg-gradient-to-b from-[#144a7a] to-[#0d3b66]">
         <Link to="/dashboard" className="flex flex-col items-center text-center px-6 py-7 border-b border-white/10 group-data-[collapsible=icon]:py-3 group-data-[collapsible=icon]:px-2">
           <div
-            className="h-24 w-24 bg-white rounded-2xl flex items-center justify-center p-2 shadow-xl mb-4 group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:mb-0 group-data-[collapsible=icon]:p-1"
+            className="h-32 w-32 bg-white rounded-2xl flex items-center justify-center p-1 shadow-xl mb-4 group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:mb-0 group-data-[collapsible=icon]:p-0.5"
             style={{ border: `3px solid ${GOLD}` }}
           >
-            <img src={logoAsset.url} alt="מרכז קארלין סטאלין" className="max-h-full max-w-full object-contain" />
+            <img src={logoAsset.url} alt="מרכז קארלין סטאלין" className="h-full w-full object-contain" />
           </div>
           <div className="group-data-[collapsible=icon]:hidden">
-            <h2 className="text-white text-xl font-extrabold leading-tight tracking-tight">
-              מרכז <span style={{ color: GOLD }}>קארלין</span> סטאלין
+            <h2 className="text-xl font-extrabold leading-tight tracking-tight" style={{ color: GOLD }}>
+              מרכז קארלין סטאלין
             </h2>
             <div className="h-1 w-10 mx-auto rounded-full my-2" style={{ background: GOLD }} />
             <p className="text-white/70 text-xs font-semibold">ממשק ניהול פיננסי</p>

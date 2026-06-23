@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/format";
 import { useAccounts, useCategories, useSubcategories, useExpenseTypes, useFunds } from "@/hooks/use-lookups";
 import {
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, LabelList,
   PieChart, Pie, Cell,
 } from "recharts";
 import { TrendingUp, TrendingDown, Scale, Building2, HardHat, PiggyBank, Download } from "lucide-react";
@@ -171,30 +171,31 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const expense = txs.filter((t) => Number(t.amount) < 0).reduce((s, t) => s + Number(t.amount), 0);
   const net = income + expense;
 
-  const monthly = useMemo(() => {
-    const map = new Map<string, { label: string; הכנסות: number; הוצאות: number; key: string }>();
-    txs.forEach((t) => {
-      const key = t.transaction_date.slice(0, 7);
-      if (!map.has(key)) {
-        const [y, m] = key.split("-");
-        const label = new Date(Number(y), Number(m) - 1).toLocaleDateString("he-IL", { month: "short", year: "2-digit" });
-        map.set(key, { key, label, הכנסות: 0, הוצאות: 0 });
-      }
-      const row = map.get(key)!;
-      const a = Number(t.amount);
-      if (a > 0) row.הכנסות += a;
-      else row.הוצאות += -a;
-    });
-    return Array.from(map.values()).sort((a, b) => a.key.localeCompare(b.key)).slice(-12);
-  }, [txs]);
-
-  // Pie filter (independent: year + month)
   const yearsAvailable = useMemo(() => {
     const ys = new Set<string>();
     txs.forEach((t) => ys.add(t.transaction_date.slice(0, 4)));
     return Array.from(ys).sort().reverse();
   }, [txs]);
   const currentYear = String(new Date().getFullYear());
+  const [barYear, setBarYear] = useState<string>(currentYear);
+
+  const monthly = useMemo(() => {
+    const monthNames = ["ינו׳", "פבר׳", "מרץ", "אפר׳", "מאי", "יוני", "יולי", "אוג׳", "ספט׳", "אוק׳", "נוב׳", "דצמ׳"];
+    const rows = monthNames.map((label, i) => {
+      const mm = String(i + 1).padStart(2, "0");
+      return { key: `${barYear}-${mm}`, label, הכנסות: 0, הוצאות: 0 };
+    });
+    txs.forEach((t) => {
+      if (!t.transaction_date.startsWith(barYear)) return;
+      const mi = Number(t.transaction_date.slice(5, 7)) - 1;
+      const a = Number(t.amount);
+      if (a > 0) rows[mi].הכנסות += a;
+      else rows[mi].הוצאות += -a;
+    });
+    return rows;
+  }, [txs, barYear]);
+
+  // Pie filter (independent: year + month)
   const [pieYear, setPieYear] = useState<string>(currentYear);
   const [pieMonth, setPieMonth] = useState<string>("all"); // "all" | "01".."12"
 
@@ -227,7 +228,7 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       if (!t.transaction_date.startsWith(monthKey)) return false;
       return kind === "income" ? Number(t.amount) > 0 : Number(t.amount) < 0;
     });
-    setDrill({ title: `${label} — ${kind === "income" ? "הכנסות" : "הוצאות"}`, rows });
+    setDrill({ title: `${label} ${monthKey.slice(0, 4)} — ${kind === "income" ? "הכנסות" : "הוצאות"}`, rows });
   };
 
   const openExpenseType = (etId: string, name: string) => {
@@ -243,6 +244,9 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     { v: "10", l: "אוקטובר" }, { v: "11", l: "נובמבר" }, { v: "12", l: "דצמבר" },
   ];
 
+  const compactFmt = (v: number) => new Intl.NumberFormat("he-IL", { notation: "compact", maximumFractionDigits: 1 }).format(v);
+  const pieTotal = expenseTypeData.reduce((s, d) => s + d.value, 0);
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -253,25 +257,35 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
-          <CardHeader><CardTitle>הכנסות מול הוצאות (חודשי)</CardTitle></CardHeader>
+          <CardHeader className="flex-row items-center justify-between space-y-0">
+            <CardTitle>הכנסות מול הוצאות (חודשי)</CardTitle>
+            <Select value={barYear} onValueChange={setBarYear}>
+              <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {(yearsAvailable.length ? yearsAvailable : [currentYear]).map((y) => (
+                  <SelectItem key={y} value={y}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardHeader>
           <CardContent>
-            {monthly.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-12 text-center">אין נתונים</p>
-            ) : (
-              <ResponsiveContainer width="100%" height={320}>
-                <BarChart data={monthly}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="label" fontSize={12} reversed />
-                  <YAxis fontSize={12} orientation="right" tickFormatter={(v) => new Intl.NumberFormat("he-IL", { notation: "compact" }).format(v)} />
-                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                  <Legend />
-                  <Bar dataKey="הכנסות" fill={CHART_COLORS[1]} radius={[4, 4, 0, 0]} cursor="pointer"
-                    onClick={(d: any) => openMonth(d.key, "income", d.label)} />
-                  <Bar dataKey="הוצאות" fill={CHART_COLORS[3]} radius={[4, 4, 0, 0]} cursor="pointer"
-                    onClick={(d: any) => openMonth(d.key, "expense", d.label)} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
+            <ResponsiveContainer width="100%" height={340}>
+              <BarChart data={monthly} margin={{ top: 20, right: 8, left: 8, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="label" fontSize={12} reversed />
+                <YAxis fontSize={12} orientation="right" tickFormatter={compactFmt} />
+                <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                <Legend />
+                <Bar dataKey="הכנסות" fill="hsl(155 65% 42%)" radius={[4, 4, 0, 0]} cursor="pointer"
+                  onClick={(d: any) => openMonth(d.key, "income", d.label)}>
+                  <LabelList dataKey="הכנסות" position="top" fontSize={10} formatter={(v: number) => v ? compactFmt(v) : ""} />
+                </Bar>
+                <Bar dataKey="הוצאות" fill="hsl(0 75% 55%)" radius={[4, 4, 0, 0]} cursor="pointer"
+                  onClick={(d: any) => openMonth(d.key, "expense", d.label)}>
+                  <LabelList dataKey="הוצאות" position="top" fontSize={10} formatter={(v: number) => v ? compactFmt(v) : ""} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
 
@@ -298,29 +312,51 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
             {expenseTypeData.length === 0 ? (
               <p className="text-sm text-muted-foreground py-12 text-center">אין נתונים</p>
             ) : (
-              <ResponsiveContainer width="100%" height={280}>
-                <PieChart>
-                  <Pie
-                    data={expenseTypeData}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={50}
-                    outerRadius={100}
-                    cursor="pointer"
-                    onClick={(d: any) => openExpenseType(d.id, d.name)}
-                  >
-                    {expenseTypeData.map((_, i) => (
-                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                </PieChart>
-              </ResponsiveContainer>
+              <>
+                <ResponsiveContainer width="100%" height={240}>
+                  <PieChart>
+                    <Pie
+                      data={expenseTypeData}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={45}
+                      outerRadius={90}
+                      cursor="pointer"
+                      onClick={(d: any) => openExpenseType(d.id, d.name)}
+                    >
+                      {expenseTypeData.map((_, i) => (
+                        <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <ul className="mt-3 space-y-1.5 text-xs max-h-44 overflow-y-auto pr-1">
+                  {expenseTypeData.map((d, i) => {
+                    const pct = pieTotal ? ((d.value / pieTotal) * 100).toFixed(1) : "0";
+                    return (
+                      <li
+                        key={d.id}
+                        className="flex items-center justify-between gap-2 cursor-pointer hover:bg-muted/50 rounded px-1.5 py-1"
+                        onClick={() => openExpenseType(d.id, d.name)}
+                      >
+                        <span className="flex items-center gap-2 min-w-0">
+                          <span className="inline-block w-3 h-3 rounded-sm shrink-0" style={{ background: CHART_COLORS[i % CHART_COLORS.length] }} />
+                          <span className="truncate">{d.name}</span>
+                        </span>
+                        <span className="font-semibold tabular-nums whitespace-nowrap">
+                          {formatCurrency(d.value)} <span className="text-muted-foreground font-normal">({pct}%)</span>
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
             )}
           </CardContent>
         </Card>
       </div>
+
 
       <DrillSheet drill={drill} onClose={() => setDrill(null)} lookups={lookups} />
     </div>
