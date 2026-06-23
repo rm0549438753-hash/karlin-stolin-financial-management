@@ -210,9 +210,9 @@ export function ImportDialog({ open, onOpenChange, account }: { open: boolean; o
         catMap.forEach((id, name) => catNameById.set(id, name));
         (existingSubs ?? []).forEach((r: any) => {
           const n = normName(r.name) ?? "";
-          subMap.set(`||${n}`, r.id);
           const cn = catNameById.get(r.category_id);
           if (cn) subMap.set(`${cn}||${n}`, r.id);
+          else subMap.set(`||${n}`, r.id);
         });
         // create missing per (category, subname)
         const toCreate: { name: string; category_id: string; key: string }[] = [];
@@ -221,7 +221,7 @@ export function ImportDialog({ open, onOpenChange, account }: { open: boolean; o
           if (!sn) continue;
           const cn = row._category_name;
           const key = `${cn ?? ""}||${sn}`;
-          if (subMap.has(key) || subMap.has(`||${sn}`)) continue;
+          if (subMap.has(key)) continue;
           const cid = cn ? catMap.get(cn) : null;
           if (!cid) continue; // can't create without category
           if (toCreate.some((t) => t.key === key)) continue;
