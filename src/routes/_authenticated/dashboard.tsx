@@ -88,8 +88,11 @@ function DashboardPage() {
   );
 
   const projectTxs = useMemo(
-    () => baseTxs.filter((t) => t.expense_type_id === projectExpenseTypeId),
-    [baseTxs, projectExpenseTypeId],
+    () => baseTxs.filter((t) =>
+      t.expense_type_id === projectExpenseTypeId &&
+      !(t.fund_id && vaultFundIds.has(t.fund_id))
+    ),
+    [baseTxs, projectExpenseTypeId, vaultFundIds],
   );
 
   const vaultTxs = useMemo(
