@@ -171,30 +171,31 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const expense = txs.filter((t) => Number(t.amount) < 0).reduce((s, t) => s + Number(t.amount), 0);
   const net = income + expense;
 
-  const monthly = useMemo(() => {
-    const map = new Map<string, { label: string; הכנסות: number; הוצאות: number; key: string }>();
-    txs.forEach((t) => {
-      const key = t.transaction_date.slice(0, 7);
-      if (!map.has(key)) {
-        const [y, m] = key.split("-");
-        const label = new Date(Number(y), Number(m) - 1).toLocaleDateString("he-IL", { month: "short", year: "2-digit" });
-        map.set(key, { key, label, הכנסות: 0, הוצאות: 0 });
-      }
-      const row = map.get(key)!;
-      const a = Number(t.amount);
-      if (a > 0) row.הכנסות += a;
-      else row.הוצאות += -a;
-    });
-    return Array.from(map.values()).sort((a, b) => a.key.localeCompare(b.key)).slice(-12);
-  }, [txs]);
-
-  // Pie filter (independent: year + month)
   const yearsAvailable = useMemo(() => {
     const ys = new Set<string>();
     txs.forEach((t) => ys.add(t.transaction_date.slice(0, 4)));
     return Array.from(ys).sort().reverse();
   }, [txs]);
   const currentYear = String(new Date().getFullYear());
+  const [barYear, setBarYear] = useState<string>(currentYear);
+
+  const monthly = useMemo(() => {
+    const monthNames = ["ינו׳", "פבר׳", "מרץ", "אפר׳", "מאי", "יוני", "יולי", "אוג׳", "ספט׳", "אוק׳", "נוב׳", "דצמ׳"];
+    const rows = monthNames.map((label, i) => {
+      const mm = String(i + 1).padStart(2, "0");
+      return { key: `${barYear}-${mm}`, label, הכנסות: 0, הוצאות: 0 };
+    });
+    txs.forEach((t) => {
+      if (!t.transaction_date.startsWith(barYear)) return;
+      const mi = Number(t.transaction_date.slice(5, 7)) - 1;
+      const a = Number(t.amount);
+      if (a > 0) rows[mi].הכנסות += a;
+      else rows[mi].הוצאות += -a;
+    });
+    return rows;
+  }, [txs, barYear]);
+
+  // Pie filter (independent: year + month)
   const [pieYear, setPieYear] = useState<string>(currentYear);
   const [pieMonth, setPieMonth] = useState<string>("all"); // "all" | "01".."12"
 
@@ -227,7 +228,7 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       if (!t.transaction_date.startsWith(monthKey)) return false;
       return kind === "income" ? Number(t.amount) > 0 : Number(t.amount) < 0;
     });
-    setDrill({ title: `${label} — ${kind === "income" ? "הכנסות" : "הוצאות"}`, rows });
+    setDrill({ title: `${label} ${monthKey.slice(0, 4)} — ${kind === "income" ? "הכנסות" : "הוצאות"}`, rows });
   };
 
   const openExpenseType = (etId: string, name: string) => {
@@ -242,6 +243,9 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     { v: "07", l: "יולי" }, { v: "08", l: "אוגוסט" }, { v: "09", l: "ספטמבר" },
     { v: "10", l: "אוקטובר" }, { v: "11", l: "נובמבר" }, { v: "12", l: "דצמבר" },
   ];
+
+  const compactFmt = (v: number) => new Intl.NumberFormat("he-IL", { notation: "compact", maximumFractionDigits: 1 }).format(v);
+  const pieTotal = expenseTypeData.reduce((s, d) => s + d.value, 0);
 
   return (
     <div className="space-y-4">
