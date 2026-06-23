@@ -431,7 +431,7 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     [lookups.funds],
   );
 
-  const [selectedVault, setSelectedVault] = useState<string>("");
+  const [openVault, setOpenVault] = useState<{ id: string; name: string } | null>(null);
 
   const summary = useMemo(() => {
     return vaultFunds.map((f: any) => {
@@ -447,9 +447,9 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     { credit: 0, debit: 0, balance: 0 },
   ), [summary]);
 
-  const selectedRows = useMemo(
-    () => selectedVault ? txs.filter((t) => t.fund_id === selectedVault).sort((a, b) => b.transaction_date.localeCompare(a.transaction_date)) : [],
-    [selectedVault, txs],
+  const openRows = useMemo(
+    () => openVault ? txs.filter((t) => t.fund_id === openVault.id).sort((a, b) => b.transaction_date.localeCompare(a.transaction_date)) : [],
+    [openVault, txs],
   );
 
   const catMap = new Map<string, string>(lookups.categories.map((c: any) => [c.id, c.name]));
@@ -457,32 +457,14 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const etMap = new Map<string, string>(lookups.expenseTypes.map((e: any) => [e.id, e.name]));
   const acctMap = new Map<string, string>(lookups.accounts.map((a: any) => [a.id, a.name]));
 
-  const selectedVaultName = vaultFunds.find((f: any) => f.id === selectedVault)?.name ?? "";
+  const openTotal = openRows.reduce((s, t) => s + Number(t.amount), 0);
 
   return (
     <div className="space-y-4">
-      {/* Vault selector at the top */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <CardTitle>בחר קופה</CardTitle>
-            <div className="min-w-[260px]">
-              <Select value={selectedVault} onValueChange={setSelectedVault}>
-                <SelectTrigger><SelectValue placeholder="בחר קופה להצגת פירוט…" /></SelectTrigger>
-                <SelectContent>
-                  {vaultFunds.map((f: any) => (
-                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
-
       <Card>
         <CardHeader><CardTitle>דוח קופות</CardTitle></CardHeader>
         <CardContent>
+          <p className="text-xs text-muted-foreground mb-2">לחץ על שם הקופה לפתיחת פירוט</p>
           <div className="overflow-x-auto rounded-md border">
             <Table>
               <TableHeader>
@@ -499,9 +481,9 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                   <TableRow
                     key={r.id}
                     className="cursor-pointer hover:bg-accent/50 border-b"
-                    onClick={() => setSelectedVault(r.id)}
+                    onClick={() => setOpenVault({ id: r.id, name: r.name })}
                   >
-                    <TableCell className="text-right font-medium">{r.name}</TableCell>
+                    <TableCell className="text-right font-medium text-primary underline-offset-2 hover:underline">{r.name}</TableCell>
                     <TableCell className="text-left text-income whitespace-nowrap">{formatCurrency(r.credit)}</TableCell>
                     <TableCell className="text-left text-expense whitespace-nowrap">{formatCurrency(r.debit)}</TableCell>
                     <TableCell className={`text-left whitespace-nowrap font-semibold ${r.balance >= 0 ? "text-income" : "text-expense"}`}>
@@ -530,58 +512,58 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <CardTitle>דוח קופה — פירוט {selectedVaultName && `· ${selectedVaultName}`}</CardTitle>
+      <Sheet open={!!openVault} onOpenChange={(o) => { if (!o) setOpenVault(null); }}>
+        <SheetContent side="left" className="w-full sm:max-w-4xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>דוח קופה — {openVault?.name}</SheetTitle>
+          </SheetHeader>
+          <div className="mt-2 mb-4 flex items-center justify-between gap-2 flex-wrap">
+            <div className="text-sm text-muted-foreground">
+              {openRows.length} תנועות · יתרה:{" "}
+              <span className={openTotal >= 0 ? "text-income" : "text-expense"}>{formatCurrency(openTotal)}</span>
+            </div>
             <Button
               size="sm"
               variant="outline"
-              disabled={!selectedRows.length}
-              onClick={() => exportTxsToExcel(selectedRows, lookups, `דוח קופה - ${selectedVaultName || "פירוט"}.xlsx`)}
+              disabled={!openRows.length}
+              onClick={() => openVault && exportTxsToExcel(openRows, lookups, `דוח קופה - ${openVault.name}.xlsx`)}
             >
               <Download className="w-4 h-4 ml-1" />
               ייצוא לאקסל
             </Button>
           </div>
-        </CardHeader>
-        <CardContent>
-          {!selectedVault ? (
-            <p className="text-sm text-muted-foreground py-12 text-center">בחר קופה להצגת פירוט התנועות</p>
-          ) : selectedRows.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-12 text-center">אין תנועות עבור הקופה הנבחרת</p>
+          {openRows.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-12 text-center">אין תנועות עבור הקופה</p>
           ) : (
             <div className="overflow-x-auto rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-right">חשבון</TableHead>
-                    <TableHead className="text-left">זכות</TableHead>
-                    <TableHead className="text-left">חובה</TableHead>
                     <TableHead className="text-right">תאריך</TableHead>
+                    <TableHead className="text-right">חשבון</TableHead>
                     <TableHead className="text-right">פרטים</TableHead>
                     <TableHead className="text-right">סוג</TableHead>
                     <TableHead className="text-right">קטגוריה</TableHead>
                     <TableHead className="text-right">תת-קטגוריה</TableHead>
-                    <TableHead className="text-right">הערה</TableHead>
+                    <TableHead className="text-left">זכות</TableHead>
+                    <TableHead className="text-left">חובה</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {selectedRows.map((t) => {
+                  {openRows.map((t) => {
                     const a = Number(t.amount);
                     const credit = t.credit != null ? Number(t.credit) : (a > 0 ? a : 0);
                     const debit = t.debit != null ? Number(t.debit) : (a < 0 ? -a : 0);
                     return (
                       <TableRow key={t.id} className="border-b">
-                        <TableCell className="text-right whitespace-nowrap">{acctMap.get(t.account_id) ?? "—"}</TableCell>
-                        <TableCell className="text-left text-income whitespace-nowrap">{credit ? formatCurrency(credit) : ""}</TableCell>
-                        <TableCell className="text-left text-expense whitespace-nowrap">{debit ? formatCurrency(debit) : ""}</TableCell>
                         <TableCell className="text-right whitespace-nowrap">{format(new Date(t.transaction_date), "dd/MM/yy")}</TableCell>
+                        <TableCell className="text-right whitespace-nowrap">{acctMap.get(t.account_id) ?? "—"}</TableCell>
                         <TableCell className="text-right">{t.description ?? "—"}</TableCell>
                         <TableCell className="text-right">{t.expense_type_id ? (etMap.get(t.expense_type_id) as string) : "—"}</TableCell>
                         <TableCell className="text-right">{t.category_id ? (catMap.get(t.category_id) as string) : "—"}</TableCell>
                         <TableCell className="text-right">{t.subcategory_id ? (subMap.get(t.subcategory_id) as string) : "—"}</TableCell>
-                        <TableCell className="text-right">{t.note ?? ""}</TableCell>
+                        <TableCell className="text-left text-income whitespace-nowrap">{credit ? formatCurrency(credit) : ""}</TableCell>
+                        <TableCell className="text-left text-expense whitespace-nowrap">{debit ? formatCurrency(debit) : ""}</TableCell>
                       </TableRow>
                     );
                   })}
@@ -589,8 +571,8 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
               </Table>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
