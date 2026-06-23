@@ -26,6 +26,8 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 const CHART_COLORS = ["hsl(220 70% 55%)", "hsl(155 60% 45%)", "hsl(75 80% 55%)", "hsl(25 80% 55%)", "hsl(295 60% 55%)", "hsl(200 70% 50%)", "hsl(340 70% 55%)"];
 const PROJECT_EXPENSE_TYPE = "בית הכנסת - בניה";
 const IRRELEVANT_FUND = "לא רלוונטי";
+const TRANSACTION_SELECT = "id, transaction_date, amount, account_id, fund_id, expense_type_id, category_id, subcategory_id, description, note, credit, debit";
+const PAGE_SIZE = 1000;
 
 type Tx = {
   id: string;
@@ -42,17 +44,32 @@ type Tx = {
   debit: number | null;
 };
 
+async function fetchAllDashboardTransactions() {
+  const rows: Tx[] = [];
+  let from = 0;
+
+  while (true) {
+    const { data, error } = await supabase
+      .from("transactions")
+      .select(TRANSACTION_SELECT)
+      .order("transaction_date", { ascending: false })
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (error) throw error;
+
+    const page = (data ?? []) as Tx[];
+    rows.push(...page);
+    if (page.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
+  }
+
+  return rows;
+}
+
 function DashboardPage() {
   const { data: txs = [], isLoading } = useQuery({
     queryKey: ["tx-dashboard-full"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("transactions")
-        .select("id, transaction_date, amount, account_id, fund_id, expense_type_id, category_id, subcategory_id, description, note, credit, debit")
-        .order("transaction_date", { ascending: false });
-      if (error) throw error;
-      return data as Tx[];
-    },
+    queryFn: fetchAllDashboardTransactions,
   });
 
   const { data: accounts = [] } = useAccounts();
