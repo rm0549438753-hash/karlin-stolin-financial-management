@@ -47,6 +47,20 @@ const DATE_FIELDS = new Set(["transaction_date", "value_date"]);
 const NUM_FIELDS = new Set(["credit", "debit", "amount", "balance", "fee"]);
 const NAME_FIELDS = new Set(["_fund_name", "_expense_type_name", "_category_name", "_subcategory_name"]);
 
+function normHeader(v: any): string {
+  return String(v ?? "")
+    .replace(/[\u200e\u200f\u202a-\u202e\ufeff]/g, "")
+    .replace(/\u00a0/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+const HEADER_FIELD_MAP = new Map(Object.entries(HEADER_MAP).map(([header, field]) => [normHeader(header), field]));
+
+function getMappedField(header: any): string | undefined {
+  return HEADER_FIELD_MAP.get(normHeader(header));
+}
+
 function normName(v: any): string | null {
   if (v == null) return null;
   const s = String(v).trim().replace(/\s+/g, " ");
@@ -55,9 +69,17 @@ function normName(v: any): string | null {
 
 function toDateStr(v: any): string | null {
   if (!v) return null;
-  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  if (v instanceof Date) {
+    const y = v.getFullYear();
+    const m = String(v.getMonth() + 1).padStart(2, "0");
+    const d = String(v.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
   if (typeof v === "number") {
-    // Excel serial date
+    const parsed = XLSX.SSF.parse_date_code(v);
+    if (parsed) {
+      return `${parsed.y}-${String(parsed.m).padStart(2, "0")}-${String(parsed.d).padStart(2, "0")}`;
+    }
     const d = new Date(Math.round((v - 25569) * 86400 * 1000));
     return d.toISOString().slice(0, 10);
   }
@@ -99,16 +121,15 @@ export function ImportDialog({ open, onOpenChange, account }: { open: boolean; o
     for (let i = 0; i < scanLimit; i++) {
       const row = aoa[i] ?? [];
       const score = row.reduce((acc: number, cell: any) => {
-        const key = cell == null ? "" : String(cell).trim();
-        return acc + (HEADER_MAP[key] ? 1 : 0);
+        return acc + (getMappedField(cell) ? 1 : 0);
       }, 0);
       if (score > bestScore) { bestScore = score; headerIdx = i; }
     }
     const rawHeaders = (aoa[headerIdx] ?? []).map((h: any, i: number) =>
-      h == null || String(h).trim() === "" ? `__col_${i}` : String(h).trim()
+      normHeader(h) === "" ? `__col_${i}` : normHeader(h)
     );
     // index of the transaction-date column (required for a real transaction row)
-    const dateColIdx = rawHeaders.findIndex((h) => HEADER_MAP[h] === "transaction_date");
+    const dateColIdx = rawHeaders.findIndex((h) => getMappedField(h) === "transaction_date");
     const dataRows = aoa.slice(headerIdx + 1).filter((r) => {
       if (!r.some((c) => c != null && String(c).trim() !== "")) return false;
       // require a parseable date in the date column — filters out totals/notes/footer rows
@@ -139,7 +160,7 @@ export function ImportDialog({ open, onOpenChange, account }: { open: boolean; o
       const parsed = preview.rows.map((r) => {
         const out: Record<string, any> = {};
         for (const [k, v] of Object.entries(r)) {
-          const field = HEADER_MAP[String(k).trim()];
+          const field = getMappedField(k);
           if (!field) continue;
           if (DATE_FIELDS.has(field)) out[field] = toDateStr(v);
           else if (NUM_FIELDS.has(field)) out[field] = toNum(v);
