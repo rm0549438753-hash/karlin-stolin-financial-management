@@ -158,17 +158,28 @@ function TransactionsPage() {
     queryKey: ["transactions", { account, category, subcategory, fund, expType, from, to }],
     enabled: !!account,
     queryFn: async () => {
-      let q = supabase.from("transactions").select("*").eq("account_id", account).order("transaction_date", { ascending: false }).limit(3000);
-      if (category.length) q = q.in("category_id", category);
-      if (subcategory.length) q = q.in("subcategory_id", subcategory);
-      if (fund.length) q = q.in("fund_id", fund);
-      if (expType.length) q = q.in("expense_type_id", expType);
-      if (from) q = q.gte("transaction_date", from);
-      if (to) q = q.lte("transaction_date", to);
-      const { data, error } = await q;
-      if (error) throw error;
-      return data as TransactionRow[];
+      const buildQ = () => {
+        let q = supabase.from("transactions").select("*").eq("account_id", account).order("transaction_date", { ascending: false });
+        if (category.length) q = q.in("category_id", category);
+        if (subcategory.length) q = q.in("subcategory_id", subcategory);
+        if (fund.length) q = q.in("fund_id", fund);
+        if (expType.length) q = q.in("expense_type_id", expType);
+        if (from) q = q.gte("transaction_date", from);
+        if (to) q = q.lte("transaction_date", to);
+        return q;
+      };
+      const PAGE = 1000;
+      const all: TransactionRow[] = [];
+      for (let offset = 0; ; offset += PAGE) {
+        const { data, error } = await buildQ().range(offset, offset + PAGE - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        all.push(...(data as TransactionRow[]));
+        if (data.length < PAGE) break;
+      }
+      return all;
     },
+
   });
 
   const { data: uncatCount = 0 } = useQuery({
@@ -265,9 +276,14 @@ function TransactionsPage() {
 
   const bulkDel = useMutation({
     mutationFn: async (ids: string[]) => {
-      const { error } = await supabase.from("transactions").delete().in("id", ids);
-      if (error) throw error;
+      const CHUNK = 200;
+      for (let i = 0; i < ids.length; i += CHUNK) {
+        const chunk = ids.slice(i, i + CHUNK);
+        const { error } = await supabase.from("transactions").delete().in("id", chunk);
+        if (error) throw error;
+      }
     },
+
     onSuccess: () => {
       toast.success(`${selectedIds.size} תנועות נמחקו`);
       setSelectedIds(new Set());
