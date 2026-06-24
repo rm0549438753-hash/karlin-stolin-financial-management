@@ -128,13 +128,21 @@ export function ImportDialog({ open, onOpenChange, account }: { open: boolean; o
     const rawHeaders = (aoa[headerIdx] ?? []).map((h: any, i: number) =>
       normHeader(h) === "" ? `__col_${i}` : normHeader(h)
     );
-    // index of the transaction-date column (required for a real transaction row)
-    const dateColIdx = rawHeaders.findIndex((h) => getMappedField(h) === "transaction_date");
+    // indices of date columns + amount columns (a real txn row has any date OR any amount)
+    const txnDateIdx = rawHeaders.findIndex((h) => getMappedField(h) === "transaction_date");
+    const valDateIdx = rawHeaders.findIndex((h) => getMappedField(h) === "value_date");
+    const amountIdxs = rawHeaders
+      .map((h, i) => ({ f: getMappedField(h), i }))
+      .filter((x) => x.f === "credit" || x.f === "debit" || x.f === "amount")
+      .map((x) => x.i);
     const dataRows = aoa.slice(headerIdx + 1).filter((r) => {
       if (!r.some((c) => c != null && String(c).trim() !== "")) return false;
-      // require a parseable date in the date column — filters out totals/notes/footer rows
-      if (dateColIdx >= 0) return toDateStr(r[dateColIdx]) != null;
-      return true;
+      const hasTxnDate = txnDateIdx >= 0 && toDateStr(r[txnDateIdx]) != null;
+      const hasValDate = valDateIdx >= 0 && toDateStr(r[valDateIdx]) != null;
+      const hasAmount = amountIdxs.some((i) => toNum(r[i]) != null && toNum(r[i]) !== 0);
+      // accept if there's any date or any amount — filters out only totals/notes/empty rows
+      if (txnDateIdx < 0 && valDateIdx < 0) return true;
+      return hasTxnDate || hasValDate || hasAmount;
     });
     const rows = dataRows.map((r) => {
       const obj: Record<string, any> = {};
