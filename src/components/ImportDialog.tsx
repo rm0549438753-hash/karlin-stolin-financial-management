@@ -269,8 +269,8 @@ export function ImportDialog({ open, onOpenChange, account }: { open: boolean; o
           const d = Number(out.debit) || 0;
           if (c || d) out.amount = c - d;
         }
+        if (!out.transaction_date) out.transaction_date = out.value_date ?? null;
         if (!out.transaction_date) out.transaction_date = new Date().toISOString().slice(0, 10);
-        return out;
       });
 
       // insert in chunks of 500
