@@ -276,9 +276,14 @@ function TransactionsPage() {
 
   const bulkDel = useMutation({
     mutationFn: async (ids: string[]) => {
-      const { error } = await supabase.from("transactions").delete().in("id", ids);
-      if (error) throw error;
+      const CHUNK = 200;
+      for (let i = 0; i < ids.length; i += CHUNK) {
+        const chunk = ids.slice(i, i + CHUNK);
+        const { error } = await supabase.from("transactions").delete().in("id", chunk);
+        if (error) throw error;
+      }
     },
+
     onSuccess: () => {
       toast.success(`${selectedIds.size} תנועות נמחקו`);
       setSelectedIds(new Set());
