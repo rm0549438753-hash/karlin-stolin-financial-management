@@ -310,12 +310,16 @@ function TransactionsPage() {
     setSelectedIds(next);
   };
 
+  function extractText(v: any): string {
+    if (v == null || typeof v === "boolean") return "";
+    if (typeof v === "string" || typeof v === "number") return String(v);
+    if (Array.isArray(v)) return v.map(extractText).join("");
+    if (typeof v === "object" && "props" in v) return extractText((v as any).props?.children);
+    return "";
+  }
   function exportRows(list: any[], filename: string) {
     const headers = columns.map((c) => c.header);
-    const rowsCsv = list.map((r) => columns.map((col) => {
-      const v = col.render(r as any, ctx);
-      return typeof v === "string" || typeof v === "number" ? String(v) : "";
-    }));
+    const rowsCsv = list.map((r) => columns.map((col) => extractText(col.render(r as any, ctx))));
     const csv = [headers, ...rowsCsv].map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
