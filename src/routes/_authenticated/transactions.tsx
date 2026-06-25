@@ -326,11 +326,11 @@ function TransactionsPage() {
     const t = setTimeout(() => {
       const el = document.querySelector(`[data-tx-id="${hid}"]`) as HTMLElement | null;
       if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-      // clear highlight from URL after ~3s
+      // clear highlight from URL after ~4s WITHOUT resetting scroll position
       setTimeout(() => {
-        navigate({ to: "/transactions", search: { account: urlSearch.account }, replace: true });
-      }, 3000);
-    }, 100);
+        navigate({ to: "/transactions", search: { account: urlSearch.account }, replace: true, resetScroll: false });
+      }, 4000);
+    }, 150);
     return () => clearTimeout(t);
   }, [urlSearch.highlight, filteredIds.join(",")]);
 
