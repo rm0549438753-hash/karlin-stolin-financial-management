@@ -502,10 +502,11 @@ function TransactionsPage() {
                           <TableCell
                             key={col.header}
                             className={
-                              "border-l border-border/60 last:border-l-0 px-4 py-3 text-sm align-middle " +
+                              "border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs align-middle " +
                               (col.align === "left" ? "text-left whitespace-nowrap " : col.align === "center" ? "text-center " : "text-right ") +
-                              "max-w-[260px] truncate"
+                              "max-w-[160px] truncate"
                             }
+                            title={typeof col.render(r as any, ctx) === "string" ? String(col.render(r as any, ctx)) : undefined}
                           >
                             {col.render(r as any, ctx)}
                           </TableCell>
