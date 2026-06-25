@@ -33,10 +33,10 @@ function AppSidebar() {
       <SidebarHeader className="p-0 bg-gradient-to-b from-[#144a7a] to-[#0d3b66]">
         <Link to="/dashboard" className="flex flex-col items-center text-center px-6 py-7 border-b border-white/10 group-data-[collapsible=icon]:py-3 group-data-[collapsible=icon]:px-2">
           <div
-            className="h-32 w-32 bg-white rounded-2xl flex items-center justify-center p-1 shadow-xl mb-4 group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:mb-0 group-data-[collapsible=icon]:p-0.5"
+            className="h-32 w-32 bg-white rounded-2xl flex items-center justify-center p-0 overflow-hidden shadow-xl mb-4 group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:mb-0"
             style={{ border: `3px solid ${GOLD}` }}
           >
-            <img src={logoAsset.url} alt="מרכז קארלין סטאלין" className="h-full w-full object-contain" />
+            <img src={logoAsset.url} alt="מרכז קארלין סטאלין" className="h-[115%] w-[115%] object-contain scale-110" />
           </div>
           <div className="group-data-[collapsible=icon]:hidden">
             <h2 className="text-xl font-extrabold leading-tight tracking-tight" style={{ color: GOLD }}>
@@ -156,10 +156,10 @@ export function AppShell({ children, title, actions }: { children: ReactNode; ti
           >
             <SidebarTrigger className="text-white hover:bg-white/10 h-10 w-10" />
             <div
-              className="h-14 w-14 bg-white rounded-full flex items-center justify-center p-1.5 shadow-inner shrink-0"
+              className="h-16 w-16 bg-white rounded-full flex items-center justify-center p-0 overflow-hidden shadow-inner shrink-0"
               style={{ border: `2px solid ${GOLD}` }}
             >
-              <img src={logoAsset.url} alt="" className="max-h-full max-w-full object-contain" />
+              <img src={logoAsset.url} alt="" className="h-[120%] w-[120%] object-contain scale-110" />
             </div>
             <div className="flex flex-col min-w-0 flex-1">
               <h1 className="text-xl md:text-2xl font-extrabold leading-none tracking-tight truncate" style={{ color: GOLD }}>{title}</h1>

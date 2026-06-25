@@ -241,6 +241,17 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     return Array.from(by.values()).sort((a, b) => b.value - a.value).slice(0, 10);
   }, [pieFilteredTxs, etMap]);
 
+  const incomeTypeData = useMemo(() => {
+    const by = new Map<string, { id: string; name: string; value: number }>();
+    pieFilteredTxs.filter((t) => Number(t.amount) > 0).forEach((t) => {
+      const key = t.expense_type_id ?? "__none__";
+      const name = t.expense_type_id ? (etMap.get(t.expense_type_id) ?? "ללא סוג") : "ללא סוג";
+      if (!by.has(key)) by.set(key, { id: key, name, value: 0 });
+      by.get(key)!.value += Number(t.amount);
+    });
+    return Array.from(by.values()).sort((a, b) => b.value - a.value).slice(0, 10);
+  }, [pieFilteredTxs, etMap]);
+
   const [drill, setDrill] = useState<{ title: string; rows: Tx[] } | null>(null);
 
   const openMonth = (monthKey: string, kind: "income" | "expense", label: string) => {
@@ -251,9 +262,12 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     setDrill({ title: `${label} ${monthKey.slice(0, 4)} — ${kind === "income" ? "הכנסות" : "הוצאות"}`, rows });
   };
 
-  const openExpenseType = (etId: string, name: string) => {
-    const rows = pieFilteredTxs.filter((t) => Number(t.amount) < 0 && (t.expense_type_id ?? "__none__") === etId);
-    setDrill({ title: `${name} — פירוט הוצאות`, rows });
+  const openTypeDrill = (etId: string, name: string, kind: "income" | "expense") => {
+    const rows = pieFilteredTxs.filter((t) =>
+      (kind === "income" ? Number(t.amount) > 0 : Number(t.amount) < 0) &&
+      (t.expense_type_id ?? "__none__") === etId,
+    );
+    setDrill({ title: `${name} — פירוט ${kind === "income" ? "הכנסות" : "הוצאות"}`, rows });
   };
 
   const months = [
@@ -265,7 +279,67 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   ];
 
   const compactFmt = (v: number) => new Intl.NumberFormat("he-IL", { notation: "compact", maximumFractionDigits: 1 }).format(v);
-  const pieTotal = expenseTypeData.reduce((s, d) => s + d.value, 0);
+  const expenseTotal = expenseTypeData.reduce((s, d) => s + d.value, 0);
+  const incomeTotal = incomeTypeData.reduce((s, d) => s + d.value, 0);
+
+  const renderPie = (
+    data: { id: string; name: string; value: number }[],
+    total: number,
+    kind: "income" | "expense",
+    title: string,
+  ) => (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {data.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-12 text-center">אין נתונים</p>
+        ) : (
+          <>
+            <ResponsiveContainer width="100%" height={240}>
+              <PieChart>
+                <Pie
+                  data={data}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={45}
+                  outerRadius={90}
+                  cursor="pointer"
+                  onClick={(d: any) => openTypeDrill(d.id, d.name, kind)}
+                >
+                  {data.map((_, i) => (
+                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(v: number) => formatCurrency(v)} />
+              </PieChart>
+            </ResponsiveContainer>
+            <ul className="mt-3 space-y-1.5 text-xs max-h-44 overflow-y-auto pr-1">
+              {data.map((d, i) => {
+                const pct = total ? ((d.value / total) * 100).toFixed(1) : "0";
+                return (
+                  <li
+                    key={d.id}
+                    className="flex items-center justify-between gap-2 cursor-pointer hover:bg-muted/50 rounded px-1.5 py-1"
+                    onClick={() => openTypeDrill(d.id, d.name, kind)}
+                  >
+                    <span className="flex items-center gap-2 min-w-0">
+                      <span className="inline-block w-3 h-3 rounded-sm shrink-0" style={{ background: CHART_COLORS[i % CHART_COLORS.length] }} />
+                      <span className="truncate">{d.name}</span>
+                    </span>
+                    <span className="font-semibold tabular-nums whitespace-nowrap">
+                      {formatCurrency(d.value)} <span className="text-muted-foreground font-normal">({pct}%)</span>
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="space-y-4">
@@ -275,107 +349,66 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
         <KPI title="מאזן" value={formatCurrency(net)} icon={Scale} tone={net >= 0 ? "income" : "expense"} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex-row items-center justify-between space-y-0">
-            <CardTitle>הכנסות מול הוצאות (חודשי)</CardTitle>
-            <Select value={barYear} onValueChange={setBarYear}>
+      <Card>
+        <CardHeader className="flex-row items-center justify-between space-y-0">
+          <CardTitle>הכנסות מול הוצאות (חודשי)</CardTitle>
+          <Select value={barYear} onValueChange={setBarYear}>
+            <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {(yearsAvailable.length ? yearsAvailable : [currentYear]).map((y) => (
+                <SelectItem key={y} value={y}>{y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={360}>
+            <BarChart data={monthly} margin={{ top: 20, right: 8, left: 8, bottom: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="label" fontSize={12} reversed />
+              <YAxis fontSize={12} orientation="right" tickFormatter={compactFmt} />
+              <Tooltip formatter={(v: number) => formatCurrency(v)} />
+              <Legend />
+              <Bar dataKey="הכנסות" fill="hsl(155 65% 42%)" radius={[4, 4, 0, 0]} cursor="pointer"
+                onClick={(d: any) => openMonth(d.key, "income", d.label)}>
+                <LabelList dataKey="הכנסות" position="top" fontSize={10} formatter={(v: number) => v ? compactFmt(v) : ""} />
+              </Bar>
+              <Bar dataKey="הוצאות" fill="hsl(0 75% 55%)" radius={[4, 4, 0, 0]} cursor="pointer"
+                onClick={(d: any) => openMonth(d.key, "expense", d.label)}>
+                <LabelList dataKey="הוצאות" position="top" fontSize={10} formatter={(v: number) => v ? compactFmt(v) : ""} />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-3">
+          <CardTitle>פילוח לפי סוג</CardTitle>
+          <div className="flex gap-2">
+            <Select value={pieYear} onValueChange={setPieYear}>
               <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {(yearsAvailable.length ? yearsAvailable : [currentYear]).map((y) => (
-                  <SelectItem key={y} value={y}>{y}</SelectItem>
-                ))}
+                <SelectItem value="all">כל השנים</SelectItem>
+                {yearsAvailable.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
               </SelectContent>
             </Select>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={340}>
-              <BarChart data={monthly} margin={{ top: 20, right: 8, left: 8, bottom: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="label" fontSize={12} reversed />
-                <YAxis fontSize={12} orientation="right" tickFormatter={compactFmt} />
-                <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                <Legend />
-                <Bar dataKey="הכנסות" fill="hsl(155 65% 42%)" radius={[4, 4, 0, 0]} cursor="pointer"
-                  onClick={(d: any) => openMonth(d.key, "income", d.label)}>
-                  <LabelList dataKey="הכנסות" position="top" fontSize={10} formatter={(v: number) => v ? compactFmt(v) : ""} />
-                </Bar>
-                <Bar dataKey="הוצאות" fill="hsl(0 75% 55%)" radius={[4, 4, 0, 0]} cursor="pointer"
-                  onClick={(d: any) => openMonth(d.key, "expense", d.label)}>
-                  <LabelList dataKey="הוצאות" position="top" fontSize={10} formatter={(v: number) => v ? compactFmt(v) : ""} />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+            <Select value={pieMonth} onValueChange={setPieMonth}>
+              <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {months.map((m) => <SelectItem key={m.v} value={m.v}>{m.l}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {renderPie(incomeTypeData, incomeTotal, "income", "פילוח הכנסות")}
+            {renderPie(expenseTypeData, expenseTotal, "expense", "פילוח הוצאות")}
+          </div>
+        </CardContent>
+      </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>פילוח הוצאות לפי סוג</CardTitle>
-            <div className="flex gap-2 mt-2">
-              <Select value={pieYear} onValueChange={setPieYear}>
-                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">כל השנים</SelectItem>
-                  {yearsAvailable.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <Select value={pieMonth} onValueChange={setPieMonth}>
-                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {months.map((m) => <SelectItem key={m.v} value={m.v}>{m.l}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {expenseTypeData.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-12 text-center">אין נתונים</p>
-            ) : (
-              <>
-                <ResponsiveContainer width="100%" height={240}>
-                  <PieChart>
-                    <Pie
-                      data={expenseTypeData}
-                      dataKey="value"
-                      nameKey="name"
-                      innerRadius={45}
-                      outerRadius={90}
-                      cursor="pointer"
-                      onClick={(d: any) => openExpenseType(d.id, d.name)}
-                    >
-                      {expenseTypeData.map((_, i) => (
-                        <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <ul className="mt-3 space-y-1.5 text-xs max-h-44 overflow-y-auto pr-1">
-                  {expenseTypeData.map((d, i) => {
-                    const pct = pieTotal ? ((d.value / pieTotal) * 100).toFixed(1) : "0";
-                    return (
-                      <li
-                        key={d.id}
-                        className="flex items-center justify-between gap-2 cursor-pointer hover:bg-muted/50 rounded px-1.5 py-1"
-                        onClick={() => openExpenseType(d.id, d.name)}
-                      >
-                        <span className="flex items-center gap-2 min-w-0">
-                          <span className="inline-block w-3 h-3 rounded-sm shrink-0" style={{ background: CHART_COLORS[i % CHART_COLORS.length] }} />
-                          <span className="truncate">{d.name}</span>
-                        </span>
-                        <span className="font-semibold tabular-nums whitespace-nowrap">
-                          {formatCurrency(d.value)} <span className="text-muted-foreground font-normal">({pct}%)</span>
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </div>
 
 
       <DrillSheet drill={drill} onClose={() => setDrill(null)} lookups={lookups} />
@@ -387,11 +420,12 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
 function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows: Tx[] } | null; onClose: () => void; lookups: any }) {
   const catMap = new Map<string, string>(lookups.categories.map((c: any) => [c.id, c.name]));
   const etMap = new Map<string, string>(lookups.expenseTypes.map((e: any) => [e.id, e.name]));
+  const acctMap = new Map<string, string>((lookups.accounts ?? []).map((a: any) => [a.id, a.name]));
   const total = drill?.rows.reduce((s, t) => s + Number(t.amount), 0) ?? 0;
 
   return (
     <Sheet open={!!drill} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <SheetContent side="left" className="w-full sm:max-w-3xl overflow-y-auto">
+      <SheetContent side="left" className="w-full sm:max-w-4xl overflow-y-auto">
         <SheetHeader>
           <SheetTitle>{drill?.title}</SheetTitle>
         </SheetHeader>
@@ -415,6 +449,7 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
             <TableHeader>
               <TableRow>
                 <TableHead className="text-right">תאריך</TableHead>
+                <TableHead className="text-right">חשבון</TableHead>
                 <TableHead className="text-right">תיאור</TableHead>
                 <TableHead className="text-right">סוג</TableHead>
                 <TableHead className="text-right">קטגוריה</TableHead>
@@ -425,6 +460,7 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
               {drill?.rows.map((t) => (
                 <TableRow key={t.id} className="border-b">
                   <TableCell className="whitespace-nowrap">{format(new Date(t.transaction_date), "dd/MM/yy")}</TableCell>
+                  <TableCell className="text-right whitespace-nowrap">{(t as any).account_id ? (acctMap.get((t as any).account_id) ?? "—") : "—"}</TableCell>
                   <TableCell className="text-right">{t.description ?? "—"}</TableCell>
                   <TableCell className="text-right">{t.expense_type_id ? (etMap.get(t.expense_type_id) as string) : "—"}</TableCell>
                   <TableCell className="text-right">{t.category_id ? (catMap.get(t.category_id) as string) : "—"}</TableCell>
