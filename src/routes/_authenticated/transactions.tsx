@@ -123,6 +123,7 @@ function TransactionsPage() {
   const [expType, setExpType] = useState<string[]>([]);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [dateSort, setDateSort] = useState<"asc" | "desc">("desc");
   const [onlyUncat, setOnlyUncat] = useState<boolean>(urlSearch.uncategorized ?? false);
 
   useEffect(() => { setOnlyUncat(urlSearch.uncategorized ?? false); }, [urlSearch.uncategorized]);
