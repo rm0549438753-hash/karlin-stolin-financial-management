@@ -239,7 +239,7 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       if (!by.has(key)) by.set(key, { id: key, name, value: 0 });
       by.get(key)!.value += Math.abs(Number(t.amount));
     });
-    return Array.from(by.values()).sort((a, b) => b.value - a.value).slice(0, 10);
+    return Array.from(by.values()).sort((a, b) => b.value - a.value);
   }, [pieFilteredTxs, etMap]);
 
   const incomeTypeData = useMemo(() => {
@@ -250,7 +250,7 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       if (!by.has(key)) by.set(key, { id: key, name, value: 0 });
       by.get(key)!.value += Number(t.amount);
     });
-    return Array.from(by.values()).sort((a, b) => b.value - a.value).slice(0, 10);
+    return Array.from(by.values()).sort((a, b) => b.value - a.value);
   }, [pieFilteredTxs, etMap]);
 
   const [drill, setDrill] = useState<{ title: string; rows: Tx[] } | null>(null);
