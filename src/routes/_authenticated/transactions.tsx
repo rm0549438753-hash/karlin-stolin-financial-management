@@ -494,17 +494,24 @@ function TransactionsPage() {
                         <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">בחר הכל</span>
                       </label>
                     </TableHead>
-                    {columns.map((c) => (
-                      <TableHead
-                        key={c.header}
-                        className={
-                          "text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap " +
-                          (c.align === "left" ? "text-left" : c.align === "center" ? "text-center" : "text-right")
-                        }
-                      >
-                        {c.header}
-                      </TableHead>
-                    ))}
+                    {columns.map((c) => {
+                      const isDate = c.header.includes("תאריך") && !c.header.includes("ערך");
+                      return (
+                        <TableHead
+                          key={c.header}
+                          onClick={isDate ? () => setDateSort((s) => (s === "desc" ? "asc" : "desc")) : undefined}
+                          className={
+                            "text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap " +
+                            (c.align === "left" ? "text-left" : c.align === "center" ? "text-center" : "text-right") +
+                            (isDate ? " cursor-pointer select-none hover:text-primary" : "")
+                          }
+                          title={isDate ? "לחץ למיון לפי תאריך" : undefined}
+                        >
+                          {c.header}
+                          {isDate && <span className="mr-1">{dateSort === "asc" ? "▲" : "▼"}</span>}
+                        </TableHead>
+                      );
+                    })}
                     <TableHead className="text-center w-24 border-l border-border last:border-l-0 px-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">פעולות</TableHead>
                   </TableRow>
                 </TableHeader>
