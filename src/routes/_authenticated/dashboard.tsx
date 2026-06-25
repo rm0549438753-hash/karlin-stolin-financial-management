@@ -382,11 +382,11 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
               <Legend />
               <Bar dataKey="הכנסות" fill="hsl(155 65% 42%)" radius={[4, 4, 0, 0]} cursor="pointer"
                 onClick={(d: any) => openMonth(d.key, "income", d.label)}>
-                <LabelList dataKey="הכנסות" position="top" fontSize={10} formatter={(v: number) => v ? compactFmt(v) : ""} />
+                <LabelList dataKey="הכנסות" position="top" fontSize={11} fontWeight={600} fill="hsl(155 65% 30%)" formatter={(v: number) => v ? compactFmt(v) : ""} />
               </Bar>
               <Bar dataKey="הוצאות" fill="hsl(0 75% 55%)" radius={[4, 4, 0, 0]} cursor="pointer"
                 onClick={(d: any) => openMonth(d.key, "expense", d.label)}>
-                <LabelList dataKey="הוצאות" position="top" fontSize={10} formatter={(v: number) => v ? compactFmt(v) : ""} />
+                <LabelList dataKey="הוצאות" position="top" fontSize={11} fontWeight={600} fill="hsl(0 75% 40%)" formatter={(v: number) => v ? compactFmt(v) : ""} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
