@@ -318,6 +318,22 @@ function TransactionsPage() {
     setSelectedIds(next);
   };
 
+  // Scroll to highlighted transaction once it appears in the filtered view
+  useEffect(() => {
+    const hid = urlSearch.highlight;
+    if (!hid) return;
+    if (!filteredIds.includes(hid)) return;
+    const t = setTimeout(() => {
+      const el = document.querySelector(`[data-tx-id="${hid}"]`) as HTMLElement | null;
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      // clear highlight from URL after ~3s
+      setTimeout(() => {
+        navigate({ to: "/transactions", search: { account: urlSearch.account }, replace: true });
+      }, 3000);
+    }, 100);
+    return () => clearTimeout(t);
+  }, [urlSearch.highlight, filteredIds.join(",")]);
+
   function extractText(v: any): string {
     if (v == null || typeof v === "boolean") return "";
     if (typeof v === "string" || typeof v === "number") return String(v);
