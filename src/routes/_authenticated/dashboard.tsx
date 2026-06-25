@@ -26,12 +26,13 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 const CHART_COLORS = ["hsl(220 70% 55%)", "hsl(155 60% 45%)", "hsl(75 80% 55%)", "hsl(25 80% 55%)", "hsl(295 60% 55%)", "hsl(200 70% 50%)", "hsl(340 70% 55%)"];
 const PROJECT_EXPENSE_TYPE = "בית הכנסת - בניה";
 const IRRELEVANT_FUND = "לא רלוונטי";
-const TRANSACTION_SELECT = "id, transaction_date, amount, account_id, fund_id, expense_type_id, category_id, subcategory_id, description, note, credit, debit";
+const TRANSACTION_SELECT = "id, transaction_date, value_date, amount, account_id, fund_id, expense_type_id, category_id, subcategory_id, description, note, credit, debit";
 const PAGE_SIZE = 1000;
 
 type Tx = {
   id: string;
   transaction_date: string;
+  value_date: string | null;
   amount: number;
   account_id: string;
   fund_id: string | null;
@@ -78,6 +79,21 @@ function DashboardPage() {
   const { data: expenseTypes = [] } = useExpenseTypes();
   const { data: funds = [] } = useFunds();
 
+  // For the checks account, use value_date (תאריך ערך) when available — otherwise fallback to transaction_date.
+  const checksAccountIds = useMemo(
+    () => new Set(accounts.filter((a: any) => a.schema_type === "checks").map((a: any) => a.id)),
+    [accounts],
+  );
+
+  const txsEffective = useMemo(
+    () => txs.map((t) => (
+      checksAccountIds.has(t.account_id) && t.value_date
+        ? { ...t, transaction_date: t.value_date }
+        : t
+    )),
+    [txs, checksAccountIds],
+  );
+
   const projectExpenseTypeId = useMemo(
     () => expenseTypes.find((e) => e.name === PROJECT_EXPENSE_TYPE)?.id,
     [expenseTypes],
@@ -93,8 +109,8 @@ function DashboardPage() {
 
 
   const baseTxs = useMemo(
-    () => txs.filter((t) => !irrelevantFundId || t.fund_id !== irrelevantFundId),
-    [txs, irrelevantFundId],
+    () => txsEffective.filter((t) => !irrelevantFundId || t.fund_id !== irrelevantFundId),
+    [txsEffective, irrelevantFundId],
   );
 
   const institutionTxs = useMemo(
