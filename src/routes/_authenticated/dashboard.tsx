@@ -494,7 +494,8 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
 /* ===================== Vaults Tab ===================== */
 function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const vaultFunds = useMemo(
-    () => lookups.funds.filter((f: any) => f.is_vault).sort((a: any, b: any) => a.name.localeCompare(b.name, "he")),
+    () => [...lookups.funds].sort((a: any, b: any) => a.name.localeCompare(b.name, "he")),
+
     [lookups.funds],
   );
 
