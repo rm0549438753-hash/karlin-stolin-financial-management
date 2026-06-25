@@ -467,7 +467,7 @@ function TransactionsPage() {
                       <TableHead
                         key={c.header}
                         className={
-                          "text-xs font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-4 py-3 " +
+                          "text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap " +
                           (c.align === "left" ? "text-left" : c.align === "center" ? "text-center" : "text-right")
                         }
                       >
