@@ -247,16 +247,22 @@ function TransactionsPage() {
   const filtered = useMemo(() => {
     let r: any[] = rows;
     if (onlyUncat) r = r.filter((x) => !x.fund_id && !x.expense_type_id);
-    if (!search.trim()) return r;
-    const q = search.toLowerCase();
-    return r.filter((x) =>
-      (x.description ?? "").toLowerCase().includes(q) ||
-      (x.reference ?? "").toLowerCase().includes(q) ||
-      (x.note ?? "").toLowerCase().includes(q) ||
-      (x.payee ?? "").toLowerCase().includes(q) ||
-      (x.association ?? "").toLowerCase().includes(q),
-    );
-  }, [rows, search, onlyUncat]);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      r = r.filter((x) =>
+        (x.description ?? "").toLowerCase().includes(q) ||
+        (x.reference ?? "").toLowerCase().includes(q) ||
+        (x.note ?? "").toLowerCase().includes(q) ||
+        (x.payee ?? "").toLowerCase().includes(q) ||
+        (x.association ?? "").toLowerCase().includes(q),
+      );
+    }
+    r = [...r].sort((a, b) => {
+      const cmp = (a.transaction_date ?? "").localeCompare(b.transaction_date ?? "");
+      return dateSort === "asc" ? cmp : -cmp;
+    });
+    return r;
+  }, [rows, search, onlyUncat, dateSort]);
 
   const columns: ColumnDef[] = selectedAccount ? COLUMNS_BY_SCHEMA[selectedAccount.schema_type] : [];
 
