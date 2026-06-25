@@ -23,6 +23,7 @@ export const Route = createFileRoute("/_authenticated/transactions")({
   validateSearch: (s: Record<string, unknown>) => ({
     account: typeof s.account === "string" ? s.account : undefined,
     uncategorized: s.uncategorized === true || s.uncategorized === "true" ? true : undefined,
+    highlight: typeof s.highlight === "string" ? s.highlight : undefined,
   }),
   component: TransactionsPage,
 });
@@ -149,6 +150,13 @@ function TransactionsPage() {
     setOnlyUncat(false);
     setSearch(""); setCategory([]); setSubcategory([]); setFund([]); setExpType([]); setFrom(""); setTo("");
   }, [account]);
+  // When navigating with highlight, also clear filters so the row is visible
+  useEffect(() => {
+    if (urlSearch.highlight) {
+      setOnlyUncat(false);
+      setSearch(""); setCategory([]); setSubcategory([]); setFund([]); setExpType([]); setFrom(""); setTo("");
+    }
+  }, [urlSearch.highlight]);
   // Reset selection when filters change
   useEffect(() => { setSelectedIds(new Set()); }, [search, category, subcategory, fund, expType, from, to, onlyUncat]);
 
@@ -309,6 +317,22 @@ function TransactionsPage() {
     if (next.has(id)) next.delete(id); else next.add(id);
     setSelectedIds(next);
   };
+
+  // Scroll to highlighted transaction once it appears in the filtered view
+  useEffect(() => {
+    const hid = urlSearch.highlight;
+    if (!hid) return;
+    if (!filteredIds.includes(hid)) return;
+    const t = setTimeout(() => {
+      const el = document.querySelector(`[data-tx-id="${hid}"]`) as HTMLElement | null;
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      // clear highlight from URL after ~3s
+      setTimeout(() => {
+        navigate({ to: "/transactions", search: { account: urlSearch.account }, replace: true });
+      }, 3000);
+    }, 100);
+    return () => clearTimeout(t);
+  }, [urlSearch.highlight, filteredIds.join(",")]);
 
   function extractText(v: any): string {
     if (v == null || typeof v === "boolean") return "";
@@ -487,12 +511,14 @@ function TransactionsPage() {
                   {filtered.map((r, idx) => {
                     const isUncat = !r.fund_id && !r.expense_type_id;
                     const isChecked = selectedIds.has(r.id);
+                    const isHighlighted = urlSearch.highlight === r.id;
                     return (
                       <TableRow
                         key={r.id}
+                        data-tx-id={r.id}
                         className={
                           "group border-b border-border transition-colors hover:bg-primary/5 " +
-                          (isChecked ? "bg-primary/5 " : isUncat ? "bg-amber-50/30 " : idx % 2 ? "bg-muted/20 " : "")
+                          (isHighlighted ? "ring-2 ring-primary bg-primary/10 " : isChecked ? "bg-primary/5 " : isUncat ? "bg-amber-50/30 " : idx % 2 ? "bg-muted/20 " : "")
                         }
                       >
                         <TableCell className="px-3 border-l border-border/60">

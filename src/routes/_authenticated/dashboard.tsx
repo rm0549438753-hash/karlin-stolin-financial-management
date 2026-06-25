@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import * as XLSX from "xlsx";
@@ -418,10 +418,18 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
 
 /* ===================== Drill-down Sheet ===================== */
 function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows: Tx[] } | null; onClose: () => void; lookups: any }) {
+  const navigate = useNavigate();
   const catMap = new Map<string, string>(lookups.categories.map((c: any) => [c.id, c.name]));
   const etMap = new Map<string, string>(lookups.expenseTypes.map((e: any) => [e.id, e.name]));
   const acctMap = new Map<string, string>((lookups.accounts ?? []).map((a: any) => [a.id, a.name]));
   const total = drill?.rows.reduce((s, t) => s + Number(t.amount), 0) ?? 0;
+
+  const goToTx = (t: Tx) => {
+    const acc = (t as any).account_id;
+    if (!acc) return;
+    onClose();
+    navigate({ to: "/transactions", search: { account: acc, highlight: t.id } });
+  };
 
   return (
     <Sheet open={!!drill} onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -458,7 +466,12 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
             </TableHeader>
             <TableBody>
               {drill?.rows.map((t) => (
-                <TableRow key={t.id} className="border-b">
+                <TableRow
+                  key={t.id}
+                  className="border-b cursor-pointer hover:bg-primary/5 transition-colors"
+                  onClick={() => goToTx(t)}
+                  title="פתח את התנועה בדף התנועות"
+                >
                   <TableCell className="whitespace-nowrap">{format(new Date(t.transaction_date), "dd/MM/yy")}</TableCell>
                   <TableCell className="text-right whitespace-nowrap">{(t as any).account_id ? (acctMap.get((t as any).account_id) ?? "—") : "—"}</TableCell>
                   <TableCell className="text-right">{t.description ?? "—"}</TableCell>
