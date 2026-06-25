@@ -79,6 +79,21 @@ function DashboardPage() {
   const { data: expenseTypes = [] } = useExpenseTypes();
   const { data: funds = [] } = useFunds();
 
+  // For the checks account, use value_date (תאריך ערך) when available — otherwise fallback to transaction_date.
+  const checksAccountIds = useMemo(
+    () => new Set(accounts.filter((a: any) => a.schema_type === "checks").map((a: any) => a.id)),
+    [accounts],
+  );
+
+  const txsEffective = useMemo(
+    () => txs.map((t) => (
+      checksAccountIds.has(t.account_id) && t.value_date
+        ? { ...t, transaction_date: t.value_date }
+        : t
+    )),
+    [txs, checksAccountIds],
+  );
+
   const projectExpenseTypeId = useMemo(
     () => expenseTypes.find((e) => e.name === PROJECT_EXPENSE_TYPE)?.id,
     [expenseTypes],
@@ -94,8 +109,8 @@ function DashboardPage() {
 
 
   const baseTxs = useMemo(
-    () => txs.filter((t) => !irrelevantFundId || t.fund_id !== irrelevantFundId),
-    [txs, irrelevantFundId],
+    () => txsEffective.filter((t) => !irrelevantFundId || t.fund_id !== irrelevantFundId),
+    [txsEffective, irrelevantFundId],
   );
 
   const institutionTxs = useMemo(
