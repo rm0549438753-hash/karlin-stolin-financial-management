@@ -239,7 +239,7 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       if (!by.has(key)) by.set(key, { id: key, name, value: 0 });
       by.get(key)!.value += Math.abs(Number(t.amount));
     });
-    return Array.from(by.values()).sort((a, b) => b.value - a.value).slice(0, 10);
+    return Array.from(by.values()).sort((a, b) => b.value - a.value);
   }, [pieFilteredTxs, etMap]);
 
   const incomeTypeData = useMemo(() => {
@@ -250,7 +250,7 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       if (!by.has(key)) by.set(key, { id: key, name, value: 0 });
       by.get(key)!.value += Number(t.amount);
     });
-    return Array.from(by.values()).sort((a, b) => b.value - a.value).slice(0, 10);
+    return Array.from(by.values()).sort((a, b) => b.value - a.value);
   }, [pieFilteredTxs, etMap]);
 
   const [drill, setDrill] = useState<{ title: string; rows: Tx[] } | null>(null);
@@ -291,52 +291,62 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   ) => (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">{title}</CardTitle>
+        <CardTitle className="text-lg">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         {data.length === 0 ? (
           <p className="text-sm text-muted-foreground py-12 text-center">אין נתונים</p>
         ) : (
-          <>
-            <ResponsiveContainer width="100%" height={240}>
-              <PieChart>
-                <Pie
-                  data={data}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={45}
-                  outerRadius={90}
-                  cursor="pointer"
-                  onClick={(d: any) => openTypeDrill(d.id, d.name, kind)}
-                >
-                  {data.map((_, i) => (
-                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(v: number) => formatCurrency(v)} />
-              </PieChart>
-            </ResponsiveContainer>
-            <ul className="mt-3 space-y-1.5 text-xs max-h-44 overflow-y-auto pr-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center" dir="rtl">
+            {/* Right side: big pie + total */}
+            <div className="flex flex-col items-center justify-center order-1">
+              <ResponsiveContainer width="100%" height={320}>
+                <PieChart>
+                  <Pie
+                    data={data}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={60}
+                    outerRadius={130}
+                    cursor="pointer"
+                    onClick={(d: any) => openTypeDrill(d.id, d.name, kind)}
+                  >
+                    {data.map((_, i) => (
+                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="mt-2 text-center">
+                <div className="text-xs text-muted-foreground">סה"כ</div>
+                <div className={"text-2xl font-extrabold tabular-nums " + (kind === "income" ? "text-income" : "text-expense")}>
+                  {formatCurrency(total)}
+                </div>
+              </div>
+            </div>
+            {/* Left side: detailed legend list */}
+            <ul className="space-y-1.5 text-sm max-h-[360px] overflow-y-auto pl-1 order-2">
               {data.map((d, i) => {
                 const pct = total ? ((d.value / total) * 100).toFixed(1) : "0";
                 return (
                   <li
                     key={d.id}
-                    className="flex items-center justify-between gap-2 cursor-pointer hover:bg-muted/50 rounded px-1.5 py-1"
+                    className="flex items-center justify-between gap-2 cursor-pointer hover:bg-muted/60 rounded px-2 py-1.5 border border-transparent hover:border-border"
                     onClick={() => openTypeDrill(d.id, d.name, kind)}
                   >
                     <span className="flex items-center gap-2 min-w-0">
-                      <span className="inline-block w-3 h-3 rounded-sm shrink-0" style={{ background: CHART_COLORS[i % CHART_COLORS.length] }} />
-                      <span className="truncate">{d.name}</span>
+                      <span className="inline-block w-3.5 h-3.5 rounded-sm shrink-0" style={{ background: CHART_COLORS[i % CHART_COLORS.length] }} />
+                      <span className="truncate font-medium">{d.name}</span>
                     </span>
-                    <span className="font-semibold tabular-nums whitespace-nowrap">
-                      {formatCurrency(d.value)} <span className="text-muted-foreground font-normal">({pct}%)</span>
+                    <span className="font-bold tabular-nums whitespace-nowrap">
+                      {formatCurrency(d.value)} <span className="text-muted-foreground font-normal text-xs">({pct}%)</span>
                     </span>
                   </li>
                 );
               })}
             </ul>
-          </>
+          </div>
         )}
       </CardContent>
     </Card>
@@ -372,11 +382,11 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
               <Legend />
               <Bar dataKey="הכנסות" fill="hsl(155 65% 42%)" radius={[4, 4, 0, 0]} cursor="pointer"
                 onClick={(d: any) => openMonth(d.key, "income", d.label)}>
-                <LabelList dataKey="הכנסות" position="top" fontSize={10} formatter={(v: number) => v ? compactFmt(v) : ""} />
+                <LabelList dataKey="הכנסות" position="top" fontSize={11} fontWeight={600} fill="hsl(155 65% 30%)" formatter={(v: number) => v ? compactFmt(v) : ""} />
               </Bar>
               <Bar dataKey="הוצאות" fill="hsl(0 75% 55%)" radius={[4, 4, 0, 0]} cursor="pointer"
                 onClick={(d: any) => openMonth(d.key, "expense", d.label)}>
-                <LabelList dataKey="הוצאות" position="top" fontSize={10} formatter={(v: number) => v ? compactFmt(v) : ""} />
+                <LabelList dataKey="הוצאות" position="top" fontSize={11} fontWeight={600} fill="hsl(0 75% 40%)" formatter={(v: number) => v ? compactFmt(v) : ""} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>

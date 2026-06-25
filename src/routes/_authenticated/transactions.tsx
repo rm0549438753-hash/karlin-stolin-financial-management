@@ -123,6 +123,7 @@ function TransactionsPage() {
   const [expType, setExpType] = useState<string[]>([]);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [dateSort, setDateSort] = useState<"asc" | "desc">("desc");
   const [onlyUncat, setOnlyUncat] = useState<boolean>(urlSearch.uncategorized ?? false);
 
   useEffect(() => { setOnlyUncat(urlSearch.uncategorized ?? false); }, [urlSearch.uncategorized]);
@@ -246,16 +247,22 @@ function TransactionsPage() {
   const filtered = useMemo(() => {
     let r: any[] = rows;
     if (onlyUncat) r = r.filter((x) => !x.fund_id && !x.expense_type_id);
-    if (!search.trim()) return r;
-    const q = search.toLowerCase();
-    return r.filter((x) =>
-      (x.description ?? "").toLowerCase().includes(q) ||
-      (x.reference ?? "").toLowerCase().includes(q) ||
-      (x.note ?? "").toLowerCase().includes(q) ||
-      (x.payee ?? "").toLowerCase().includes(q) ||
-      (x.association ?? "").toLowerCase().includes(q),
-    );
-  }, [rows, search, onlyUncat]);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      r = r.filter((x) =>
+        (x.description ?? "").toLowerCase().includes(q) ||
+        (x.reference ?? "").toLowerCase().includes(q) ||
+        (x.note ?? "").toLowerCase().includes(q) ||
+        (x.payee ?? "").toLowerCase().includes(q) ||
+        (x.association ?? "").toLowerCase().includes(q),
+      );
+    }
+    r = [...r].sort((a, b) => {
+      const cmp = (a.transaction_date ?? "").localeCompare(b.transaction_date ?? "");
+      return dateSort === "asc" ? cmp : -cmp;
+    });
+    return r;
+  }, [rows, search, onlyUncat, dateSort]);
 
   const columns: ColumnDef[] = selectedAccount ? COLUMNS_BY_SCHEMA[selectedAccount.schema_type] : [];
 
@@ -326,11 +333,11 @@ function TransactionsPage() {
     const t = setTimeout(() => {
       const el = document.querySelector(`[data-tx-id="${hid}"]`) as HTMLElement | null;
       if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-      // clear highlight from URL after ~3s
+      // clear highlight from URL after ~4s WITHOUT resetting scroll position
       setTimeout(() => {
-        navigate({ to: "/transactions", search: { account: urlSearch.account }, replace: true });
-      }, 3000);
-    }, 100);
+        navigate({ to: "/transactions", search: { account: urlSearch.account }, replace: true, resetScroll: false });
+      }, 4000);
+    }, 150);
     return () => clearTimeout(t);
   }, [urlSearch.highlight, filteredIds.join(",")]);
 
@@ -487,17 +494,24 @@ function TransactionsPage() {
                         <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">בחר הכל</span>
                       </label>
                     </TableHead>
-                    {columns.map((c) => (
-                      <TableHead
-                        key={c.header}
-                        className={
-                          "text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap " +
-                          (c.align === "left" ? "text-left" : c.align === "center" ? "text-center" : "text-right")
-                        }
-                      >
-                        {c.header}
-                      </TableHead>
-                    ))}
+                    {columns.map((c) => {
+                      const isDate = c.header.includes("תאריך") && !c.header.includes("ערך");
+                      return (
+                        <TableHead
+                          key={c.header}
+                          onClick={isDate ? () => setDateSort((s) => (s === "desc" ? "asc" : "desc")) : undefined}
+                          className={
+                            "text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap " +
+                            (c.align === "left" ? "text-left" : c.align === "center" ? "text-center" : "text-right") +
+                            (isDate ? " cursor-pointer select-none hover:text-primary" : "")
+                          }
+                          title={isDate ? "לחץ למיון לפי תאריך" : undefined}
+                        >
+                          {c.header}
+                          {isDate && <span className="mr-1">{dateSort === "asc" ? "▲" : "▼"}</span>}
+                        </TableHead>
+                      );
+                    })}
                     <TableHead className="text-center w-24 border-l border-border last:border-l-0 px-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">פעולות</TableHead>
                   </TableRow>
                 </TableHeader>
