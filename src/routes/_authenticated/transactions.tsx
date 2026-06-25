@@ -511,12 +511,14 @@ function TransactionsPage() {
                   {filtered.map((r, idx) => {
                     const isUncat = !r.fund_id && !r.expense_type_id;
                     const isChecked = selectedIds.has(r.id);
+                    const isHighlighted = urlSearch.highlight === r.id;
                     return (
                       <TableRow
                         key={r.id}
+                        data-tx-id={r.id}
                         className={
                           "group border-b border-border transition-colors hover:bg-primary/5 " +
-                          (isChecked ? "bg-primary/5 " : isUncat ? "bg-amber-50/30 " : idx % 2 ? "bg-muted/20 " : "")
+                          (isHighlighted ? "ring-2 ring-primary bg-primary/10 " : isChecked ? "bg-primary/5 " : isUncat ? "bg-amber-50/30 " : idx % 2 ? "bg-muted/20 " : "")
                         }
                       >
                         <TableCell className="px-3 border-l border-border/60">
