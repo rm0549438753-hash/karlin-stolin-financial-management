@@ -241,6 +241,17 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     return Array.from(by.values()).sort((a, b) => b.value - a.value).slice(0, 10);
   }, [pieFilteredTxs, etMap]);
 
+  const incomeTypeData = useMemo(() => {
+    const by = new Map<string, { id: string; name: string; value: number }>();
+    pieFilteredTxs.filter((t) => Number(t.amount) > 0).forEach((t) => {
+      const key = t.expense_type_id ?? "__none__";
+      const name = t.expense_type_id ? (etMap.get(t.expense_type_id) ?? "ללא סוג") : "ללא סוג";
+      if (!by.has(key)) by.set(key, { id: key, name, value: 0 });
+      by.get(key)!.value += Number(t.amount);
+    });
+    return Array.from(by.values()).sort((a, b) => b.value - a.value).slice(0, 10);
+  }, [pieFilteredTxs, etMap]);
+
   const [drill, setDrill] = useState<{ title: string; rows: Tx[] } | null>(null);
 
   const openMonth = (monthKey: string, kind: "income" | "expense", label: string) => {
@@ -251,9 +262,12 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     setDrill({ title: `${label} ${monthKey.slice(0, 4)} — ${kind === "income" ? "הכנסות" : "הוצאות"}`, rows });
   };
 
-  const openExpenseType = (etId: string, name: string) => {
-    const rows = pieFilteredTxs.filter((t) => Number(t.amount) < 0 && (t.expense_type_id ?? "__none__") === etId);
-    setDrill({ title: `${name} — פירוט הוצאות`, rows });
+  const openTypeDrill = (etId: string, name: string, kind: "income" | "expense") => {
+    const rows = pieFilteredTxs.filter((t) =>
+      (kind === "income" ? Number(t.amount) > 0 : Number(t.amount) < 0) &&
+      (t.expense_type_id ?? "__none__") === etId,
+    );
+    setDrill({ title: `${name} — פירוט ${kind === "income" ? "הכנסות" : "הוצאות"}`, rows });
   };
 
   const months = [
