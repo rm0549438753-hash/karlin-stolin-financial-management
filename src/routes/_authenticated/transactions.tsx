@@ -150,6 +150,13 @@ function TransactionsPage() {
     setOnlyUncat(false);
     setSearch(""); setCategory([]); setSubcategory([]); setFund([]); setExpType([]); setFrom(""); setTo("");
   }, [account]);
+  // When navigating with highlight, also clear filters so the row is visible
+  useEffect(() => {
+    if (urlSearch.highlight) {
+      setOnlyUncat(false);
+      setSearch(""); setCategory([]); setSubcategory([]); setFund([]); setExpType([]); setFrom(""); setTo("");
+    }
+  }, [urlSearch.highlight]);
   // Reset selection when filters change
   useEffect(() => { setSelectedIds(new Set()); }, [search, category, subcategory, fund, expType, from, to, onlyUncat]);
 
