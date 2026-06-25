@@ -87,9 +87,10 @@ function DashboardPage() {
     [funds],
   );
   const vaultFundIds = useMemo(
-    () => new Set(funds.filter((f) => f.is_vault).map((f) => f.id)),
+    () => new Set(funds.map((f) => f.id)),
     [funds],
   );
+
 
   const baseTxs = useMemo(
     () => txs.filter((t) => !irrelevantFundId || t.fund_id !== irrelevantFundId),
