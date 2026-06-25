@@ -23,6 +23,7 @@ export const Route = createFileRoute("/_authenticated/transactions")({
   validateSearch: (s: Record<string, unknown>) => ({
     account: typeof s.account === "string" ? s.account : undefined,
     uncategorized: s.uncategorized === true || s.uncategorized === "true" ? true : undefined,
+    highlight: typeof s.highlight === "string" ? s.highlight : undefined,
   }),
   component: TransactionsPage,
 });
