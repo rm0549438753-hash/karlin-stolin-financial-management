@@ -420,11 +420,12 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
 function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows: Tx[] } | null; onClose: () => void; lookups: any }) {
   const catMap = new Map<string, string>(lookups.categories.map((c: any) => [c.id, c.name]));
   const etMap = new Map<string, string>(lookups.expenseTypes.map((e: any) => [e.id, e.name]));
+  const acctMap = new Map<string, string>((lookups.accounts ?? []).map((a: any) => [a.id, a.name]));
   const total = drill?.rows.reduce((s, t) => s + Number(t.amount), 0) ?? 0;
 
   return (
     <Sheet open={!!drill} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <SheetContent side="left" className="w-full sm:max-w-3xl overflow-y-auto">
+      <SheetContent side="left" className="w-full sm:max-w-4xl overflow-y-auto">
         <SheetHeader>
           <SheetTitle>{drill?.title}</SheetTitle>
         </SheetHeader>
@@ -448,6 +449,7 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
             <TableHeader>
               <TableRow>
                 <TableHead className="text-right">תאריך</TableHead>
+                <TableHead className="text-right">חשבון</TableHead>
                 <TableHead className="text-right">תיאור</TableHead>
                 <TableHead className="text-right">סוג</TableHead>
                 <TableHead className="text-right">קטגוריה</TableHead>
@@ -458,6 +460,7 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
               {drill?.rows.map((t) => (
                 <TableRow key={t.id} className="border-b">
                   <TableCell className="whitespace-nowrap">{format(new Date(t.transaction_date), "dd/MM/yy")}</TableCell>
+                  <TableCell className="text-right whitespace-nowrap">{(t as any).account_id ? (acctMap.get((t as any).account_id) ?? "—") : "—"}</TableCell>
                   <TableCell className="text-right">{t.description ?? "—"}</TableCell>
                   <TableCell className="text-right">{t.expense_type_id ? (etMap.get(t.expense_type_id) as string) : "—"}</TableCell>
                   <TableCell className="text-right">{t.category_id ? (catMap.get(t.category_id) as string) : "—"}</TableCell>
