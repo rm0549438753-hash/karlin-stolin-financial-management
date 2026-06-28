@@ -18,7 +18,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, LabelList,
   PieChart, Pie, Cell,
 } from "recharts";
-import { TrendingUp, TrendingDown, Scale, Download } from "lucide-react";
+import { TrendingUp, TrendingDown, Scale, Download, Printer } from "lucide-react";
 import { format } from "date-fns";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
