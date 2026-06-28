@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 const CHART_COLORS = ["hsl(220 70% 55%)", "hsl(155 60% 45%)", "hsl(75 80% 55%)", "hsl(25 80% 55%)", "hsl(295 60% 55%)", "hsl(200 70% 50%)", "hsl(340 70% 55%)"];
-const PROJECT_EXPENSE_TYPE = "בית הכנסת - בניה";
+const PROJECT_EXPENSE_TYPE = "בית הכנסת - גבעת זאב";
 const IRRELEVANT_FUND = "לא רלוונטי";
 const TRANSACTION_SELECT = "id, transaction_date, value_date, amount, account_id, fund_id, expense_type_id, category_id, subcategory_id, description, note, credit, debit";
 const PAGE_SIZE = 1000;
@@ -151,19 +151,15 @@ function DashboardPage() {
       <AlertsBanner />
       <Tabs defaultValue="institution" className="space-y-4 mt-4" dir="rtl">
         <div className="flex items-center justify-between gap-3 flex-wrap">
-        <TabsList className="grid grid-cols-3 max-w-2xl flex-1">
-
-          <TabsTrigger value="institution" className="gap-2">
-            <Building2 className="w-4 h-4" />
-            ניהול שוטף (מוסד)
+        <TabsList className="flex flex-wrap h-auto max-w-3xl flex-1 gap-1">
+          <TabsTrigger value="institution" className="text-base font-semibold px-4 py-2">
+            מרכז קרלין סטולין
           </TabsTrigger>
-          <TabsTrigger value="project" className="gap-2">
-            <HardHat className="w-4 h-4" />
-            פרויקט בנייה
+          <TabsTrigger value="project" className="text-base font-semibold px-4 py-2">
+            בית הכנסת - גבעת זאב
           </TabsTrigger>
-          <TabsTrigger value="vaults" className="gap-2">
-            <PiggyBank className="w-4 h-4" />
-            ניהול קופות
+          <TabsTrigger value="vaults" className="text-base font-semibold px-4 py-2">
+            דו"ח קופות (הלוואות)
           </TabsTrigger>
         </TabsList>
           <Button onClick={() => setNewTxOpen(true)}>+ תנועה חדשה</Button>
