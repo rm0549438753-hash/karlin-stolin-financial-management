@@ -214,7 +214,7 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const compactFmt = (v: number) => new Intl.NumberFormat("he-IL", { notation: "compact", maximumFractionDigits: 1 }).format(v);
 
   const [openMonth, setOpenMonth] = useState<string | null>(null);
-  const [openDay, setOpenDay] = useState<string | null>(null);
+  const setOpenDay = (_: string | null) => {}; void setOpenDay;
 
   const monthLabel = openMonth
     ? new Intl.DateTimeFormat("he-IL", { year: "numeric", month: "long" }).format(new Date(openMonth + "-01"))
@@ -234,10 +234,6 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       .map(([date, rows]) => ({ date, rows, sum: rows.reduce((s, r) => s + Math.abs(Number(r.amount)), 0) }));
   }, [openMonth, future]);
 
-  const dayRows = useMemo(() => {
-    if (!openDay) return [] as Tx[];
-    return future.filter((t) => (t.value_date ?? t.transaction_date) === openDay);
-  }, [openDay, future]);
 
   if (!checksAcc) return <ReportShell title="צ׳קים עתידיים"><p className="text-muted-foreground">לא הוגדר חשבון צ׳קים.</p></ReportShell>;
 
