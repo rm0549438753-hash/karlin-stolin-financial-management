@@ -162,3 +162,18 @@
     text-align: right;
   }
 }
+
+@media print {
+  @page { size: A4; margin: 12mm; }
+  [data-sidebar="sidebar"],
+  [data-slot="sidebar-container"],
+  [data-slot="sidebar-gap"],
+  header.sticky,
+  .no-print { display: none !important; }
+  main { padding: 0 !important; }
+  body { background: white !important; color: black !important; }
+  .print-area { box-shadow: none !important; }
+  .print-area table { font-size: 11px; }
+  .print-area .recharts-wrapper { page-break-inside: avoid; }
+}
+

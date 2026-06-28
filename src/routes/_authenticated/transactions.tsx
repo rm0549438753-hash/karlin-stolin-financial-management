@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Trash2, Download, Search, Upload, AlertTriangle, History, Undo2, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Search, Upload, AlertTriangle, History, Undo2, X, Printer } from "lucide-react";
 import { useAccounts, useCategories, useFunds, useExpenseTypes, useSubcategories, type Account } from "@/hooks/use-lookups";
 import { formatDate } from "@/lib/format";
 import { TransactionDialog, type TransactionRow } from "@/components/TransactionDialog";
@@ -377,6 +377,10 @@ function TransactionsPage() {
           <Button variant="outline" size="sm" onClick={exportCSV} disabled={!selectedAccount}>
             <Download className="w-4 h-4 ml-1" />ייצוא
           </Button>
+          <Button variant="outline" size="sm" onClick={() => window.print()} disabled={!selectedAccount}>
+            <Printer className="w-4 h-4 ml-1" />הדפסה
+          </Button>
+
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" disabled={!selectedAccount}>
@@ -416,9 +420,32 @@ function TransactionsPage() {
       }
     >
       {!selectedAccount ? (
-        <div className="rounded-2xl border bg-card p-12 text-center text-muted-foreground">בחר חשבון מהתפריט הצדדי כדי להציג תנועות.</div>
+        <div className="rounded-2xl border bg-card p-12 text-center text-muted-foreground">טוען חשבונות…</div>
       ) : (
         <div className="space-y-4">
+          {/* Horizontal account tabs */}
+          <div className="rounded-2xl border bg-card p-1.5 overflow-x-auto no-print">
+            <div className="flex gap-1 min-w-max">
+              {accounts.map((a) => {
+                const active = a.id === account;
+                return (
+                  <button
+                    key={a.id}
+                    onClick={() => navigate({ to: "/transactions", search: { account: a.id } })}
+                    className={
+                      "px-4 py-2 text-sm font-semibold rounded-xl whitespace-nowrap transition " +
+                      (active
+                        ? "bg-primary text-primary-foreground shadow"
+                        : "text-foreground/70 hover:bg-muted hover:text-foreground")
+                    }
+                  >
+                    {a.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {uncatCount > 0 && (
             <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">

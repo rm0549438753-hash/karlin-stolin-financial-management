@@ -18,7 +18,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, LabelList,
   PieChart, Pie, Cell,
 } from "recharts";
-import { TrendingUp, TrendingDown, Scale, Download } from "lucide-react";
+import { TrendingUp, TrendingDown, Scale, Download, Printer } from "lucide-react";
 import { format } from "date-fns";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -483,15 +483,21 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
             {drill?.rows.length ?? 0} תנועות · סה"כ:{" "}
             <span className={total >= 0 ? "text-income" : "text-expense"}>{formatCurrency(total)}</span>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={!drill?.rows.length}
-            onClick={() => drill && exportTxsToExcel(drill.rows, lookups, `${drill.title}.xlsx`)}
-          >
-            <Download className="w-4 h-4 ml-1" />
-            ייצוא לאקסל
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!drill?.rows.length}
+              onClick={() => drill && exportTxsToExcel(drill.rows, lookups, `${drill.title}.xlsx`)}
+            >
+              <Download className="w-4 h-4 ml-1" />
+              ייצוא לאקסל
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => window.print()} disabled={!drill?.rows.length}>
+              <Printer className="w-4 h-4 ml-1" />הדפסה
+            </Button>
+          </div>
+
         </div>
         <div className="rounded-md border">
           <Table>
@@ -630,15 +636,21 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
               {openRows.length} תנועות · יתרה:{" "}
               <span className={openTotal >= 0 ? "text-income" : "text-expense"}>{formatCurrency(openTotal)}</span>
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={!openRows.length}
-              onClick={() => openVault && exportTxsToExcel(openRows, lookups, `דוח קופה - ${openVault.name}.xlsx`)}
-            >
-              <Download className="w-4 h-4 ml-1" />
-              ייצוא לאקסל
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!openRows.length}
+                onClick={() => openVault && exportTxsToExcel(openRows, lookups, `דוח קופה - ${openVault.name}.xlsx`)}
+              >
+                <Download className="w-4 h-4 ml-1" />
+                ייצוא לאקסל
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => window.print()} disabled={!openRows.length}>
+                <Printer className="w-4 h-4 ml-1" />הדפסה
+              </Button>
+            </div>
+
           </div>
           {openRows.length === 0 ? (
             <p className="text-sm text-muted-foreground py-12 text-center">אין תנועות עבור הקופה</p>
