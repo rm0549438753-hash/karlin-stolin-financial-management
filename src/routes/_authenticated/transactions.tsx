@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Trash2, Download, Search, Upload, AlertTriangle, History, Undo2, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Search, Upload, AlertTriangle, History, Undo2, X, Printer } from "lucide-react";
 import { useAccounts, useCategories, useFunds, useExpenseTypes, useSubcategories, type Account } from "@/hooks/use-lookups";
 import { formatDate } from "@/lib/format";
 import { TransactionDialog, type TransactionRow } from "@/components/TransactionDialog";
