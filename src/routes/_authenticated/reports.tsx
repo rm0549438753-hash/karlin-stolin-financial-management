@@ -214,7 +214,7 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const compactFmt = (v: number) => new Intl.NumberFormat("he-IL", { notation: "compact", maximumFractionDigits: 1 }).format(v);
 
   const [openMonth, setOpenMonth] = useState<string | null>(null);
-  const setOpenDay = (_: string | null) => {}; void setOpenDay;
+  
 
   const monthLabel = openMonth
     ? new Intl.DateTimeFormat("he-IL", { year: "numeric", month: "long" }).format(new Date(openMonth + "-01"))
