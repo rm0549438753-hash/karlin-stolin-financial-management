@@ -178,14 +178,16 @@ export function TransactionDialog({
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <Field label="חשבון">
-            <Select value={watch("account_id")} onValueChange={(v) => setValue("account_id", v)}>
-              <SelectTrigger><SelectValue placeholder="בחר חשבון" /></SelectTrigger>
-              <SelectContent>
-                {accounts.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </Field>
+          {!lockAccount && (
+            <Field label="חשבון">
+              <Select value={watch("account_id")} onValueChange={(v) => setValue("account_id", v)}>
+                <SelectTrigger><SelectValue placeholder="בחר חשבון" /></SelectTrigger>
+                <SelectContent>
+                  {accounts.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
 
           <Field label="תאריך">
             <Input type="date" {...register("transaction_date", { required: true })} dir="ltr" />
