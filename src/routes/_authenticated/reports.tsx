@@ -278,7 +278,7 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       )}
 
       {/* Month sheet — accordion of days */}
-      <Sheet open={!!openMonth} onOpenChange={(o) => { if (!o) { setOpenMonth(null); setOpenDay(null); } }}>
+      <Sheet open={!!openMonth} onOpenChange={(o) => { if (!o) setOpenMonth(null); }}>
         <SheetContent side="left" className="w-full sm:max-w-3xl overflow-y-auto">
           <SheetHeader className="border-b pb-3 mb-4">
             <SheetTitle className="text-2xl">{monthLabel}</SheetTitle>
