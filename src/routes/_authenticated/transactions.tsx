@@ -377,6 +377,10 @@ function TransactionsPage() {
           <Button variant="outline" size="sm" onClick={exportCSV} disabled={!selectedAccount}>
             <Download className="w-4 h-4 ml-1" />ייצוא
           </Button>
+          <Button variant="outline" size="sm" onClick={() => window.print()} disabled={!selectedAccount}>
+            <Printer className="w-4 h-4 ml-1" />הדפסה
+          </Button>
+
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" disabled={!selectedAccount}>
