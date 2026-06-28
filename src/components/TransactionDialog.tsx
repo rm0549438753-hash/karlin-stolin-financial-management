@@ -63,11 +63,12 @@ type FormValues = {
 };
 
 export function TransactionDialog({
-  open, onOpenChange, initial, account,
+  open, onOpenChange, initial, account, lockAccount = false,
 }: {
   open: boolean; onOpenChange: (o: boolean) => void;
   initial?: TransactionRow | null;
   account?: Account | null;
+  lockAccount?: boolean;
 }) {
   const qc = useQueryClient();
   const { data: accounts = [] } = useAccounts();
