@@ -239,7 +239,6 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   return (
     <ReportShell
       title="צ׳קים עתידיים"
-      subtitle="לחיצה על חודש פותחת את הימים, ולחיצה על יום פותחת את הצ׳קים. לחיצה על תנועה פותחת אותה בדף התנועות."
       onExport={() => exportTxs(future, lookups, "צ׳קים עתידיים.xlsx")}
     >
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
