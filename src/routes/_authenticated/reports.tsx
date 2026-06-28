@@ -16,7 +16,7 @@ import { useAccounts, useCategories, useExpenseTypes, useFunds, useSubcategories
 import { formatCurrency, formatDate } from "@/lib/format";
 import {
   CalendarClock, TrendingUp, GitCompare, Trophy, PiggyBank, ListTree, AlertTriangle,
-  FileText, HardHat, Download, ChevronLeft,
+  FileText, HardHat, Download,
 } from "lucide-react";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LabelList, Legend,
