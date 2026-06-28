@@ -173,7 +173,7 @@ export function TransactionDialog({
           <DialogTitle className="flex items-center gap-2">
             {initial ? "עריכת תנועה" : "תנועה חדשה"}
             {activeAccount && (
-              <span className="text-xs font-normal text-muted-foreground">· {activeAccount.name} ({schemaLabel})</span>
+              <span className="text-xs font-normal text-muted-foreground">· {activeAccount.name}</span>
             )}
           </DialogTitle>
         </DialogHeader>
