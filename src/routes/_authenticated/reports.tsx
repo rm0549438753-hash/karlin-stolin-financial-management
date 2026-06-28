@@ -345,72 +345,8 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   );
 }
 
-/* ===================== 2. Fund Report ===================== */
-function FundReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
-  const [fundId, setFundId] = useState<string>(lookups.funds[0]?.id ?? "");
-  const fund = (lookups.funds as any[]).find((f) => f.id === fundId);
 
-  const rows = useMemo(() => {
-    return txs.filter((t) => t.fund_id === fundId).sort((a, b) => a.transaction_date.localeCompare(b.transaction_date));
-  }, [txs, fundId]);
 
-  let running = 0;
-  const withRunning = rows.map((t) => {
-    running += Number(t.amount);
-    return { ...t, _running: running };
-  });
-
-  const credit = rows.reduce((s, t) => s + (Number(t.amount) > 0 ? Number(t.amount) : 0), 0);
-  const debit = rows.reduce((s, t) => s + (Number(t.amount) < 0 ? -Number(t.amount) : 0), 0);
-
-  return (
-    <ReportShell
-      title="דוח קופה מפורט"
-      subtitle={fund?.name ?? ""}
-      onExport={() => exportTxs(rows, lookups, `דוח קופה - ${fund?.name ?? ""}.xlsx`)}
-    >
-      <div className="flex justify-between items-end gap-3 flex-wrap">
-        <div className="flex gap-4 text-sm">
-          <span>נכנס: <span className="text-income font-semibold tabular-nums">{formatCurrency(credit)}</span></span>
-          <span>יצא: <span className="text-expense font-semibold tabular-nums">{formatCurrency(debit)}</span></span>
-          <span>יתרה: <span className={`font-bold tabular-nums ${credit - debit >= 0 ? "text-income" : "text-expense"}`}>{formatCurrency(credit - debit)}</span></span>
-        </div>
-        <Select value={fundId} onValueChange={setFundId}>
-          <SelectTrigger className="w-64"><SelectValue placeholder="בחר קופה" /></SelectTrigger>
-          <SelectContent>{(lookups.funds as any[]).map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}</SelectContent>
-        </Select>
-      </div>
-      <div className="rounded-2xl border bg-card overflow-x-auto">
-        <Table className="border-collapse">
-          <TableHeader>
-            <TableRow className="bg-muted/30 hover:bg-muted/30">
-              <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">תאריך</TableHead>
-              <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">חשבון</TableHead>
-              <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">פרטים</TableHead>
-              <TableHead className="text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">סכום</TableHead>
-              <TableHead className="text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">יתרה רצה</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {withRunning.map((t, idx) => {
-              const acct = nameMap(lookups.accounts);
-              return (
-                <TableRow key={t.id} className={"border-b border-border hover:bg-primary/5 " + (idx % 2 ? "bg-muted/20" : "")}>
-                  <TableCell className="whitespace-nowrap tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{formatDate(t.transaction_date)}</TableCell>
-                  <TableCell className="whitespace-nowrap border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{acct.get(t.account_id) ?? "—"}</TableCell>
-                  <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{t.description ?? "—"}</TableCell>
-                  <TableCell className={`text-left font-mono tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs ${Number(t.amount) >= 0 ? "text-income" : "text-expense"}`}>{formatCurrency(Number(t.amount))}</TableCell>
-                  <TableCell className={`text-left font-mono tabular-nums font-bold border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs ${t._running >= 0 ? "text-income" : "text-expense"}`}>{formatCurrency(t._running)}</TableCell>
-                </TableRow>
-              );
-            })}
-            {rows.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">אין תנועות</TableCell></TableRow>}
-          </TableBody>
-        </Table>
-      </div>
-    </ReportShell>
-  );
-}
 
 /* ===================== 3. Uncategorized (with filters + edit) ===================== */
 function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
