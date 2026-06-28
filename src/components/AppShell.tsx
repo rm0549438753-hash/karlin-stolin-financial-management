@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import logoAsset from "@/assets/karlin-logo.png.asset.json";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { GlobalSearch } from "@/components/GlobalSearch";
 
 const GOLD = "#D4AF37";
 
