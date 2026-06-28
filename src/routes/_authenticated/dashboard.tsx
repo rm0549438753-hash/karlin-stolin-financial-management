@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { AlertsBanner } from "@/components/AlertsBanner";
 import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
@@ -139,9 +140,16 @@ function DashboardPage() {
 
   const [newTxOpen, setNewTxOpen] = useState(false);
 
+  useEffect(() => {
+    const open = () => setNewTxOpen(true);
+    window.addEventListener("lovable:new-tx", open);
+    return () => window.removeEventListener("lovable:new-tx", open);
+  }, []);
+
   return (
     <AppShell title="לוח בקרה">
-      <Tabs defaultValue="institution" className="space-y-4" dir="rtl">
+      <AlertsBanner />
+      <Tabs defaultValue="institution" className="space-y-4 mt-4" dir="rtl">
         <div className="flex items-center justify-between gap-3 flex-wrap">
         <TabsList className="grid grid-cols-3 max-w-2xl flex-1">
 
