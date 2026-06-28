@@ -173,7 +173,7 @@ export function TransactionDialog({
           <DialogTitle className="flex items-center gap-2">
             {initial ? "עריכת תנועה" : "תנועה חדשה"}
             {activeAccount && (
-              <span className="text-xs font-normal text-muted-foreground">· {activeAccount.name} ({schemaLabel})</span>
+              <span className="text-xs font-normal text-muted-foreground">· {activeAccount.name}</span>
             )}
           </DialogTitle>
         </DialogHeader>
@@ -201,17 +201,9 @@ export function TransactionDialog({
 
           {/* Direction + Amount */}
           {schema === "checks" ? (
-            <>
-              <Field label="סכום ₪">
-                <Input type="number" step="0.01" min="0" dir="ltr" {...register("amount", { required: true })} />
-              </Field>
-              <Field label="צ׳ק עתידי">
-                <label className="flex items-center gap-2 h-10">
-                  <Checkbox checked={watch("future_check")} onCheckedChange={(c) => setValue("future_check", c === true)} />
-                  <span className="text-sm">סמן אם זה צ׳ק עתידי</span>
-                </label>
-              </Field>
-            </>
+            <Field label="סכום ₪">
+              <Input type="number" step="0.01" min="0" dir="ltr" {...register("amount", { required: true })} />
+            </Field>
           ) : (
             <>
               <Field label="סוג פעולה">
