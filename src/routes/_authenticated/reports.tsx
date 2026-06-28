@@ -71,6 +71,8 @@ async function fetchAllTransactions(): Promise<Tx[]> {
 }
 
 function ReportsPage() {
+  const { tab } = Route.useSearch();
+  const navigate = useNavigate();
   const { data: txs = [], isLoading } = useQuery({
     queryKey: ["reports-all-tx"],
     queryFn: fetchAllTransactions,
@@ -85,7 +87,12 @@ function ReportsPage() {
 
   return (
     <AppShell title="דוחות">
-      <Tabs defaultValue="future-checks" dir="rtl" className="space-y-4">
+      <Tabs
+        value={tab}
+        onValueChange={(v) => navigate({ to: "/reports", search: { tab: v } as any })}
+        dir="rtl"
+        className="space-y-4"
+      >
         <TabsList className="flex flex-wrap h-auto justify-start gap-1">
           <TabsTrigger value="future-checks" className="gap-1.5 text-base font-semibold px-4 py-2">
             <CalendarClock className="w-4 h-4" />צ׳קים עתידיים
