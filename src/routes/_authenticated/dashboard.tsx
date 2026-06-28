@@ -483,15 +483,21 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
             {drill?.rows.length ?? 0} תנועות · סה"כ:{" "}
             <span className={total >= 0 ? "text-income" : "text-expense"}>{formatCurrency(total)}</span>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={!drill?.rows.length}
-            onClick={() => drill && exportTxsToExcel(drill.rows, lookups, `${drill.title}.xlsx`)}
-          >
-            <Download className="w-4 h-4 ml-1" />
-            ייצוא לאקסל
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!drill?.rows.length}
+              onClick={() => drill && exportTxsToExcel(drill.rows, lookups, `${drill.title}.xlsx`)}
+            >
+              <Download className="w-4 h-4 ml-1" />
+              ייצוא לאקסל
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => window.print()} disabled={!drill?.rows.length}>
+              <Printer className="w-4 h-4 ml-1" />הדפסה
+            </Button>
+          </div>
+
         </div>
         <div className="rounded-md border">
           <Table>
