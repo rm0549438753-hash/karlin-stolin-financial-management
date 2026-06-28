@@ -7,9 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2, Plus, UserPlus, Ban, ShieldCheck } from "lucide-react";
+import { Trash2, Plus, UserPlus, Ban, ShieldCheck, Pencil } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useUserRole, useAuthUser } from "@/hooks/use-auth";
@@ -88,6 +89,30 @@ function LookupCRUD({ table, label, hasKind, hasCategory }: { table: string; lab
     onError: (e: any) => toast.error(e.message ?? "לא ניתן למחוק (יתכן ויש בו שימוש)"),
   });
 
+  const [editing, setEditing] = useState<{ id: string; name: string } | null>(null);
+  const [editName, setEditName] = useState("");
+
+  const rename = useMutation({
+    mutationFn: async () => {
+      if (!editing || !editName.trim()) throw new Error("יש להזין שם");
+      const { error } = await supabase.from(table as any).update({ name: editName.trim() }).eq("id", editing.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("השם עודכן בכל המקומות במערכת");
+      setEditing(null);
+      // Invalidate everything that may reference these names
+      qc.invalidateQueries({ queryKey: [table] });
+      qc.invalidateQueries({ queryKey: [table, "all"] });
+      qc.invalidateQueries({ queryKey: ["accounts"] });
+      qc.invalidateQueries({ queryKey: ["funds"] });
+      qc.invalidateQueries({ queryKey: ["expense_types"] });
+      qc.invalidateQueries({ queryKey: ["categories"] });
+      qc.invalidateQueries({ queryKey: ["subcategories"] });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   return (
     <Card>
       <CardHeader><CardTitle>{label}</CardTitle></CardHeader>
@@ -118,13 +143,41 @@ function LookupCRUD({ table, label, hasKind, hasCategory }: { table: string; lab
           {(rows as any[]).map((r) => (
             <div key={r.id} className="flex items-center justify-between p-2 hover:bg-muted/50">
               <span>{r.name}{hasKind && <span className="text-xs text-muted-foreground mr-2">({r.kind})</span>}</span>
-              <Button size="icon" variant="ghost" className="text-destructive" onClick={() => del.mutate(r.id)}>
-                <Trash2 className="w-4 h-4" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button size="icon" variant="ghost" onClick={() => { setEditing({ id: r.id, name: r.name }); setEditName(r.name); }} title="עריכת שם">
+                  <Pencil className="w-4 h-4" />
+                </Button>
+                <Button size="icon" variant="ghost" className="text-destructive" onClick={() => del.mutate(r.id)}>
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           ))}
           {rows.length === 0 && <div className="p-4 text-center text-sm text-muted-foreground">רשימה ריקה</div>}
         </div>
+
+        <Dialog open={!!editing} onOpenChange={(o) => { if (!o) setEditing(null); }}>
+          <DialogContent dir="rtl">
+            <DialogHeader>
+              <DialogTitle>עריכת שם</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2 py-2">
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") rename.mutate(); }}
+                autoFocus
+              />
+              <p className="text-xs text-muted-foreground">
+                שינוי השם יתעדכן אוטומטית בכל התנועות והדוחות שמסווגים תחת פריט זה.
+              </p>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditing(null)}>ביטול</Button>
+              <Button onClick={() => rename.mutate()} disabled={rename.isPending}>שמירה</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
