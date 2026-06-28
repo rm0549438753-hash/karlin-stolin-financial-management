@@ -381,17 +381,38 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
 
   const editingAccount = editing ? (lookups.accounts as any[]).find((a) => a.id === editing.account_id) : null;
 
+  const totalAmt = useMemo(() => filtered.reduce((s, t) => s + Math.abs(Number(t.amount)), 0), [filtered]);
+  const accountsCount = accountsWithUnc.length;
+  const oldestDate = useMemo(() => {
+    if (filtered.length === 0) return null;
+    return filtered.reduce((min, t) => (t.transaction_date < min ? t.transaction_date : min), filtered[0].transaction_date);
+  }, [filtered]);
+
   return (
     <ReportShell
       title="תנועות לא מסווגות"
       subtitle="כל התנועות שבהן גם הסוג וגם הקופה ריקים. לחיצה על תנועה פותחת לעריכה."
       onExport={() => exportTxs(filtered, lookups, "לא מסווגות.xlsx")}
     >
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Kpi label="סה״כ לא מסווגות" value={String(filtered.length)} />
+        <Kpi label="סכום מצטבר" value={formatCurrency(totalAmt)} tone="expense" />
+        <Kpi label="חשבונות עם תנועות לא מסווגות" value={String(accountsCount)} />
+        <Kpi label="הוותיק ביותר" value={oldestDate ? formatDate(oldestDate) : "—"} />
+      </div>
+
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="text-sm font-semibold">סה״כ {filtered.length} תנועות</div>
+        <div className="text-sm font-semibold">מציג {filtered.length} תנועות</div>
         <Select value={accountFilter} onValueChange={setAccountFilter}>
           <SelectTrigger className="w-72"><SelectValue placeholder="כל החשבונות" /></SelectTrigger>
           <SelectContent>
+            <SelectItem value="all">כל החשבונות ({allUnc.length})</SelectItem>
+            {accountsWithUnc.map((a) => (
+              <SelectItem key={a.id} value={a.id}>{a.name} ({a.count})</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
             <SelectItem value="all">כל החשבונות ({allUnc.length})</SelectItem>
             {accountsWithUnc.map((a) => (
               <SelectItem key={a.id} value={a.id}>{a.name} ({a.count})</SelectItem>
