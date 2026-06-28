@@ -465,32 +465,32 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
         </Select>
       </div>
 
-      <div className="rounded-md border overflow-x-auto">
-        <Table>
+      <div className="rounded-2xl border bg-card overflow-x-auto">
+        <Table className="border-collapse">
           <TableHeader>
-            <TableRow>
-              <TableHead className="text-right">תאריך</TableHead>
-              <TableHead className="text-right">חשבון</TableHead>
-              <TableHead className="text-right">פרטים</TableHead>
-              <TableHead className="text-right">מוטב</TableHead>
-              <TableHead className="text-left">סכום</TableHead>
+            <TableRow className="bg-muted/30 hover:bg-muted/30">
+              <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">תאריך</TableHead>
+              <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">חשבון</TableHead>
+              <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">פרטים</TableHead>
+              <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">מוטב</TableHead>
+              <TableHead className="text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">סכום</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 && (
               <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">הכל מסווג ✓</TableCell></TableRow>
             )}
-            {filtered.map((t) => (
+            {filtered.map((t, idx) => (
               <TableRow
                 key={t.id}
-                className="cursor-pointer hover:bg-primary/5 border-b"
+                className={"cursor-pointer hover:bg-primary/5 border-b border-border " + (idx % 2 ? "bg-muted/20" : "")}
                 onClick={() => setEditing(t as unknown as TransactionRow)}
               >
-                <TableCell className="whitespace-nowrap tabular-nums">{formatDate(t.transaction_date)}</TableCell>
-                <TableCell className="whitespace-nowrap">{acctMap.get(t.account_id) ?? "—"}</TableCell>
-                <TableCell>{t.description ?? "—"}</TableCell>
-                <TableCell>{t.payee ?? "—"}</TableCell>
-                <TableCell className={`text-left font-mono tabular-nums ${Number(t.amount) >= 0 ? "text-income" : "text-expense"}`}>
+                <TableCell className="whitespace-nowrap tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{formatDate(t.transaction_date)}</TableCell>
+                <TableCell className="whitespace-nowrap border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{acctMap.get(t.account_id) ?? "—"}</TableCell>
+                <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{t.description ?? "—"}</TableCell>
+                <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{t.payee ?? "—"}</TableCell>
+                <TableCell className={`text-left font-mono tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs ${Number(t.amount) >= 0 ? "text-income" : "text-expense"}`}>
                   {formatCurrency(Number(t.amount))}
                 </TableCell>
               </TableRow>
