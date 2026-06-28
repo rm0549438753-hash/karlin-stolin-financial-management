@@ -67,7 +67,13 @@ export function AlertsBanner() {
             <div className="font-semibold">{uncategorizedCount} תנועות לא מסווגות</div>
             <div className="text-xs text-muted-foreground">דורש סיווג של סוג או קופה</div>
           </div>
-          <Link to="/reports" className="text-xs font-semibold underline">לדוח</Link>
+          <Link
+            to="/reports"
+            search={{ tab: "uncategorized" } as any}
+            className="text-xs font-semibold rounded-md bg-orange-600 hover:bg-orange-700 text-white px-3 py-1.5 shrink-0"
+          >
+            לחץ כאן לסיווג
+          </Link>
         </div>
       )}
     </div>
