@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { TransactionDialog } from "@/components/TransactionDialog";
 import { formatCurrency } from "@/lib/format";
 import { useAccounts, useCategories, useSubcategories, useExpenseTypes, useFunds } from "@/hooks/use-lookups";
 import {
@@ -136,10 +137,14 @@ function DashboardPage() {
 
   const lookups = { accounts, categories, subcategories, expenseTypes, funds };
 
+  const [newTxOpen, setNewTxOpen] = useState(false);
+
   return (
     <AppShell title="לוח בקרה">
       <Tabs defaultValue="institution" className="space-y-4" dir="rtl">
-        <TabsList className="grid w-full grid-cols-3 max-w-2xl">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+        <TabsList className="grid grid-cols-3 max-w-2xl flex-1">
+
           <TabsTrigger value="institution" className="gap-2">
             <Building2 className="w-4 h-4" />
             ניהול שוטף (מוסד)
@@ -153,6 +158,9 @@ function DashboardPage() {
             ניהול קופות
           </TabsTrigger>
         </TabsList>
+          <Button onClick={() => setNewTxOpen(true)}>+ תנועה חדשה</Button>
+        </div>
+
 
         <TabsContent value="institution">
           <OverviewTab txs={institutionTxs} lookups={lookups} />
@@ -165,7 +173,9 @@ function DashboardPage() {
         </TabsContent>
       </Tabs>
       {isLoading && <p className="text-center text-sm text-muted-foreground mt-6">טוען נתונים…</p>}
+      <TransactionDialog open={newTxOpen} onOpenChange={setNewTxOpen} />
     </AppShell>
+
   );
 }
 

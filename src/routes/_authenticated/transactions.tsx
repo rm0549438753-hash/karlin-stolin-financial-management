@@ -582,7 +582,7 @@ function TransactionsPage() {
         </div>
       )}
 
-      <TransactionDialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) setEditing(null); }} initial={editing} account={selectedAccount} />
+      <TransactionDialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) setEditing(null); }} initial={editing} account={selectedAccount} lockAccount />
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} account={selectedAccount} />
       <BulkEditDialog open={bulkEditOpen} onOpenChange={setBulkEditOpen} ids={Array.from(selectedIds)} onDone={() => setSelectedIds(new Set())} />
 
