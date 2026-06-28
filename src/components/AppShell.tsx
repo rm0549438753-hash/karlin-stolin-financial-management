@@ -167,7 +167,11 @@ export function AppShell({ children, title, actions }: { children: ReactNode; ti
               <h1 className="text-xl md:text-2xl font-extrabold leading-none tracking-tight truncate" style={{ color: GOLD }}>{title}</h1>
               <p className="text-white/60 text-xs md:text-sm font-medium mt-1 hidden sm:block">מרכז קארלין סטאלין · ניהול פיננסי</p>
             </div>
-            <div className="mr-auto flex items-center gap-2 flex-wrap justify-end">{actions}</div>
+            <div className="mr-auto flex items-center gap-2 flex-wrap justify-end">
+              <GlobalSearch />
+              <ThemeToggle />
+              {actions}
+            </div>
           </header>
           <main className="flex-1 p-4 md:p-6 overflow-x-hidden">{children}</main>
         </div>
