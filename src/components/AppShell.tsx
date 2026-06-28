@@ -1,19 +1,17 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
-  LayoutDashboard, Receipt, BarChart3, Settings as SettingsIcon, LogOut, ChevronDown,
+  LayoutDashboard, Receipt, BarChart3, Settings as SettingsIcon, LogOut,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthUser, useUserRole } from "@/hooks/use-auth";
-import { useAccounts } from "@/hooks/use-lookups";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
-  SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem,
+  SidebarMenu, SidebarMenuButton, SidebarMenuItem,
   SidebarProvider, SidebarTrigger, SidebarHeader, SidebarFooter,
 } from "@/components/ui/sidebar";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import logoAsset from "@/assets/karlin-logo.png.asset.json";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { GlobalSearch } from "@/components/GlobalSearch";
@@ -22,13 +20,10 @@ const GOLD = "#D4AF37";
 
 function AppSidebar() {
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const search = useRouterState({ select: (s) => s.location.search as Record<string, unknown> });
   const { data: role } = useUserRole();
-  const { data: accounts = [] } = useAccounts();
-  const [txOpen, setTxOpen] = useState(true);
 
-  const activeAccount = typeof search?.account === "string" ? (search.account as string) : null;
   const onTransactions = path === "/transactions" || path.startsWith("/transactions/");
+
 
   return (
     <Sidebar side="right" collapsible="icon" className="border-l-4 border-l-[color:var(--brand-gold,theme(colors.amber.400))]" style={{ ["--brand-gold" as any]: GOLD }}>
