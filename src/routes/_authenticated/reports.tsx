@@ -14,7 +14,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { useAccounts, useCategories, useExpenseTypes, useFunds, useSubcategories } from "@/hooks/use-lookups";
 import { TransactionDialog, type TransactionRow } from "@/components/TransactionDialog";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { CalendarClock, PiggyBank, AlertTriangle, Download, ChevronRight } from "lucide-react";
+import { CalendarClock, AlertTriangle, Download, Printer } from "lucide-react";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LabelList,
 } from "recharts";
