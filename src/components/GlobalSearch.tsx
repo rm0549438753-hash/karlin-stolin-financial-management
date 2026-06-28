@@ -52,13 +52,13 @@ export function GlobalSearch() {
       const asNum = Number(term.replace(/[,\s]/g, ""));
       let query = supabase
         .from("transactions")
-        .select("id, transaction_date, amount, account_id, description, note")
+        .select("id, transaction_date, amount, account_id, description, note, payee")
         .order("transaction_date", { ascending: false })
-        .limit(30);
+        .limit(50);
       if (!isNaN(asNum) && asNum !== 0) {
-        query = query.or(`description.ilike.%${term}%,note.ilike.%${term}%,amount.eq.${asNum},amount.eq.${-asNum}`);
+        query = query.or(`description.ilike.%${term}%,note.ilike.%${term}%,payee.ilike.%${term}%,amount.eq.${asNum},amount.eq.${-asNum}`);
       } else {
-        query = query.or(`description.ilike.%${term}%,note.ilike.%${term}%`);
+        query = query.or(`description.ilike.%${term}%,note.ilike.%${term}%,payee.ilike.%${term}%`);
       }
       const { data, error } = await query;
       if (error) throw error;
@@ -85,9 +85,9 @@ export function GlobalSearch() {
         <span className="hidden md:inline text-xs">חיפוש</span>
         <kbd className="hidden md:inline-flex text-[10px] bg-white/10 px-1.5 py-0.5 rounded">⌘K</kbd>
       </Button>
-      <CommandDialog open={open} onOpenChange={setOpen}>
+      <CommandDialog open={open} onOpenChange={setOpen} shouldFilter={false}>
         <CommandInput
-          placeholder="חפש לפי תיאור, הערה או סכום…"
+          placeholder="חפש לפי תיאור, הערה, מוטב או סכום…"
           value={q}
           onValueChange={setQ}
         />
@@ -98,7 +98,7 @@ export function GlobalSearch() {
           {hits.length > 0 && (
             <CommandGroup heading={`${hits.length} תוצאות`}>
               {hits.map((h) => (
-                <CommandItem key={h.id} onSelect={() => go(h)} className="flex justify-between gap-3">
+                <CommandItem key={h.id} value={`${h.id}-${q}`} onSelect={() => go(h)} className="flex justify-between gap-3">
                   <span className="flex flex-col min-w-0">
                     <span className="truncate text-sm">{h.description || h.note || "—"}</span>
                     <span className="text-[11px] text-muted-foreground">
