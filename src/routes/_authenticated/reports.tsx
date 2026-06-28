@@ -281,83 +281,71 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
         <p className="text-center text-muted-foreground py-8">אין צ׳קים עתידיים</p>
       )}
 
-      {/* Month -> Day drill */}
+      {/* Month sheet — accordion of days */}
       <Sheet open={!!openMonth} onOpenChange={(o) => { if (!o) { setOpenMonth(null); setOpenDay(null); } }}>
-        <SheetContent side="left" className="w-full sm:max-w-2xl overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>{monthLabel} — ימים עם צ׳קים</SheetTitle>
-          </SheetHeader>
-          <div className="mt-4 rounded-2xl border bg-card overflow-x-auto">
-            <Table className="border-collapse">
-              <TableHeader>
-                <TableRow className="bg-muted/30 hover:bg-muted/30">
-                  <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">תאריך ערך</TableHead>
-                  <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">מספר צ׳קים</TableHead>
-                  <TableHead className="text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">סכום</TableHead>
-                  <TableHead className="w-10 border-l border-border last:border-l-0"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {dayBuckets.map((d, idx) => (
-                  <TableRow key={d.date} className={"cursor-pointer hover:bg-primary/5 border-b border-border " + (idx % 2 ? "bg-muted/20" : "")} onClick={() => setOpenDay(d.date)}>
-                    <TableCell className="font-semibold tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{formatDate(d.date)}</TableCell>
-                    <TableCell className="tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{d.rows.length}</TableCell>
-                    <TableCell className="text-left font-mono text-expense tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{formatCurrency(d.sum)}</TableCell>
-                    <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5"><ChevronRight className="w-4 h-4 text-muted-foreground" /></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </SheetContent>
-      </Sheet>
-
-      {/* Day -> Tx drill */}
-      <Sheet open={!!openDay} onOpenChange={(o) => { if (!o) setOpenDay(null); }}>
         <SheetContent side="left" className="w-full sm:max-w-3xl overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>צ׳קים ליום {openDay ? formatDate(openDay) : ""}</SheetTitle>
+          <SheetHeader className="border-b pb-3 mb-4">
+            <SheetTitle className="text-2xl">{monthLabel}</SheetTitle>
+            <p className="text-sm text-muted-foreground">
+              {dayBuckets.length} ימים · סה״כ{" "}
+              <b className="text-expense">{formatCurrency(dayBuckets.reduce((s, d) => s + d.sum, 0))}</b>
+            </p>
           </SheetHeader>
-          <div className="mt-2 text-xs text-muted-foreground mb-3">לחיצה על תנועה תנווט לדף התנועות עם הדגשה.</div>
-          <div className="rounded-2xl border bg-card overflow-x-auto">
-            <Table className="border-collapse">
-              <TableHeader>
-                <TableRow className="bg-muted/30 hover:bg-muted/30">
-                  <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">פרטים</TableHead>
-                  <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">מוטב</TableHead>
-                  <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">סוג</TableHead>
-                  <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">קופה</TableHead>
-                  <TableHead className="text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">סכום</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {dayRows.map((t, idx) => {
-                  const fund = nameMap(lookups.funds);
-                  const et = nameMap(lookups.expenseTypes);
-                  return (
-                    <TableRow
-                      key={t.id}
-                      className={"cursor-pointer hover:bg-primary/5 border-b border-border " + (idx % 2 ? "bg-muted/20" : "")}
-                      onClick={() => {
-                        setOpenDay(null);
-                        setOpenMonth(null);
-                        navigate({ to: "/transactions", search: { account: t.account_id, highlight: t.id } });
-                      }}
-                    >
-                      <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{t.description ?? "—"}</TableCell>
-                      <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{t.payee ?? "—"}</TableCell>
-                      <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{t.expense_type_id ? et.get(t.expense_type_id) : "—"}</TableCell>
-                      <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{t.fund_id ? fund.get(t.fund_id) : "—"}</TableCell>
-                      <TableCell className="text-left font-mono text-expense tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{formatCurrency(Math.abs(Number(t.amount)))}</TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+
+          <Accordion type="multiple" className="space-y-2">
+            {dayBuckets.map((d) => (
+              <AccordionItem key={d.date} value={d.date} className="rounded-xl border bg-card overflow-hidden">
+                <AccordionTrigger className="px-4 py-3 hover:bg-muted/40 hover:no-underline data-[state=open]:bg-muted/50">
+                  <div className="flex items-center justify-between w-full gap-4 pl-2">
+                    <div className="flex items-center gap-3">
+                      <span className="text-base font-bold tabular-nums">{formatDate(d.date)}</span>
+                      <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{d.rows.length} צ׳קים</span>
+                    </div>
+                    <span className="text-base font-bold text-expense tabular-nums">{formatCurrency(d.sum)}</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="p-0 border-t bg-background">
+                  <Table className="border-collapse">
+                    <TableHeader>
+                      <TableRow className="bg-muted/30 hover:bg-muted/30">
+                        <TableHead className="text-right text-xs font-bold text-muted-foreground border-l border-border last:border-l-0 px-3 py-2">פרטים</TableHead>
+                        <TableHead className="text-right text-xs font-bold text-muted-foreground border-l border-border last:border-l-0 px-3 py-2">מוטב</TableHead>
+                        <TableHead className="text-right text-xs font-bold text-muted-foreground border-l border-border last:border-l-0 px-3 py-2">סוג</TableHead>
+                        <TableHead className="text-right text-xs font-bold text-muted-foreground border-l border-border last:border-l-0 px-3 py-2">קופה</TableHead>
+                        <TableHead className="text-left text-xs font-bold text-muted-foreground border-l border-border last:border-l-0 px-3 py-2">סכום</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {d.rows.map((t, idx) => {
+                        const fund = nameMap(lookups.funds);
+                        const et = nameMap(lookups.expenseTypes);
+                        return (
+                          <TableRow
+                            key={t.id}
+                            className={"cursor-pointer hover:bg-primary/5 border-b border-border " + (idx % 2 ? "bg-muted/20" : "")}
+                            onClick={() => {
+                              setOpenMonth(null);
+                              navigate({ to: "/transactions", search: { account: t.account_id, highlight: t.id } });
+                            }}
+                          >
+                            <TableCell className="border-l border-border/60 last:border-l-0 px-3 py-2 text-sm">{t.description ?? "—"}</TableCell>
+                            <TableCell className="border-l border-border/60 last:border-l-0 px-3 py-2 text-sm">{t.payee ?? "—"}</TableCell>
+                            <TableCell className="border-l border-border/60 last:border-l-0 px-3 py-2 text-sm">{t.expense_type_id ? et.get(t.expense_type_id) : "—"}</TableCell>
+                            <TableCell className="border-l border-border/60 last:border-l-0 px-3 py-2 text-sm">{t.fund_id ? fund.get(t.fund_id) : "—"}</TableCell>
+                            <TableCell className="text-left font-mono text-expense tabular-nums border-l border-border/60 last:border-l-0 px-3 py-2 text-sm font-semibold">{formatCurrency(Math.abs(Number(t.amount)))}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </SheetContent>
       </Sheet>
     </ReportShell>
+
   );
 }
 
