@@ -172,7 +172,9 @@ function DashboardPage() {
         </TabsContent>
       </Tabs>
       {isLoading && <p className="text-center text-sm text-muted-foreground mt-6">טוען נתונים…</p>}
+      <TransactionDialog open={newTxOpen} onOpenChange={setNewTxOpen} />
     </AppShell>
+
   );
 }
 
