@@ -140,9 +140,16 @@ function DashboardPage() {
 
   const [newTxOpen, setNewTxOpen] = useState(false);
 
+  useEffect(() => {
+    const open = () => setNewTxOpen(true);
+    window.addEventListener("lovable:new-tx", open);
+    return () => window.removeEventListener("lovable:new-tx", open);
+  }, []);
+
   return (
     <AppShell title="לוח בקרה">
-      <Tabs defaultValue="institution" className="space-y-4" dir="rtl">
+      <AlertsBanner />
+      <Tabs defaultValue="institution" className="space-y-4 mt-4" dir="rtl">
         <div className="flex items-center justify-between gap-3 flex-wrap">
         <TabsList className="grid grid-cols-3 max-w-2xl flex-1">
 
