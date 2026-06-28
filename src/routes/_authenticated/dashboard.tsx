@@ -157,6 +157,9 @@ function DashboardPage() {
             ניהול קופות
           </TabsTrigger>
         </TabsList>
+          <Button onClick={() => setNewTxOpen(true)} className="bg-gold hover:bg-gold/90 text-navy">+ תנועה חדשה</Button>
+        </div>
+
 
         <TabsContent value="institution">
           <OverviewTab txs={institutionTxs} lookups={lookups} />
