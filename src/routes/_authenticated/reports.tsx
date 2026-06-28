@@ -87,9 +87,6 @@ function ReportsPage() {
           <TabsTrigger value="future-checks" className="gap-1.5 text-base font-semibold px-4 py-2">
             <CalendarClock className="w-4 h-4" />צ׳קים עתידיים
           </TabsTrigger>
-          <TabsTrigger value="fund-report" className="gap-1.5 text-base font-semibold px-4 py-2">
-            <PiggyBank className="w-4 h-4" />דוח קופה
-          </TabsTrigger>
           <TabsTrigger value="uncategorized" className="gap-1.5 text-base font-semibold px-4 py-2">
             <AlertTriangle className="w-4 h-4" />לא מסווגות
           </TabsTrigger>
@@ -98,12 +95,12 @@ function ReportsPage() {
         {isLoading && <p className="text-sm text-muted-foreground">טוען…</p>}
 
         <TabsContent value="future-checks"><FutureChecksReport txs={txs} lookups={lookups} /></TabsContent>
-        <TabsContent value="fund-report"><FundReport txs={txs} lookups={lookups} /></TabsContent>
         <TabsContent value="uncategorized"><UncategorizedReport txs={txs} lookups={lookups} /></TabsContent>
       </Tabs>
     </AppShell>
   );
 }
+
 
 /* ===================== Helpers ===================== */
 function nameMap(arr: any[]) {
