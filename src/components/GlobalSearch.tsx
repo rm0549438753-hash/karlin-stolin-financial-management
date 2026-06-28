@@ -85,13 +85,13 @@ export function GlobalSearch() {
         <span className="hidden md:inline text-xs">חיפוש</span>
         <kbd className="hidden md:inline-flex text-[10px] bg-white/10 px-1.5 py-0.5 rounded">⌘K</kbd>
       </Button>
-      <CommandDialog open={open} onOpenChange={setOpen}>
+      <CommandDialog open={open} onOpenChange={setOpen} shouldFilter={false}>
         <CommandInput
-          placeholder="חפש לפי תיאור, הערה או סכום…"
+          placeholder="חפש לפי תיאור, הערה, מוטב או סכום…"
           value={q}
           onValueChange={setQ}
         />
-        <CommandList shouldFilter={false as any}>
+        <CommandList>
           {q.trim().length < 2 && <CommandEmpty>הקלד לפחות 2 תווים</CommandEmpty>}
           {q.trim().length >= 2 && !isFetching && hits.length === 0 && <CommandEmpty>לא נמצאו תוצאות</CommandEmpty>}
           {isFetching && <CommandEmpty>מחפש…</CommandEmpty>}
