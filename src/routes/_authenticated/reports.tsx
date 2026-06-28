@@ -22,6 +22,9 @@ import {
 } from "recharts";
 
 export const Route = createFileRoute("/_authenticated/reports")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    tab: (search.tab as string) ?? "future-checks",
+  }),
   component: ReportsPage,
 });
 
@@ -68,6 +71,8 @@ async function fetchAllTransactions(): Promise<Tx[]> {
 }
 
 function ReportsPage() {
+  const { tab } = Route.useSearch();
+  const navigate = useNavigate();
   const { data: txs = [], isLoading } = useQuery({
     queryKey: ["reports-all-tx"],
     queryFn: fetchAllTransactions,
@@ -82,7 +87,12 @@ function ReportsPage() {
 
   return (
     <AppShell title="דוחות">
-      <Tabs defaultValue="future-checks" dir="rtl" className="space-y-4">
+      <Tabs
+        value={tab}
+        onValueChange={(v) => navigate({ to: "/reports", search: { tab: v } as any })}
+        dir="rtl"
+        className="space-y-4"
+      >
         <TabsList className="flex flex-wrap h-auto justify-start gap-1">
           <TabsTrigger value="future-checks" className="gap-1.5 text-base font-semibold px-4 py-2">
             <CalendarClock className="w-4 h-4" />צ׳קים עתידיים
@@ -371,14 +381,28 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
 
   const editingAccount = editing ? (lookups.accounts as any[]).find((a) => a.id === editing.account_id) : null;
 
+  const totalAmt = useMemo(() => filtered.reduce((s, t) => s + Math.abs(Number(t.amount)), 0), [filtered]);
+  const accountsCount = accountsWithUnc.length;
+  const oldestDate = useMemo(() => {
+    if (filtered.length === 0) return null;
+    return filtered.reduce((min, t) => (t.transaction_date < min ? t.transaction_date : min), filtered[0].transaction_date);
+  }, [filtered]);
+
   return (
     <ReportShell
       title="תנועות לא מסווגות"
       subtitle="כל התנועות שבהן גם הסוג וגם הקופה ריקים. לחיצה על תנועה פותחת לעריכה."
       onExport={() => exportTxs(filtered, lookups, "לא מסווגות.xlsx")}
     >
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Kpi label="סה״כ לא מסווגות" value={String(filtered.length)} />
+        <Kpi label="סכום מצטבר" value={formatCurrency(totalAmt)} tone="expense" />
+        <Kpi label="חשבונות עם תנועות לא מסווגות" value={String(accountsCount)} />
+        <Kpi label="הוותיק ביותר" value={oldestDate ? formatDate(oldestDate) : "—"} />
+      </div>
+
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="text-sm font-semibold">סה״כ {filtered.length} תנועות</div>
+        <div className="text-sm font-semibold">מציג {filtered.length} תנועות</div>
         <Select value={accountFilter} onValueChange={setAccountFilter}>
           <SelectTrigger className="w-72"><SelectValue placeholder="כל החשבונות" /></SelectTrigger>
           <SelectContent>
