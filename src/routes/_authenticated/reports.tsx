@@ -253,7 +253,7 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
 
       {monthly.length > 0 ? (
         <div className="rounded-lg border bg-card p-4">
-          <p className="text-sm font-semibold mb-3">פריסה לפי חודש — לחיצה לפירוט</p>
+          <p className="text-sm font-semibold mb-3">פריסה לפי חודש — לחץ לפירוט</p>
           <ResponsiveContainer width="100%" height={320}>
             <BarChart data={monthly} margin={{ top: 24, right: 10, left: 10, bottom: 8 }}>
               <CartesianGrid strokeDasharray="3 3" />
