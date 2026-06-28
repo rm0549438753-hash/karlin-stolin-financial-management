@@ -413,13 +413,6 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           </SelectContent>
         </Select>
       </div>
-            <SelectItem value="all">כל החשבונות ({allUnc.length})</SelectItem>
-            {accountsWithUnc.map((a) => (
-              <SelectItem key={a.id} value={a.id}>{a.name} ({a.count})</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
 
       <div className="rounded-2xl border bg-card overflow-x-auto">
         <Table className="border-collapse">
