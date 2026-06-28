@@ -145,22 +145,28 @@ function exportTxs(rows: Tx[], lookups: any, filename: string) {
 
 function ReportShell({ title, subtitle, onExport, children }: { title: string; subtitle?: string; onExport?: () => void; children: React.ReactNode }) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+    <Card className="print-area">
+      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 bg-muted/40 border-b rounded-t-xl">
         <div>
           <CardTitle className="text-2xl">{title}</CardTitle>
           {subtitle && <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>}
         </div>
-        {onExport && (
-          <Button variant="outline" size="sm" onClick={onExport}>
-            <Download className="w-4 h-4 ml-1" />ייצוא לאקסל
+        <div className="flex gap-2 no-print">
+          {onExport && (
+            <Button variant="outline" size="sm" onClick={onExport}>
+              <Download className="w-4 h-4 ml-1" />ייצוא לאקסל
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={() => window.print()}>
+            <Printer className="w-4 h-4 ml-1" />הדפסה
           </Button>
-        )}
+        </div>
       </CardHeader>
-      <CardContent className="space-y-4">{children}</CardContent>
+      <CardContent className="space-y-4 pt-6">{children}</CardContent>
     </Card>
   );
 }
+
 
 /* ===================== Kpi ===================== */
 function Kpi({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "income" | "expense" }) {
