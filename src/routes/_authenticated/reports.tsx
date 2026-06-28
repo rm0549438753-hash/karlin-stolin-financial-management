@@ -282,23 +282,23 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           <SheetHeader>
             <SheetTitle>{monthLabel} — ימים עם צ׳קים</SheetTitle>
           </SheetHeader>
-          <div className="mt-4 rounded-md border">
-            <Table>
+          <div className="mt-4 rounded-2xl border bg-card overflow-x-auto">
+            <Table className="border-collapse">
               <TableHeader>
-                <TableRow>
-                  <TableHead className="text-right">תאריך ערך</TableHead>
-                  <TableHead className="text-right">מספר צ׳קים</TableHead>
-                  <TableHead className="text-left">סכום</TableHead>
-                  <TableHead className="w-10"></TableHead>
+                <TableRow className="bg-muted/30 hover:bg-muted/30">
+                  <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">תאריך ערך</TableHead>
+                  <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">מספר צ׳קים</TableHead>
+                  <TableHead className="text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">סכום</TableHead>
+                  <TableHead className="w-10 border-l border-border last:border-l-0"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dayBuckets.map((d) => (
-                  <TableRow key={d.date} className="cursor-pointer hover:bg-primary/5 border-b" onClick={() => setOpenDay(d.date)}>
-                    <TableCell className="font-semibold tabular-nums">{formatDate(d.date)}</TableCell>
-                    <TableCell className="tabular-nums">{d.rows.length}</TableCell>
-                    <TableCell className="text-left font-mono text-expense tabular-nums">{formatCurrency(d.sum)}</TableCell>
-                    <TableCell><ChevronRight className="w-4 h-4 text-muted-foreground" /></TableCell>
+                {dayBuckets.map((d, idx) => (
+                  <TableRow key={d.date} className={"cursor-pointer hover:bg-primary/5 border-b border-border " + (idx % 2 ? "bg-muted/20" : "")} onClick={() => setOpenDay(d.date)}>
+                    <TableCell className="font-semibold tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{formatDate(d.date)}</TableCell>
+                    <TableCell className="tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{d.rows.length}</TableCell>
+                    <TableCell className="text-left font-mono text-expense tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{formatCurrency(d.sum)}</TableCell>
+                    <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5"><ChevronRight className="w-4 h-4 text-muted-foreground" /></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
