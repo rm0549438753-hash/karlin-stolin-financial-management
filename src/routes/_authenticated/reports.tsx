@@ -239,7 +239,6 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   return (
     <ReportShell
       title="צ׳קים עתידיים"
-      subtitle="לחיצה על חודש פותחת את הימים, ולחיצה על יום פותחת את הצ׳קים. לחיצה על תנועה פותחת אותה בדף התנועות."
       onExport={() => exportTxs(future, lookups, "צ׳קים עתידיים.xlsx")}
     >
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -254,7 +253,7 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
 
       {monthly.length > 0 ? (
         <div className="rounded-lg border bg-card p-4">
-          <p className="text-sm font-semibold mb-3">פריסה לפי חודש — לחיצה לפירוט</p>
+          <p className="text-sm font-semibold mb-3">פריסה לפי חודש — לחץ לפירוט</p>
           <ResponsiveContainer width="100%" height={320}>
             <BarChart data={monthly} margin={{ top: 24, right: 10, left: 10, bottom: 8 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -283,23 +282,23 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           <SheetHeader>
             <SheetTitle>{monthLabel} — ימים עם צ׳קים</SheetTitle>
           </SheetHeader>
-          <div className="mt-4 rounded-md border">
-            <Table>
+          <div className="mt-4 rounded-2xl border bg-card overflow-x-auto">
+            <Table className="border-collapse">
               <TableHeader>
-                <TableRow>
-                  <TableHead className="text-right">תאריך ערך</TableHead>
-                  <TableHead className="text-right">מספר צ׳קים</TableHead>
-                  <TableHead className="text-left">סכום</TableHead>
-                  <TableHead className="w-10"></TableHead>
+                <TableRow className="bg-muted/30 hover:bg-muted/30">
+                  <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">תאריך ערך</TableHead>
+                  <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">מספר צ׳קים</TableHead>
+                  <TableHead className="text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">סכום</TableHead>
+                  <TableHead className="w-10 border-l border-border last:border-l-0"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dayBuckets.map((d) => (
-                  <TableRow key={d.date} className="cursor-pointer hover:bg-primary/5 border-b" onClick={() => setOpenDay(d.date)}>
-                    <TableCell className="font-semibold tabular-nums">{formatDate(d.date)}</TableCell>
-                    <TableCell className="tabular-nums">{d.rows.length}</TableCell>
-                    <TableCell className="text-left font-mono text-expense tabular-nums">{formatCurrency(d.sum)}</TableCell>
-                    <TableCell><ChevronRight className="w-4 h-4 text-muted-foreground" /></TableCell>
+                {dayBuckets.map((d, idx) => (
+                  <TableRow key={d.date} className={"cursor-pointer hover:bg-primary/5 border-b border-border " + (idx % 2 ? "bg-muted/20" : "")} onClick={() => setOpenDay(d.date)}>
+                    <TableCell className="font-semibold tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{formatDate(d.date)}</TableCell>
+                    <TableCell className="tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{d.rows.length}</TableCell>
+                    <TableCell className="text-left font-mono text-expense tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{formatCurrency(d.sum)}</TableCell>
+                    <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5"><ChevronRight className="w-4 h-4 text-muted-foreground" /></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -315,36 +314,36 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
             <SheetTitle>צ׳קים ליום {openDay ? formatDate(openDay) : ""}</SheetTitle>
           </SheetHeader>
           <div className="mt-2 text-xs text-muted-foreground mb-3">לחיצה על תנועה תנווט לדף התנועות עם הדגשה.</div>
-          <div className="rounded-md border">
-            <Table>
+          <div className="rounded-2xl border bg-card overflow-x-auto">
+            <Table className="border-collapse">
               <TableHeader>
-                <TableRow>
-                  <TableHead className="text-right">פרטים</TableHead>
-                  <TableHead className="text-right">מוטב</TableHead>
-                  <TableHead className="text-right">סוג</TableHead>
-                  <TableHead className="text-right">קופה</TableHead>
-                  <TableHead className="text-left">סכום</TableHead>
+                <TableRow className="bg-muted/30 hover:bg-muted/30">
+                  <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">פרטים</TableHead>
+                  <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">מוטב</TableHead>
+                  <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">סוג</TableHead>
+                  <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">קופה</TableHead>
+                  <TableHead className="text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">סכום</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dayRows.map((t) => {
+                {dayRows.map((t, idx) => {
                   const fund = nameMap(lookups.funds);
                   const et = nameMap(lookups.expenseTypes);
                   return (
                     <TableRow
                       key={t.id}
-                      className="cursor-pointer hover:bg-primary/5 border-b"
+                      className={"cursor-pointer hover:bg-primary/5 border-b border-border " + (idx % 2 ? "bg-muted/20" : "")}
                       onClick={() => {
                         setOpenDay(null);
                         setOpenMonth(null);
                         navigate({ to: "/transactions", search: { account: t.account_id, highlight: t.id } });
                       }}
                     >
-                      <TableCell>{t.description ?? "—"}</TableCell>
-                      <TableCell>{t.payee ?? "—"}</TableCell>
-                      <TableCell>{t.expense_type_id ? et.get(t.expense_type_id) : "—"}</TableCell>
-                      <TableCell>{t.fund_id ? fund.get(t.fund_id) : "—"}</TableCell>
-                      <TableCell className="text-left font-mono text-expense tabular-nums">{formatCurrency(Math.abs(Number(t.amount)))}</TableCell>
+                      <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{t.description ?? "—"}</TableCell>
+                      <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{t.payee ?? "—"}</TableCell>
+                      <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{t.expense_type_id ? et.get(t.expense_type_id) : "—"}</TableCell>
+                      <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{t.fund_id ? fund.get(t.fund_id) : "—"}</TableCell>
+                      <TableCell className="text-left font-mono text-expense tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{formatCurrency(Math.abs(Number(t.amount)))}</TableCell>
                     </TableRow>
                   );
                 })}
@@ -392,27 +391,27 @@ function FundReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           <SelectContent>{(lookups.funds as any[]).map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}</SelectContent>
         </Select>
       </div>
-      <div className="rounded-md border overflow-x-auto">
-        <Table>
+      <div className="rounded-2xl border bg-card overflow-x-auto">
+        <Table className="border-collapse">
           <TableHeader>
-            <TableRow>
-              <TableHead className="text-right">תאריך</TableHead>
-              <TableHead className="text-right">חשבון</TableHead>
-              <TableHead className="text-right">פרטים</TableHead>
-              <TableHead className="text-left">סכום</TableHead>
-              <TableHead className="text-left">יתרה רצה</TableHead>
+            <TableRow className="bg-muted/30 hover:bg-muted/30">
+              <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">תאריך</TableHead>
+              <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">חשבון</TableHead>
+              <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">פרטים</TableHead>
+              <TableHead className="text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">סכום</TableHead>
+              <TableHead className="text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">יתרה רצה</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {withRunning.map((t) => {
+            {withRunning.map((t, idx) => {
               const acct = nameMap(lookups.accounts);
               return (
-                <TableRow key={t.id} className="border-b">
-                  <TableCell className="whitespace-nowrap tabular-nums">{formatDate(t.transaction_date)}</TableCell>
-                  <TableCell className="whitespace-nowrap">{acct.get(t.account_id) ?? "—"}</TableCell>
-                  <TableCell>{t.description ?? "—"}</TableCell>
-                  <TableCell className={`text-left font-mono tabular-nums ${Number(t.amount) >= 0 ? "text-income" : "text-expense"}`}>{formatCurrency(Number(t.amount))}</TableCell>
-                  <TableCell className={`text-left font-mono tabular-nums font-bold ${t._running >= 0 ? "text-income" : "text-expense"}`}>{formatCurrency(t._running)}</TableCell>
+                <TableRow key={t.id} className={"border-b border-border hover:bg-primary/5 " + (idx % 2 ? "bg-muted/20" : "")}>
+                  <TableCell className="whitespace-nowrap tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{formatDate(t.transaction_date)}</TableCell>
+                  <TableCell className="whitespace-nowrap border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{acct.get(t.account_id) ?? "—"}</TableCell>
+                  <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{t.description ?? "—"}</TableCell>
+                  <TableCell className={`text-left font-mono tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs ${Number(t.amount) >= 0 ? "text-income" : "text-expense"}`}>{formatCurrency(Number(t.amount))}</TableCell>
+                  <TableCell className={`text-left font-mono tabular-nums font-bold border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs ${t._running >= 0 ? "text-income" : "text-expense"}`}>{formatCurrency(t._running)}</TableCell>
                 </TableRow>
               );
             })}
@@ -466,32 +465,32 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
         </Select>
       </div>
 
-      <div className="rounded-md border overflow-x-auto">
-        <Table>
+      <div className="rounded-2xl border bg-card overflow-x-auto">
+        <Table className="border-collapse">
           <TableHeader>
-            <TableRow>
-              <TableHead className="text-right">תאריך</TableHead>
-              <TableHead className="text-right">חשבון</TableHead>
-              <TableHead className="text-right">פרטים</TableHead>
-              <TableHead className="text-right">מוטב</TableHead>
-              <TableHead className="text-left">סכום</TableHead>
+            <TableRow className="bg-muted/30 hover:bg-muted/30">
+              <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">תאריך</TableHead>
+              <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">חשבון</TableHead>
+              <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">פרטים</TableHead>
+              <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">מוטב</TableHead>
+              <TableHead className="text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">סכום</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 && (
               <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">הכל מסווג ✓</TableCell></TableRow>
             )}
-            {filtered.map((t) => (
+            {filtered.map((t, idx) => (
               <TableRow
                 key={t.id}
-                className="cursor-pointer hover:bg-primary/5 border-b"
+                className={"cursor-pointer hover:bg-primary/5 border-b border-border " + (idx % 2 ? "bg-muted/20" : "")}
                 onClick={() => setEditing(t as unknown as TransactionRow)}
               >
-                <TableCell className="whitespace-nowrap tabular-nums">{formatDate(t.transaction_date)}</TableCell>
-                <TableCell className="whitespace-nowrap">{acctMap.get(t.account_id) ?? "—"}</TableCell>
-                <TableCell>{t.description ?? "—"}</TableCell>
-                <TableCell>{t.payee ?? "—"}</TableCell>
-                <TableCell className={`text-left font-mono tabular-nums ${Number(t.amount) >= 0 ? "text-income" : "text-expense"}`}>
+                <TableCell className="whitespace-nowrap tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{formatDate(t.transaction_date)}</TableCell>
+                <TableCell className="whitespace-nowrap border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{acctMap.get(t.account_id) ?? "—"}</TableCell>
+                <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{t.description ?? "—"}</TableCell>
+                <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{t.payee ?? "—"}</TableCell>
+                <TableCell className={`text-left font-mono tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs ${Number(t.amount) >= 0 ? "text-income" : "text-expense"}`}>
                   {formatCurrency(Number(t.amount))}
                 </TableCell>
               </TableRow>
