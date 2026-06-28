@@ -314,36 +314,36 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
             <SheetTitle>צ׳קים ליום {openDay ? formatDate(openDay) : ""}</SheetTitle>
           </SheetHeader>
           <div className="mt-2 text-xs text-muted-foreground mb-3">לחיצה על תנועה תנווט לדף התנועות עם הדגשה.</div>
-          <div className="rounded-md border">
-            <Table>
+          <div className="rounded-2xl border bg-card overflow-x-auto">
+            <Table className="border-collapse">
               <TableHeader>
-                <TableRow>
-                  <TableHead className="text-right">פרטים</TableHead>
-                  <TableHead className="text-right">מוטב</TableHead>
-                  <TableHead className="text-right">סוג</TableHead>
-                  <TableHead className="text-right">קופה</TableHead>
-                  <TableHead className="text-left">סכום</TableHead>
+                <TableRow className="bg-muted/30 hover:bg-muted/30">
+                  <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">פרטים</TableHead>
+                  <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">מוטב</TableHead>
+                  <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">סוג</TableHead>
+                  <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">קופה</TableHead>
+                  <TableHead className="text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">סכום</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dayRows.map((t) => {
+                {dayRows.map((t, idx) => {
                   const fund = nameMap(lookups.funds);
                   const et = nameMap(lookups.expenseTypes);
                   return (
                     <TableRow
                       key={t.id}
-                      className="cursor-pointer hover:bg-primary/5 border-b"
+                      className={"cursor-pointer hover:bg-primary/5 border-b border-border " + (idx % 2 ? "bg-muted/20" : "")}
                       onClick={() => {
                         setOpenDay(null);
                         setOpenMonth(null);
                         navigate({ to: "/transactions", search: { account: t.account_id, highlight: t.id } });
                       }}
                     >
-                      <TableCell>{t.description ?? "—"}</TableCell>
-                      <TableCell>{t.payee ?? "—"}</TableCell>
-                      <TableCell>{t.expense_type_id ? et.get(t.expense_type_id) : "—"}</TableCell>
-                      <TableCell>{t.fund_id ? fund.get(t.fund_id) : "—"}</TableCell>
-                      <TableCell className="text-left font-mono text-expense tabular-nums">{formatCurrency(Math.abs(Number(t.amount)))}</TableCell>
+                      <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{t.description ?? "—"}</TableCell>
+                      <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{t.payee ?? "—"}</TableCell>
+                      <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{t.expense_type_id ? et.get(t.expense_type_id) : "—"}</TableCell>
+                      <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{t.fund_id ? fund.get(t.fund_id) : "—"}</TableCell>
+                      <TableCell className="text-left font-mono text-expense tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{formatCurrency(Math.abs(Number(t.amount)))}</TableCell>
                     </TableRow>
                   );
                 })}
