@@ -391,27 +391,27 @@ function FundReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           <SelectContent>{(lookups.funds as any[]).map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}</SelectContent>
         </Select>
       </div>
-      <div className="rounded-md border overflow-x-auto">
-        <Table>
+      <div className="rounded-2xl border bg-card overflow-x-auto">
+        <Table className="border-collapse">
           <TableHeader>
-            <TableRow>
-              <TableHead className="text-right">תאריך</TableHead>
-              <TableHead className="text-right">חשבון</TableHead>
-              <TableHead className="text-right">פרטים</TableHead>
-              <TableHead className="text-left">סכום</TableHead>
-              <TableHead className="text-left">יתרה רצה</TableHead>
+            <TableRow className="bg-muted/30 hover:bg-muted/30">
+              <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">תאריך</TableHead>
+              <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">חשבון</TableHead>
+              <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">פרטים</TableHead>
+              <TableHead className="text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">סכום</TableHead>
+              <TableHead className="text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">יתרה רצה</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {withRunning.map((t) => {
+            {withRunning.map((t, idx) => {
               const acct = nameMap(lookups.accounts);
               return (
-                <TableRow key={t.id} className="border-b">
-                  <TableCell className="whitespace-nowrap tabular-nums">{formatDate(t.transaction_date)}</TableCell>
-                  <TableCell className="whitespace-nowrap">{acct.get(t.account_id) ?? "—"}</TableCell>
-                  <TableCell>{t.description ?? "—"}</TableCell>
-                  <TableCell className={`text-left font-mono tabular-nums ${Number(t.amount) >= 0 ? "text-income" : "text-expense"}`}>{formatCurrency(Number(t.amount))}</TableCell>
-                  <TableCell className={`text-left font-mono tabular-nums font-bold ${t._running >= 0 ? "text-income" : "text-expense"}`}>{formatCurrency(t._running)}</TableCell>
+                <TableRow key={t.id} className={"border-b border-border hover:bg-primary/5 " + (idx % 2 ? "bg-muted/20" : "")}>
+                  <TableCell className="whitespace-nowrap tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{formatDate(t.transaction_date)}</TableCell>
+                  <TableCell className="whitespace-nowrap border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{acct.get(t.account_id) ?? "—"}</TableCell>
+                  <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{t.description ?? "—"}</TableCell>
+                  <TableCell className={`text-left font-mono tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs ${Number(t.amount) >= 0 ? "text-income" : "text-expense"}`}>{formatCurrency(Number(t.amount))}</TableCell>
+                  <TableCell className={`text-left font-mono tabular-nums font-bold border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs ${t._running >= 0 ? "text-income" : "text-expense"}`}>{formatCurrency(t._running)}</TableCell>
                 </TableRow>
               );
             })}
