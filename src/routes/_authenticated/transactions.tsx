@@ -13,6 +13,7 @@ import { formatDate } from "@/lib/format";
 import { TransactionDialog, type TransactionRow } from "@/components/TransactionDialog";
 import { ImportDialog } from "@/components/ImportDialog";
 import { BulkEditDialog } from "@/components/BulkEditDialog";
+import { PrintDialog, type PrintColumn } from "@/components/PrintDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
