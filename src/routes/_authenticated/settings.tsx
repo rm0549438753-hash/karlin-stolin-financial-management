@@ -190,6 +190,7 @@ function UsersPanel() {
   const createUser = useServerFn(adminCreateUser);
   const deleteUser = useServerFn(adminDeleteUser);
   const setBlocked = useServerFn(adminSetUserBlocked);
+  const listUsers = useServerFn(adminListUsers);
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newName, setNewName] = useState("");
@@ -197,18 +198,9 @@ function UsersPanel() {
 
   const { data = [] } = useQuery({
     queryKey: ["users-with-roles"],
-    queryFn: async () => {
-      const { data: profiles } = await supabase.from("profiles").select("id, email, full_name, blocked");
-      const { data: roles } = await supabase.from("user_roles").select("user_id, role");
-      const rolesByUser = new Map<string, string[]>();
-      (roles ?? []).forEach((r) => {
-        const arr = rolesByUser.get(r.user_id) ?? [];
-        arr.push(r.role);
-        rolesByUser.set(r.user_id, arr);
-      });
-      return (profiles ?? []).map((p) => ({ ...p, roles: rolesByUser.get(p.id) ?? [] }));
-    },
+    queryFn: async () => await listUsers(),
   });
+
 
   const add = useMutation({
     mutationFn: async () => {
