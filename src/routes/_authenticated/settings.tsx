@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useUserRole, useAuthUser } from "@/hooks/use-auth";
 import { useServerFn } from "@tanstack/react-start";
-import { adminCreateUser, adminDeleteUser, adminSetUserBlocked } from "@/lib/admin-users.functions";
+import { adminCreateUser, adminDeleteUser, adminSetUserBlocked, adminListUsers } from "@/lib/admin-users.functions";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/_authenticated/settings")({
 function SettingsPage() {
   const { data: role, isLoading } = useUserRole();
   if (isLoading) return <AppShell title="הגדרות"><div className="p-8 text-center text-muted-foreground">טוען…</div></AppShell>;
-  if (!role?.isAdmin) {
+  if (!role?.isAdmin && !role?.isEditor) {
     return <AppShell title="הגדרות"><Card><CardContent className="p-8 text-center">אין הרשאה לגשת לדף זה.</CardContent></Card></AppShell>;
   }
   return (
@@ -36,18 +36,19 @@ function SettingsPage() {
           <TabsTrigger value="expense_types">סוגי הוצאה</TabsTrigger>
           <TabsTrigger value="categories">קטגוריות</TabsTrigger>
           <TabsTrigger value="subcategories">תת-קטגוריות</TabsTrigger>
-          <TabsTrigger value="users">משתמשים והרשאות</TabsTrigger>
+          {role?.isAdmin && <TabsTrigger value="users">משתמשים והרשאות</TabsTrigger>}
         </TabsList>
         <TabsContent value="accounts"><LookupCRUD table="accounts" label="חשבונות" hasKind /></TabsContent>
         <TabsContent value="funds"><LookupCRUD table="funds" label="קופות" /></TabsContent>
         <TabsContent value="expense_types"><LookupCRUD table="expense_types" label="סוגי הוצאה" /></TabsContent>
         <TabsContent value="categories"><LookupCRUD table="categories" label="קטגוריות" /></TabsContent>
         <TabsContent value="subcategories"><LookupCRUD table="subcategories" label="תת-קטגוריות" hasCategory /></TabsContent>
-        <TabsContent value="users"><UsersPanel /></TabsContent>
+        {role?.isAdmin && <TabsContent value="users"><UsersPanel /></TabsContent>}
       </Tabs>
     </AppShell>
   );
 }
+
 
 function LookupCRUD({ table, label, hasKind, hasCategory }: { table: string; label: string; hasKind?: boolean; hasCategory?: boolean }) {
   const qc = useQueryClient();
@@ -189,6 +190,7 @@ function UsersPanel() {
   const createUser = useServerFn(adminCreateUser);
   const deleteUser = useServerFn(adminDeleteUser);
   const setBlocked = useServerFn(adminSetUserBlocked);
+  const listUsers = useServerFn(adminListUsers);
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newName, setNewName] = useState("");
@@ -196,18 +198,9 @@ function UsersPanel() {
 
   const { data = [] } = useQuery({
     queryKey: ["users-with-roles"],
-    queryFn: async () => {
-      const { data: profiles } = await supabase.from("profiles").select("id, email, full_name, blocked");
-      const { data: roles } = await supabase.from("user_roles").select("user_id, role");
-      const rolesByUser = new Map<string, string[]>();
-      (roles ?? []).forEach((r) => {
-        const arr = rolesByUser.get(r.user_id) ?? [];
-        arr.push(r.role);
-        rolesByUser.set(r.user_id, arr);
-      });
-      return (profiles ?? []).map((p) => ({ ...p, roles: rolesByUser.get(p.id) ?? [] }));
-    },
+    queryFn: async () => await listUsers(),
   });
+
 
   const add = useMutation({
     mutationFn: async () => {
