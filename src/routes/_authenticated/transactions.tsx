@@ -508,9 +508,11 @@ function TransactionsPage() {
                   נבחרו {selectedIds.size} תנועות
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="default" onClick={() => setBulkEditOpen(true)}>
-                    <Pencil className="w-3.5 h-3.5 ml-1" />שינוי נבחרות
-                  </Button>
+                  {role?.isEditor && (
+                    <Button size="sm" variant="default" onClick={() => setBulkEditOpen(true)}>
+                      <Pencil className="w-3.5 h-3.5 ml-1" />שינוי נבחרות
+                    </Button>
+                  )}
                   <Button size="sm" variant="outline" onClick={exportSelected}>
                     <Download className="w-3.5 h-3.5 ml-1" />ייצוא נבחרות
                   </Button>
