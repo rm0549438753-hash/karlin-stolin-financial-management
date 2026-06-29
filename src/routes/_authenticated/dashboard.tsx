@@ -159,6 +159,7 @@ function DashboardPage() {
   const lookups = { accounts, categories, subcategories, expenseTypes, funds };
 
   const [newTxOpen, setNewTxOpen] = useState(false);
+  const { data: role } = useUserRole();
 
   useEffect(() => {
     const open = () => setNewTxOpen(true);
