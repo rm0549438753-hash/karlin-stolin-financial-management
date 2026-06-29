@@ -1,0 +1,1 @@
+TRUNCATE TABLE public.transactions; TRUNCATE TABLE public.import_batches CASCADE;
