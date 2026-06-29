@@ -811,15 +811,17 @@ function NoDateReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                       {formatCurrency(Number(t.amount))}
                     </TableCell>
                     <TableCell className="text-center px-2 py-1.5 align-middle">
-                      <Button
-                        size="sm"
-                        variant="default"
-                        disabled={!draft || isSaving}
-                        onClick={() => { setSavingId(t.id); updateDate.mutate({ id: t.id, date: draft }); }}
-                        className="h-7 px-2"
-                      >
-                        <Save className="w-3.5 h-3.5 ml-1" />שמור
-                      </Button>
+                      {role?.isEditor && (
+                        <Button
+                          size="sm"
+                          variant="default"
+                          disabled={!draft || isSaving}
+                          onClick={() => { setSavingId(t.id); updateDate.mutate({ id: t.id, date: draft }); }}
+                          className="h-7 px-2"
+                        >
+                          <Save className="w-3.5 h-3.5 ml-1" />שמור
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 );
