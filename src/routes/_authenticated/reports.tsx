@@ -97,7 +97,7 @@ function ReportsPage() {
     <AppShell title="דוחות">
       <Tabs
         value={tab}
-        onValueChange={(v) => navigate({ to: "/reports", search: { tab: v } as any })}
+        onValueChange={(v) => navigate({ to: "/reports", search: { tab: v } as any, replace: true })}
         dir="rtl"
         className="space-y-4"
       >
