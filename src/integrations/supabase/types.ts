@@ -272,7 +272,7 @@ export type Database = {
           payer_name: string | null
           reference: string | null
           subcategory_id: string | null
-          transaction_date: string
+          transaction_date: string | null
           updated_at: string
           updated_by: string | null
           value_date: string | null
@@ -302,7 +302,7 @@ export type Database = {
           payer_name?: string | null
           reference?: string | null
           subcategory_id?: string | null
-          transaction_date: string
+          transaction_date?: string | null
           updated_at?: string
           updated_by?: string | null
           value_date?: string | null
@@ -332,7 +332,7 @@ export type Database = {
           payer_name?: string | null
           reference?: string | null
           subcategory_id?: string | null
-          transaction_date?: string
+          transaction_date?: string | null
           updated_at?: string
           updated_by?: string | null
           value_date?: string | null
