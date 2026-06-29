@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -14,7 +15,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { useAccounts, useCategories, useExpenseTypes, useFunds, useSubcategories } from "@/hooks/use-lookups";
 import { TransactionDialog, type TransactionRow } from "@/components/TransactionDialog";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { CalendarClock, AlertTriangle, Download, Printer } from "lucide-react";
+import { CalendarClock, AlertTriangle, Download, Printer, Search, Pencil } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 import {
@@ -362,8 +363,11 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
 function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const allUnc = useMemo(() => txs.filter((t) => !t.expense_type_id && !t.fund_id), [txs]);
   const acctMap = nameMap(lookups.accounts);
+  const catMap = nameMap(lookups.categories);
+  const subMap = nameMap(lookups.subcategories);
 
   const [accountFilter, setAccountFilter] = useState<string>("all");
+  const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<TransactionRow | null>(null);
 
   const accountsWithUnc = useMemo(() => {
@@ -374,10 +378,26 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       .map((a) => ({ id: a.id, name: a.name, count: counts.get(a.id) ?? 0 }));
   }, [allUnc, lookups.accounts]);
 
-  const filtered = useMemo(
-    () => accountFilter === "all" ? allUnc : allUnc.filter((t) => t.account_id === accountFilter),
-    [allUnc, accountFilter],
-  );
+  const filtered = useMemo(() => {
+    const byAccount = accountFilter === "all" ? allUnc : allUnc.filter((t) => t.account_id === accountFilter);
+    const q = search.trim().toLowerCase();
+    const searched = q
+      ? byAccount.filter((t) => [
+        t.description,
+        t.reference,
+        t.note,
+        t.payee,
+        acctMap.get(t.account_id),
+        t.category_id ? catMap.get(t.category_id) : "",
+        t.subcategory_id ? subMap.get(t.subcategory_id) : "",
+        t.transaction_date,
+        formatDate(t.transaction_date),
+        String(t.amount),
+        formatCurrency(Number(t.amount)),
+      ].some((v) => String(v ?? "").toLowerCase().includes(q)))
+      : byAccount;
+    return [...searched].sort((a, b) => b.transaction_date.localeCompare(a.transaction_date));
+  }, [allUnc, accountFilter, search, acctMap, catMap, subMap]);
 
   const editingAccount = editing ? (lookups.accounts as any[]).find((a) => a.id === editing.account_id) : null;
 
@@ -391,20 +411,26 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   return (
     <ReportShell
       title="תנועות לא מסווגות"
-      subtitle="כל התנועות שבהן גם הסוג וגם הקופה ריקים. לחיצה על תנועה פותחת לעריכה."
       onExport={() => exportTxs(filtered, lookups, "לא מסווגות.xlsx")}
     >
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Kpi label="סה״כ לא מסווגות" value={String(filtered.length)} />
         <Kpi label="סכום מצטבר" value={formatCurrency(totalAmt)} tone="expense" />
-        <Kpi label="חשבונות עם תנועות לא מסווגות" value={String(accountsCount)} />
+        <Kpi label="חשבונות" value={String(accountsCount)} />
         <Kpi label="הוותיק ביותר" value={oldestDate ? formatDate(oldestDate) : "—"} />
       </div>
 
       <div className="rounded-2xl border bg-card overflow-hidden">
-        <div className="px-4 py-3 bg-muted/40 flex flex-wrap gap-2 items-center border-b">
-          <div className="text-sm font-semibold">מציג {filtered.length} תנועות</div>
-          <div className="flex-1" />
+        <div className="px-4 py-3 bg-muted/40 flex flex-wrap gap-2 items-center">
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="חיפוש בתיאור / אסמכתה / הערה / שם"
+              className="pr-9 bg-card"
+            />
+          </div>
           <Select value={accountFilter} onValueChange={setAccountFilter}>
             <SelectTrigger className="w-72 h-9"><SelectValue placeholder="כל החשבונות" /></SelectTrigger>
             <SelectContent>
@@ -414,6 +440,7 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
               ))}
             </SelectContent>
           </Select>
+          <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setAccountFilter("all"); }}>איפוס</Button>
         </div>
 
         <div className="overflow-x-auto">
@@ -424,25 +451,37 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                 <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">חשבון</TableHead>
                 <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">פרטים</TableHead>
                 <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">מוטב</TableHead>
+                <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">סוג</TableHead>
+                <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">קופה</TableHead>
+                <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">קטגוריה</TableHead>
                 <TableHead className="text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">סכום</TableHead>
+                <TableHead className="text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2 py-2 whitespace-nowrap">פעולות</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 && (
-                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-12">הכל מסווג ✓</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-12">הכל מסווג ✓</TableCell></TableRow>
               )}
               {filtered.map((t, idx) => (
                 <TableRow
                   key={t.id}
-                  className={"group cursor-pointer border-b border-border transition-colors hover:bg-primary/5 bg-amber-50/30 " + (idx % 2 ? "bg-muted/20 " : "")}
+                  className={"group cursor-pointer border-b border-border transition-colors hover:bg-primary/5 " + (idx % 2 ? "bg-muted/20 " : "")}
                   onClick={() => setEditing(t as unknown as TransactionRow)}
                 >
                   <TableCell className="whitespace-nowrap tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs align-middle">{formatDate(t.transaction_date)}</TableCell>
                   <TableCell className="whitespace-nowrap border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs align-middle">{acctMap.get(t.account_id) ?? "—"}</TableCell>
                   <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs align-middle max-w-[280px] truncate">{t.description ?? "—"}</TableCell>
                   <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs align-middle max-w-[180px] truncate">{t.payee ?? "—"}</TableCell>
+                  <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs align-middle"><UncatBadge /></TableCell>
+                  <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs align-middle"><UncatBadge /></TableCell>
+                  <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs align-middle">{t.category_id ? catMap.get(t.category_id) ?? "—" : "—"}</TableCell>
                   <TableCell className={`text-left font-mono tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs font-semibold align-middle ${Number(t.amount) >= 0 ? "text-income" : "text-expense"}`}>
                     {formatCurrency(Number(t.amount))}
+                  </TableCell>
+                  <TableCell className="text-center px-2 py-1.5 align-middle">
+                    <Button size="sm" variant="ghost" className="h-7 px-2" onClick={(e) => { e.stopPropagation(); setEditing(t as unknown as TransactionRow); }}>
+                      <Pencil className="w-3.5 h-3.5 ml-1" />עריכה
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -451,7 +490,7 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t bg-muted/30 text-sm text-muted-foreground">
-          <span>סה״כ {filtered.length} תנועות</span>
+          <span>סה״כ {filtered.length} תנועות · {accountsCount} חשבונות · הוותיק ביותר: {oldestDate ? formatDate(oldestDate) : "—"}</span>
           <span className="font-semibold text-expense tabular-nums">{formatCurrency(totalAmt)}</span>
         </div>
       </div>
@@ -466,4 +505,8 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       />
     </ReportShell>
   );
+}
+
+function UncatBadge() {
+  return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-dashed border-amber-300">לא מסווג</span>;
 }
