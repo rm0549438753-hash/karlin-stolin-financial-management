@@ -255,6 +255,7 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     <ReportShell
       title="צ׳קים עתידיים"
       onExport={() => exportTxs(future, lookups, "צ׳קים עתידיים.xlsx")}
+      onPrint={() => setPrintOpen(true)}
     >
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <Kpi label="סה״כ צ׳קים עתידיים" value={String(future.length)} />
