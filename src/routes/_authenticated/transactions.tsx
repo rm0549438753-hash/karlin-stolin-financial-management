@@ -145,6 +145,7 @@ function TransactionsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [printOpen, setPrintOpen] = useState(false);
 
   // Reset selection + uncategorized filter when account changes (banner is per-account)
   useEffect(() => {
