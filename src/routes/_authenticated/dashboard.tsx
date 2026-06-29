@@ -22,6 +22,7 @@ import {
 import { TrendingUp, TrendingDown, Scale, Download, Printer, Search, History } from "lucide-react";
 import { format } from "date-fns";
 import { PrintDialog, type PrintColumn } from "@/components/PrintDialog";
+import { useUserRole } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
