@@ -17,6 +17,7 @@ import { TransactionDialog, type TransactionRow } from "@/components/Transaction
 import { formatCurrency, formatDate } from "@/lib/format";
 import { CalendarClock, AlertTriangle, Download, Printer, Search, Pencil } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { PrintDialog } from "@/components/PrintDialog";
 
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LabelList,
