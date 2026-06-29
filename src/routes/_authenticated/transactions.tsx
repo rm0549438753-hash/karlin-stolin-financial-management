@@ -562,7 +562,7 @@ function TransactionsPage() {
                           (isHighlighted ? "ring-2 ring-primary bg-primary/10 " : isChecked ? "bg-primary/5 " : isUncat ? "bg-amber-50/30 " : idx % 2 ? "bg-muted/20 " : "")
                         }
                       >
-                        <TableCell className="px-3 border-l border-border/60">
+                        <TableCell className="w-8 px-1 text-center border-l border-border/60">
                           <Checkbox checked={isChecked} onCheckedChange={() => toggleOne(r.id)} aria-label="בחר תנועה" />
                         </TableCell>
                         {columns.map((col) => (
