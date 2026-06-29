@@ -114,7 +114,7 @@ function UserMenu() {
     <div className="flex flex-col gap-2 text-white">
       <div className="px-2 py-1 group-data-[collapsible=icon]:hidden">
         <div className="text-xs font-bold truncate">{user?.email}</div>
-        <div className="text-[10px] text-white/60">{role?.isAdmin ? "מנהל" : "עורך"}</div>
+        <div className="text-[10px] text-white/60">{role?.isAdmin ? "מנהל" : role?.roles?.includes("editor") ? "עורך" : "צופה"}</div>
       </div>
       <Button onClick={signOut} variant="ghost" size="sm" className="justify-start gap-2 text-white hover:bg-white/10 hover:text-white">
         <LogOut className="w-4 h-4" />
