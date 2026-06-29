@@ -113,7 +113,7 @@ function DashboardPage() {
     [funds],
   );
   const vaultFundIds = useMemo(
-    () => new Set(funds.map((f) => f.id)),
+    () => new Set(funds.filter((f: any) => f.is_vault).map((f) => f.id)),
     [funds],
   );
 
