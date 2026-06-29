@@ -281,10 +281,11 @@ function UsersPanel() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Select value={current} onValueChange={(v) => setRole.mutate({ userId: u.id, role: v as any })} disabled={isMe}>
-                    <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="admin">מנהל</SelectItem>
                       <SelectItem value="editor">עורך</SelectItem>
+                      <SelectItem value="viewer">צופה</SelectItem>
                     </SelectContent>
                   </Select>
                   <Button
