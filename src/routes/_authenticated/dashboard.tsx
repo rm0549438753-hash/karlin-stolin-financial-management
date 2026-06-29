@@ -51,6 +51,8 @@ type Tx = {
   reference: string | null;
 };
 
+
+
 async function fetchAllDashboardTransactions() {
   const rows: Tx[] = [];
   let from = 0;
@@ -59,6 +61,7 @@ async function fetchAllDashboardTransactions() {
     const { data, error } = await supabase
       .from("transactions")
       .select(TRANSACTION_SELECT)
+      .not("transaction_date", "is", null)
       .order("transaction_date", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
 
@@ -69,6 +72,7 @@ async function fetchAllDashboardTransactions() {
     if (page.length < PAGE_SIZE) break;
     from += PAGE_SIZE;
   }
+
 
   return rows;
 }
@@ -114,10 +118,14 @@ function DashboardPage() {
   );
 
 
+  // Note: transactions without a `transaction_date` are excluded at the query level
+  // so they don't affect charts, pies, totals or drill-downs.
   const baseTxs = useMemo(
     () => txsEffective.filter((t) => !irrelevantFundId || t.fund_id !== irrelevantFundId),
     [txsEffective, irrelevantFundId],
   );
+
+
 
   const institutionTxs = useMemo(
     () => baseTxs.filter((t) =>

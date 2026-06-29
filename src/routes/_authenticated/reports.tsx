@@ -15,7 +15,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { useAccounts, useCategories, useExpenseTypes, useFunds, useSubcategories } from "@/hooks/use-lookups";
 import { TransactionDialog, type TransactionRow } from "@/components/TransactionDialog";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { CalendarClock, AlertTriangle, Download, Printer, Search, Pencil, X, Trash2 } from "lucide-react";
+import { CalendarClock, AlertTriangle, Download, Printer, Search, Pencil, X, Trash2, CalendarX, Save } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { PrintDialog } from "@/components/PrintDialog";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -108,12 +108,17 @@ function ReportsPage() {
           <TabsTrigger value="uncategorized" className="gap-1.5 text-base font-semibold px-4 py-2">
             <AlertTriangle className="w-4 h-4" />לא מסווגות
           </TabsTrigger>
+          <TabsTrigger value="no-date" className="gap-1.5 text-base font-semibold px-4 py-2">
+            <CalendarX className="w-4 h-4" />ללא תאריך
+          </TabsTrigger>
         </TabsList>
 
         {isLoading && <p className="text-sm text-muted-foreground">טוען…</p>}
 
         <TabsContent value="future-checks"><FutureChecksReport txs={txs} lookups={lookups} /></TabsContent>
         <TabsContent value="uncategorized"><UncategorizedReport txs={txs} lookups={lookups} /></TabsContent>
+        <TabsContent value="no-date"><NoDateReport txs={txs} lookups={lookups} /></TabsContent>
+
       </Tabs>
     </AppShell>
   );
@@ -671,3 +676,159 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
 function UncatBadge() {
   return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-dashed border-amber-300">לא מסווג</span>;
 }
+
+/* ===================== 4. No Date (inline date editor) ===================== */
+function NoDateReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
+  const acctMap = nameMap(lookups.accounts);
+  const fundMap = nameMap(lookups.funds);
+  const etMap = nameMap(lookups.expenseTypes);
+  const qc = useQueryClient();
+
+  const noDateTxs = useMemo(
+    () => txs.filter((t) => !t.transaction_date),
+    [txs],
+  );
+
+  const [accountFilter, setAccountFilter] = useState<string>("all");
+  const [search, setSearch] = useState("");
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [savingId, setSavingId] = useState<string | null>(null);
+
+  const accountsWithRows = useMemo(() => {
+    const counts = new Map<string, number>();
+    noDateTxs.forEach((t) => counts.set(t.account_id, (counts.get(t.account_id) ?? 0) + 1));
+    return (lookups.accounts as any[])
+      .filter((a) => counts.has(a.id))
+      .map((a) => ({ id: a.id, name: a.name, count: counts.get(a.id) ?? 0 }));
+  }, [noDateTxs, lookups.accounts]);
+
+  const filtered = useMemo(() => {
+    const byAcc = accountFilter === "all" ? noDateTxs : noDateTxs.filter((t) => t.account_id === accountFilter);
+    const q = search.trim().toLowerCase();
+    if (!q) return byAcc;
+    return byAcc.filter((t) =>
+      [t.description, t.payee, t.note, t.reference, acctMap.get(t.account_id), String(t.amount)]
+        .some((v) => String(v ?? "").toLowerCase().includes(q)),
+    );
+  }, [noDateTxs, accountFilter, search, acctMap]);
+
+  const totalAmt = useMemo(() => filtered.reduce((s, t) => s + Math.abs(Number(t.amount)), 0), [filtered]);
+
+  const updateDate = useMutation({
+    mutationFn: async ({ id, date }: { id: string; date: string }) => {
+      const { error } = await supabase.from("transactions").update({ transaction_date: date }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => {
+      toast.success("תאריך עודכן");
+      setDrafts((d) => { const n = { ...d }; delete n[vars.id]; return n; });
+      qc.invalidateQueries({ queryKey: ["reports-all-tx"] });
+      qc.invalidateQueries({ queryKey: ["tx-dashboard-full"] });
+      qc.invalidateQueries({ queryKey: ["transactions"] });
+      qc.invalidateQueries({ queryKey: ["alerts-no-date-count"] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "שגיאה"),
+    onSettled: () => setSavingId(null),
+  });
+
+  return (
+    <ReportShell
+      title="תנועות ללא תאריך"
+      subtitle="תנועות אלו לא נכללות בחישובי הגרפים והעוגות בלוח הבקרה"
+      onExport={() => exportTxs(filtered as any, lookups, "ללא תאריך.xlsx")}
+    >
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <Kpi label="סה״כ ללא תאריך" value={String(filtered.length)} />
+        <Kpi label="סכום מצטבר" value={formatCurrency(totalAmt)} tone="expense" />
+        <Kpi label="חשבונות" value={String(accountsWithRows.length)} />
+      </div>
+
+      <div className="rounded-2xl border bg-card overflow-hidden">
+        <div className="px-4 py-3 bg-muted/40 flex flex-wrap gap-2 items-center">
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="חיפוש בתיאור / מוטב / הערה"
+              className="pr-9 bg-card"
+            />
+          </div>
+          <Select value={accountFilter} onValueChange={setAccountFilter}>
+            <SelectTrigger className="w-72 h-9"><SelectValue placeholder="כל החשבונות" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">כל החשבונות ({noDateTxs.length})</SelectItem>
+              {accountsWithRows.map((a) => (
+                <SelectItem key={a.id} value={a.id}>{a.name} ({a.count})</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setAccountFilter("all"); }}>איפוס</Button>
+        </div>
+
+        <div className="overflow-x-auto">
+          <Table className="border-collapse">
+            <TableHeader>
+              <TableRow className="bg-muted/30 hover:bg-muted/30">
+                <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">תאריך חדש</TableHead>
+                <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">חשבון</TableHead>
+                <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">פרטים</TableHead>
+                <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">מוטב</TableHead>
+                <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">סוג</TableHead>
+                <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">קופה</TableHead>
+                <TableHead className="text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">סכום</TableHead>
+                <TableHead className="text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2 py-2 whitespace-nowrap">שמירה</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.length === 0 && (
+                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-12">אין תנועות ללא תאריך ✓</TableCell></TableRow>
+              )}
+              {filtered.map((t, idx) => {
+                const draft = drafts[t.id] ?? "";
+                const isSaving = savingId === t.id;
+                return (
+                  <TableRow key={t.id} className={"border-b border-border " + (idx % 2 ? "bg-muted/20" : "")}>
+                    <TableCell className="border-l border-border/60 px-2 py-1.5 align-middle">
+                      <Input
+                        type="date"
+                        value={draft}
+                        onChange={(e) => setDrafts((d) => ({ ...d, [t.id]: e.target.value }))}
+                        className="h-8 w-40 text-xs"
+                      />
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap border-l border-border/60 px-2 py-1.5 text-xs align-middle">{acctMap.get(t.account_id) ?? "—"}</TableCell>
+                    <TableCell className="border-l border-border/60 px-2 py-1.5 text-xs align-middle max-w-[260px] truncate">{t.description ?? "—"}</TableCell>
+                    <TableCell className="border-l border-border/60 px-2 py-1.5 text-xs align-middle max-w-[160px] truncate">{t.payee ?? "—"}</TableCell>
+                    <TableCell className="border-l border-border/60 px-2 py-1.5 text-xs align-middle">{t.expense_type_id ? etMap.get(t.expense_type_id) ?? "—" : "—"}</TableCell>
+                    <TableCell className="border-l border-border/60 px-2 py-1.5 text-xs align-middle">{t.fund_id ? fundMap.get(t.fund_id) ?? "—" : "—"}</TableCell>
+                    <TableCell className={`text-left font-mono tabular-nums border-l border-border/60 px-2 py-1.5 text-xs font-semibold align-middle ${Number(t.amount) >= 0 ? "text-income" : "text-expense"}`}>
+                      {formatCurrency(Number(t.amount))}
+                    </TableCell>
+                    <TableCell className="text-center px-2 py-1.5 align-middle">
+                      <Button
+                        size="sm"
+                        variant="default"
+                        disabled={!draft || isSaving}
+                        onClick={() => { setSavingId(t.id); updateDate.mutate({ id: t.id, date: draft }); }}
+                        className="h-7 px-2"
+                      >
+                        <Save className="w-3.5 h-3.5 ml-1" />שמור
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t bg-muted/30 text-sm text-muted-foreground">
+          <span>סה״כ {filtered.length} תנועות · {accountsWithRows.length} חשבונות</span>
+          <span className="font-semibold text-expense tabular-nums">{formatCurrency(totalAmt)}</span>
+        </div>
+      </div>
+    </ReportShell>
+  );
+}
+
