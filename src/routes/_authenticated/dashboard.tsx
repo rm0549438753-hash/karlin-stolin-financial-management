@@ -21,6 +21,7 @@ import {
 } from "recharts";
 import { TrendingUp, TrendingDown, Scale, Download, Printer, Search, History } from "lucide-react";
 import { format } from "date-fns";
+import { PrintDialog, type PrintColumn } from "@/components/PrintDialog";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -477,6 +478,7 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
   const etMap = new Map<string, string>(lookups.expenseTypes.map((e: any) => [e.id, e.name]));
   const acctMap = new Map<string, string>((lookups.accounts ?? []).map((a: any) => [a.id, a.name]));
   const [search, setSearch] = useState("");
+  const [printOpen, setPrintOpen] = useState(false);
 
   useEffect(() => {
     setSearch("");
@@ -531,12 +533,36 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
               <Download className="w-4 h-4 ml-1" />
               ייצוא לאקסל
             </Button>
-            <Button size="sm" variant="outline" onClick={() => window.print()} disabled={!drill?.rows.length}>
+            <Button size="sm" variant="outline" onClick={() => setPrintOpen(true)} disabled={!drill?.rows.length}>
               <Printer className="w-4 h-4 ml-1" />הדפסה
             </Button>
           </div>
 
         </div>
+        <PrintDialog
+          open={printOpen}
+          onOpenChange={setPrintOpen}
+          title={drill?.title ?? "פירוט תנועות"}
+          subtitle={`${filteredRows.length} מתוך ${drill?.rows.length ?? 0} תנועות`}
+          scopes={[
+            { id: "filtered", label: "תוצאות הסינון הנוכחי", rows: filteredRows },
+            { id: "all", label: "כל התנועות בפירוט", rows: drill?.rows ?? [] },
+          ]}
+          columns={[
+            { id: "date", header: "תאריך", align: "right", format: (t: Tx) => format(new Date(t.transaction_date), "dd/MM/yy") },
+            { id: "account", header: "חשבון", align: "right", format: (t: Tx) => acctMap.get(t.account_id) ?? "—" },
+            { id: "desc", header: "תיאור", align: "right", format: (t: Tx) => t.description ?? "—" },
+            { id: "payee", header: "שם מוטב", align: "right", format: (t: Tx) => t.payee ?? "—" },
+            { id: "ref", header: "אסמכתה", align: "right", format: (t: Tx) => t.reference ?? "—" },
+            { id: "type", header: "סוג", align: "right", format: (t: Tx) => (t.expense_type_id ? (etMap.get(t.expense_type_id) as string) : "—") },
+            { id: "cat", header: "קטגוריה", align: "right", format: (t: Tx) => (t.category_id ? (catMap.get(t.category_id) as string) : "—") },
+            { id: "amount", header: "סכום", align: "left", format: (t: Tx) => formatCurrency(Number(t.amount)) },
+          ]}
+          totals={[
+            { label: "סך תנועות", value: filteredRows.length.toLocaleString("he-IL") },
+            { label: 'סה"כ', value: formatCurrency(total), tone: total >= 0 ? "income" : "expense" },
+          ]}
+        />
         <div className="relative mb-3">
           <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -596,6 +622,7 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   );
 
   const [openVault, setOpenVault] = useState<{ id: string; name: string } | null>(null);
+  const [printOpen, setPrintOpen] = useState(false);
 
   const summary = useMemo(() => {
     return vaultFunds.map((f: any) => {
@@ -696,12 +723,35 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                 <Download className="w-4 h-4 ml-1" />
                 ייצוא לאקסל
               </Button>
-              <Button size="sm" variant="outline" onClick={() => window.print()} disabled={!openRows.length}>
+              <Button size="sm" variant="outline" onClick={() => setPrintOpen(true)} disabled={!openRows.length}>
                 <Printer className="w-4 h-4 ml-1" />הדפסה
               </Button>
             </div>
 
           </div>
+          <PrintDialog
+            open={printOpen}
+            onOpenChange={setPrintOpen}
+            title={`דוח קופה — ${openVault?.name ?? ""}`}
+            subtitle={`${openRows.length} תנועות`}
+            scopes={[{ id: "all", label: "כל תנועות הקופה", rows: openRows }]}
+            columns={[
+              { id: "date", header: "תאריך", align: "right", format: (t: Tx) => format(new Date(t.transaction_date), "dd/MM/yy") },
+              { id: "account", header: "חשבון", align: "right", format: (t: Tx) => acctMap.get(t.account_id) ?? "—" },
+              { id: "desc", header: "פרטים", align: "right", format: (t: Tx) => t.description ?? "—" },
+              { id: "payee", header: "שם מוטב", align: "right", format: (t: Tx) => t.payee ?? "—" },
+              { id: "ref", header: "אסמכתה", align: "right", format: (t: Tx) => t.reference ?? "—" },
+              { id: "type", header: "סוג", align: "right", format: (t: Tx) => (t.expense_type_id ? (etMap.get(t.expense_type_id) as string) : "—") },
+              { id: "cat", header: "קטגוריה", align: "right", format: (t: Tx) => (t.category_id ? (catMap.get(t.category_id) as string) : "—") },
+              { id: "sub", header: "תת-קטגוריה", align: "right", format: (t: Tx) => (t.subcategory_id ? (subMap.get(t.subcategory_id) as string) : "—") },
+              { id: "credit", header: "זכות", align: "left", format: (t: Tx) => { const a = Number(t.amount); const c = t.credit != null ? Number(t.credit) : (a > 0 ? a : 0); return c ? formatCurrency(c) : ""; } },
+              { id: "debit", header: "חובה", align: "left", format: (t: Tx) => { const a = Number(t.amount); const d = t.debit != null ? Number(t.debit) : (a < 0 ? -a : 0); return d ? formatCurrency(d) : ""; } },
+            ]}
+            totals={[
+              { label: "תנועות", value: openRows.length.toLocaleString("he-IL") },
+              { label: "יתרה", value: formatCurrency(openTotal), tone: openTotal >= 0 ? "income" : "expense" },
+            ]}
+          />
           {openRows.length === 0 ? (
             <p className="text-sm text-muted-foreground py-12 text-center">אין תנועות עבור הקופה</p>
           ) : (
