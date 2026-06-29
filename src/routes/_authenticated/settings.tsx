@@ -267,7 +267,7 @@ function UsersPanel() {
 
         <div className="border rounded-lg divide-y">
           {data.map((u: any) => {
-            const current = u.roles.includes("admin") ? "admin" : "editor";
+            const current = u.roles.includes("admin") ? "admin" : u.roles.includes("editor") ? "editor" : "viewer";
             const isMe = me?.id === u.id;
             return (
               <div key={u.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
