@@ -216,7 +216,7 @@ function UsersPanel() {
   });
 
   const setRole = useMutation({
-    mutationFn: async ({ userId, role }: { userId: string; role: "admin" | "editor" }) => {
+    mutationFn: async ({ userId, role }: { userId: string; role: "admin" | "editor" | "viewer" }) => {
       await supabase.from("user_roles").delete().eq("user_id", userId);
       const { error } = await supabase.from("user_roles").insert({ user_id: userId, role });
       if (error) throw error;
