@@ -355,6 +355,31 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           </Accordion>
         </SheetContent>
       </Sheet>
+
+      <PrintDialog
+        open={printOpen}
+        onOpenChange={setPrintOpen}
+        title="דוח צ׳קים עתידיים"
+        subtitle={checksAcc ? `חשבון: ${checksAcc.name}` : undefined}
+        scopes={[
+          { id: "all", label: "כל הצ׳קים העתידיים", rows: future },
+          ...(openMonth ? [{ id: "month", label: `רק החודש הפתוח (${monthLabel})`, rows: future.filter((t) => (t.value_date ?? t.transaction_date).startsWith(openMonth)) }] : []),
+        ]}
+        columns={[
+          { id: "vdate", header: "תאריך ערך", format: (t) => formatDate(t.value_date ?? t.transaction_date) },
+          { id: "tdate", header: "תאריך תנועה", format: (t) => formatDate(t.transaction_date) },
+          { id: "payee", header: "שם", format: (t) => t.payee ?? "" },
+          { id: "desc", header: "פרטים", format: (t) => t.description ?? "" },
+          { id: "ref", header: "אסמכתה", format: (t) => t.reference ?? "" },
+          { id: "note", header: "הערה", format: (t) => t.note ?? "" },
+          { id: "account", header: "חשבון", format: (t) => acctMap.get(t.account_id) ?? "" },
+          { id: "amount", header: "סכום", align: "left", format: (t) => formatCurrency(Math.abs(Number(t.amount))) },
+        ]}
+        totals={[
+          { label: "סך צ׳קים", value: future.length.toLocaleString("he-IL") },
+          { label: "סכום כולל", value: formatCurrency(totalAmt), tone: "expense" },
+        ]}
+      />
     </ReportShell>
 
   );
