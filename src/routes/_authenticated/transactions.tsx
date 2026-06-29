@@ -433,7 +433,7 @@ function TransactionsPage() {
                 return (
                   <button
                     key={a.id}
-                    onClick={() => navigate({ to: "/transactions", search: { account: a.id } })}
+                    onClick={() => navigate({ to: "/transactions", search: { account: a.id }, replace: true })}
                     className={
                       "px-4 py-2 text-sm font-semibold rounded-xl whitespace-nowrap transition " +
                       (active
