@@ -513,15 +513,13 @@ function TransactionsPage() {
               <Table className="border-collapse">
                 <TableHeader>
                   <TableRow className="bg-muted/30 hover:bg-muted/30">
-                    <TableHead className="w-32 px-3 border-l border-border">
-                      <label className="flex items-center gap-2 cursor-pointer select-none">
-                        <Checkbox
-                          checked={allSelected ? true : someSelected ? "indeterminate" : false}
-                          onCheckedChange={toggleAll}
-                          aria-label="בחר הכל"
-                        />
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">בחר הכל</span>
-                      </label>
+                    <TableHead className="w-8 px-1 border-l border-border text-center">
+                      <Checkbox
+                        checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                        onCheckedChange={toggleAll}
+                        aria-label="בחר הכל"
+                        title="בחר הכל"
+                      />
                     </TableHead>
                     {columns.map((c) => {
                       const isDate = c.header.includes("תאריך") && !c.header.includes("ערך");
