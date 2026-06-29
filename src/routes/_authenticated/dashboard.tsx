@@ -723,12 +723,35 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                 <Download className="w-4 h-4 ml-1" />
                 ייצוא לאקסל
               </Button>
-              <Button size="sm" variant="outline" onClick={() => window.print()} disabled={!openRows.length}>
+              <Button size="sm" variant="outline" onClick={() => setPrintOpen(true)} disabled={!openRows.length}>
                 <Printer className="w-4 h-4 ml-1" />הדפסה
               </Button>
             </div>
 
           </div>
+          <PrintDialog
+            open={printOpen}
+            onOpenChange={setPrintOpen}
+            title={`דוח קופה — ${openVault?.name ?? ""}`}
+            subtitle={`${openRows.length} תנועות`}
+            scopes={[{ id: "all", label: "כל תנועות הקופה", rows: openRows }]}
+            columns={[
+              { id: "date", header: "תאריך", align: "right", format: (t: Tx) => format(new Date(t.transaction_date), "dd/MM/yy") },
+              { id: "account", header: "חשבון", align: "right", format: (t: Tx) => acctMap.get(t.account_id) ?? "—" },
+              { id: "desc", header: "פרטים", align: "right", format: (t: Tx) => t.description ?? "—" },
+              { id: "payee", header: "שם מוטב", align: "right", format: (t: Tx) => t.payee ?? "—" },
+              { id: "ref", header: "אסמכתה", align: "right", format: (t: Tx) => t.reference ?? "—" },
+              { id: "type", header: "סוג", align: "right", format: (t: Tx) => (t.expense_type_id ? (etMap.get(t.expense_type_id) as string) : "—") },
+              { id: "cat", header: "קטגוריה", align: "right", format: (t: Tx) => (t.category_id ? (catMap.get(t.category_id) as string) : "—") },
+              { id: "sub", header: "תת-קטגוריה", align: "right", format: (t: Tx) => (t.subcategory_id ? (subMap.get(t.subcategory_id) as string) : "—") },
+              { id: "credit", header: "זכות", align: "left", format: (t: Tx) => { const a = Number(t.amount); const c = t.credit != null ? Number(t.credit) : (a > 0 ? a : 0); return c ? formatCurrency(c) : ""; } },
+              { id: "debit", header: "חובה", align: "left", format: (t: Tx) => { const a = Number(t.amount); const d = t.debit != null ? Number(t.debit) : (a < 0 ? -a : 0); return d ? formatCurrency(d) : ""; } },
+            ]}
+            totals={[
+              { label: "תנועות", value: openRows.length.toLocaleString("he-IL") },
+              { label: "יתרה", value: formatCurrency(openTotal), tone: openTotal >= 0 ? "income" : "expense" },
+            ]}
+          />
           {openRows.length === 0 ? (
             <p className="text-sm text-muted-foreground py-12 text-center">אין תנועות עבור הקופה</p>
           ) : (
