@@ -193,7 +193,7 @@ function DashboardPage() {
             דו"ח קופות (הלוואות)
           </TabsTrigger>
         </TabsList>
-          <Button onClick={() => setNewTxOpen(true)}>+ תנועה חדשה</Button>
+          {role?.isEditor && <Button onClick={() => setNewTxOpen(true)}>+ תנועה חדשה</Button>}
         </div>
 
 
