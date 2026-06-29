@@ -687,6 +687,7 @@ function NoDateReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const fundMap = nameMap(lookups.funds);
   const etMap = nameMap(lookups.expenseTypes);
   const qc = useQueryClient();
+  const { data: role } = useUserRole();
 
   const noDateTxs = useMemo(
     () => txs.filter((t) => !t.transaction_date),
