@@ -415,6 +415,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      undo_action_history: {
+        Args: { p_history_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "editor"
