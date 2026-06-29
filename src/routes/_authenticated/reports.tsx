@@ -226,6 +226,8 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const compactFmt = (v: number) => new Intl.NumberFormat("he-IL", { notation: "compact", maximumFractionDigits: 1 }).format(v);
 
   const [openMonth, setOpenMonth] = useState<string | null>(null);
+  const [printOpen, setPrintOpen] = useState(false);
+  const acctMap = nameMap(lookups.accounts);
   
 
   const monthLabel = openMonth
