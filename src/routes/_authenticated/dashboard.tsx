@@ -118,11 +118,13 @@ function DashboardPage() {
   );
 
 
-  // Exclude transactions without a date from all chart / pie computations (per user request).
+  // Note: transactions without a `transaction_date` are excluded at the query level
+  // so they don't affect charts, pies, totals or drill-downs.
   const baseTxs = useMemo(
-    () => txsEffective.filter((t) => !!t.transaction_date && (!irrelevantFundId || t.fund_id !== irrelevantFundId)) as (Tx & { transaction_date: string })[],
+    () => txsEffective.filter((t) => !irrelevantFundId || t.fund_id !== irrelevantFundId),
     [txsEffective, irrelevantFundId],
   );
+
 
 
   const institutionTxs = useMemo(
