@@ -127,25 +127,27 @@ function DashboardPage() {
 
 
 
+  // Logic rules:
+  // - Fund = "לא רלוונטי" → already excluded from baseTxs (excluded everywhere).
+  // - Any other fund assigned → ONLY in vaults report.
+  // - No fund assigned → goes to institution or project tab based on expense_type.
   const institutionTxs = useMemo(
     () => baseTxs.filter((t) =>
-      t.expense_type_id !== projectExpenseTypeId &&
-      !(t.fund_id && vaultFundIds.has(t.fund_id))
+      !t.fund_id && t.expense_type_id !== projectExpenseTypeId
     ),
-    [baseTxs, projectExpenseTypeId, vaultFundIds],
+    [baseTxs, projectExpenseTypeId],
   );
 
   const projectTxs = useMemo(
     () => baseTxs.filter((t) =>
-      t.expense_type_id === projectExpenseTypeId &&
-      !(t.fund_id && vaultFundIds.has(t.fund_id))
+      !t.fund_id && t.expense_type_id === projectExpenseTypeId
     ),
-    [baseTxs, projectExpenseTypeId, vaultFundIds],
+    [baseTxs, projectExpenseTypeId],
   );
 
   const vaultTxs = useMemo(
-    () => baseTxs.filter((t) => t.fund_id && vaultFundIds.has(t.fund_id)),
-    [baseTxs, vaultFundIds],
+    () => baseTxs.filter((t) => !!t.fund_id),
+    [baseTxs],
   );
 
   const lookups = { accounts, categories, subcategories, expenseTypes, funds };
