@@ -253,6 +253,7 @@ function UsersPanel() {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="editor">עורך</SelectItem>
+                <SelectItem value="viewer">צופה (קריאה בלבד)</SelectItem>
                 <SelectItem value="admin">מנהל</SelectItem>
               </SelectContent>
             </Select>
