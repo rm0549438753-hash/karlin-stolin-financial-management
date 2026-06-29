@@ -570,12 +570,17 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
               {filtered.length === 0 && (
                 <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-12">הכל מסווג ✓</TableCell></TableRow>
               )}
-              {filtered.map((t, idx) => (
+              {filtered.map((t, idx) => {
+                const isChecked = selectedIds.has(t.id);
+                return (
                 <TableRow
                   key={t.id}
-                  className={"group cursor-pointer border-b border-border transition-colors hover:bg-primary/5 " + (idx % 2 ? "bg-muted/20 " : "")}
+                  className={"group cursor-pointer border-b border-border transition-colors hover:bg-primary/5 " + (isChecked ? "bg-primary/5 " : idx % 2 ? "bg-muted/20 " : "")}
                   onClick={() => setEditing(t as unknown as TransactionRow)}
                 >
+                  <TableCell className="w-8 px-1 text-center border-l border-border/60" onClick={(e) => e.stopPropagation()}>
+                    <Checkbox checked={isChecked} onCheckedChange={() => toggleOne(t.id)} aria-label="בחר תנועה" />
+                  </TableCell>
                   <TableCell className="whitespace-nowrap tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs align-middle">{formatDate(t.transaction_date)}</TableCell>
                   <TableCell className="whitespace-nowrap border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs align-middle">{acctMap.get(t.account_id) ?? "—"}</TableCell>
                   <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs align-middle max-w-[280px] truncate">{t.description ?? "—"}</TableCell>
