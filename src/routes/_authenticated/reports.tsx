@@ -644,6 +644,26 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           { label: "חשבונות", value: String(accountsCount) },
         ]}
       />
+
+      <BulkEditDialog
+        open={bulkEditOpen}
+        onOpenChange={setBulkEditOpen}
+        ids={Array.from(selectedIds)}
+        onDone={() => { setSelectedIds(new Set()); qc.invalidateQueries({ queryKey: ["reports-tx"] }); qc.invalidateQueries({ queryKey: ["transactions"] }); }}
+      />
+
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>מחיקת {selectedIds.size} תנועות?</AlertDialogTitle>
+            <AlertDialogDescription>פעולה זו אינה הפיכה.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => bulkDel.mutate(Array.from(selectedIds))}>מחק</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ReportShell>
   );
 }
