@@ -533,12 +533,36 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
               <Download className="w-4 h-4 ml-1" />
               ייצוא לאקסל
             </Button>
-            <Button size="sm" variant="outline" onClick={() => window.print()} disabled={!drill?.rows.length}>
+            <Button size="sm" variant="outline" onClick={() => setPrintOpen(true)} disabled={!drill?.rows.length}>
               <Printer className="w-4 h-4 ml-1" />הדפסה
             </Button>
           </div>
 
         </div>
+        <PrintDialog
+          open={printOpen}
+          onOpenChange={setPrintOpen}
+          title={drill?.title ?? "פירוט תנועות"}
+          subtitle={`${filteredRows.length} מתוך ${drill?.rows.length ?? 0} תנועות`}
+          scopes={[
+            { id: "filtered", label: "תוצאות הסינון הנוכחי", rows: filteredRows },
+            { id: "all", label: "כל התנועות בפירוט", rows: drill?.rows ?? [] },
+          ]}
+          columns={[
+            { id: "date", header: "תאריך", align: "right", format: (t: Tx) => format(new Date(t.transaction_date), "dd/MM/yy") },
+            { id: "account", header: "חשבון", align: "right", format: (t: Tx) => acctMap.get(t.account_id) ?? "—" },
+            { id: "desc", header: "תיאור", align: "right", format: (t: Tx) => t.description ?? "—" },
+            { id: "payee", header: "שם מוטב", align: "right", format: (t: Tx) => t.payee ?? "—" },
+            { id: "ref", header: "אסמכתה", align: "right", format: (t: Tx) => t.reference ?? "—" },
+            { id: "type", header: "סוג", align: "right", format: (t: Tx) => (t.expense_type_id ? (etMap.get(t.expense_type_id) as string) : "—") },
+            { id: "cat", header: "קטגוריה", align: "right", format: (t: Tx) => (t.category_id ? (catMap.get(t.category_id) as string) : "—") },
+            { id: "amount", header: "סכום", align: "left", format: (t: Tx) => formatCurrency(Number(t.amount)) },
+          ]}
+          totals={[
+            { label: "סך תנועות", value: filteredRows.length.toLocaleString("he-IL") },
+            { label: 'סה"כ', value: formatCurrency(total), tone: total >= 0 ? "income" : "expense" },
+          ]}
+        />
         <div className="relative mb-3">
           <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
