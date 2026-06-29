@@ -640,6 +640,11 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
 
   const [openVault, setOpenVault] = useState<{ id: string; name: string } | null>(null);
   const [printOpen, setPrintOpen] = useState(false);
+  const navigate = useNavigate();
+  const goToTx = (t: Tx) => {
+    const acc = lookups.accounts.find((a: any) => a.id === t.account_id)?.id ?? "";
+    navigate({ to: "/transactions", search: { account: acc, highlight: t.id } });
+  };
 
   const summary = useMemo(() => {
     return vaultFunds.map((f: any) => {
@@ -792,7 +797,7 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                     const credit = t.credit != null ? Number(t.credit) : (a > 0 ? a : 0);
                     const debit = t.debit != null ? Number(t.debit) : (a < 0 ? -a : 0);
                     return (
-                      <TableRow key={t.id} className="border-b">
+                      <TableRow key={t.id} className="border-b cursor-pointer hover:bg-accent/50" onClick={() => goToTx(t)}>
                         <TableCell className="text-right whitespace-nowrap">{format(new Date(t.transaction_date), "dd/MM/yy")}</TableCell>
                         <TableCell className="text-right whitespace-nowrap">{acctMap.get(t.account_id) ?? "—"}</TableCell>
                         <TableCell className="text-right">{t.description ?? "—"}</TableCell>
