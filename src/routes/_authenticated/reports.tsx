@@ -15,9 +15,15 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { useAccounts, useCategories, useExpenseTypes, useFunds, useSubcategories } from "@/hooks/use-lookups";
 import { TransactionDialog, type TransactionRow } from "@/components/TransactionDialog";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { CalendarClock, AlertTriangle, Download, Printer, Search, Pencil } from "lucide-react";
+import { CalendarClock, AlertTriangle, Download, Printer, Search, Pencil, X, Trash2 } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { PrintDialog } from "@/components/PrintDialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { BulkEditDialog } from "@/components/BulkEditDialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useUserRole } from "@/hooks/use-auth";
 
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LabelList,
@@ -399,6 +405,32 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<TransactionRow | null>(null);
   const [printOpen, setPrintOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const { data: role } = useUserRole();
+  const qc = useQueryClient();
+
+  const bulkDel = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const CHUNK = 200;
+      for (let i = 0; i < ids.length; i += CHUNK) {
+        const chunk = ids.slice(i, i + CHUNK);
+        const { error } = await supabase.from("transactions").delete().in("id", chunk);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success(`${selectedIds.size} תנועות נמחקו`);
+      setSelectedIds(new Set());
+      qc.invalidateQueries({ queryKey: ["transactions"] });
+      qc.invalidateQueries({ queryKey: ["reports-tx"] });
+      qc.invalidateQueries({ queryKey: ["tx-dashboard"] });
+      qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "שגיאה"),
+  });
+
 
   const accountsWithUnc = useMemo(() => {
     const counts = new Map<string, number>();
@@ -438,6 +470,21 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     return filtered.reduce((min, t) => (t.transaction_date < min ? t.transaction_date : min), filtered[0].transaction_date);
   }, [filtered]);
 
+  const filteredIds = useMemo(() => filtered.map((t) => t.id), [filtered]);
+  const allSelected = filteredIds.length > 0 && filteredIds.every((id) => selectedIds.has(id));
+  const someSelected = !allSelected && filteredIds.some((id) => selectedIds.has(id));
+  const toggleAll = () => {
+    const next = new Set(selectedIds);
+    if (allSelected) filteredIds.forEach((id) => next.delete(id));
+    else filteredIds.forEach((id) => next.add(id));
+    setSelectedIds(next);
+  };
+  const toggleOne = (id: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    setSelectedIds(next);
+  };
+
   return (
     <ReportShell
       title="תנועות לא מסווגות"
@@ -474,10 +521,40 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setAccountFilter("all"); }}>איפוס</Button>
         </div>
 
+        {selectedIds.size > 0 && (
+          <div className="px-4 py-2.5 bg-primary/10 border-y border-primary/30 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm font-bold text-primary">
+              <Checkbox checked={true} onCheckedChange={() => setSelectedIds(new Set())} />
+              נבחרו {selectedIds.size} תנועות
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="default" onClick={() => setBulkEditOpen(true)}>
+                <Pencil className="w-3.5 h-3.5 ml-1" />שינוי נבחרות
+              </Button>
+              {role?.isAdmin && (
+                <Button size="sm" variant="outline" className="text-destructive border-destructive/40" onClick={() => setBulkDeleteOpen(true)}>
+                  <Trash2 className="w-3.5 h-3.5 ml-1" />מחיקה
+                </Button>
+              )}
+              <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
+                <X className="w-3.5 h-3.5 ml-1" />בטל בחירה
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="overflow-x-auto">
           <Table className="border-collapse">
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
+                <TableHead className="w-8 px-1 border-l border-border text-center">
+                  <Checkbox
+                    checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                    onCheckedChange={toggleAll}
+                    aria-label="בחר הכל"
+                    title="בחר הכל"
+                  />
+                </TableHead>
                 <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">תאריך</TableHead>
                 <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">חשבון</TableHead>
                 <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">פרטים</TableHead>
@@ -491,14 +568,19 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
             </TableHeader>
             <TableBody>
               {filtered.length === 0 && (
-                <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-12">הכל מסווג ✓</TableCell></TableRow>
+                <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-12">הכל מסווג ✓</TableCell></TableRow>
               )}
-              {filtered.map((t, idx) => (
+              {filtered.map((t, idx) => {
+                const isChecked = selectedIds.has(t.id);
+                return (
                 <TableRow
                   key={t.id}
-                  className={"group cursor-pointer border-b border-border transition-colors hover:bg-primary/5 " + (idx % 2 ? "bg-muted/20 " : "")}
+                  className={"group cursor-pointer border-b border-border transition-colors hover:bg-primary/5 " + (isChecked ? "bg-primary/5 " : idx % 2 ? "bg-muted/20 " : "")}
                   onClick={() => setEditing(t as unknown as TransactionRow)}
                 >
+                  <TableCell className="w-8 px-1 text-center border-l border-border/60" onClick={(e) => e.stopPropagation()}>
+                    <Checkbox checked={isChecked} onCheckedChange={() => toggleOne(t.id)} aria-label="בחר תנועה" />
+                  </TableCell>
                   <TableCell className="whitespace-nowrap tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs align-middle">{formatDate(t.transaction_date)}</TableCell>
                   <TableCell className="whitespace-nowrap border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs align-middle">{acctMap.get(t.account_id) ?? "—"}</TableCell>
                   <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs align-middle max-w-[280px] truncate">{t.description ?? "—"}</TableCell>
@@ -515,7 +597,8 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                     </Button>
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         </div>
@@ -561,6 +644,26 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           { label: "חשבונות", value: String(accountsCount) },
         ]}
       />
+
+      <BulkEditDialog
+        open={bulkEditOpen}
+        onOpenChange={setBulkEditOpen}
+        ids={Array.from(selectedIds)}
+        onDone={() => { setSelectedIds(new Set()); qc.invalidateQueries({ queryKey: ["reports-tx"] }); qc.invalidateQueries({ queryKey: ["transactions"] }); }}
+      />
+
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>מחיקת {selectedIds.size} תנועות?</AlertDialogTitle>
+            <AlertDialogDescription>פעולה זו אינה הפיכה.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => bulkDel.mutate(Array.from(selectedIds))}>מחק</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ReportShell>
   );
 }
