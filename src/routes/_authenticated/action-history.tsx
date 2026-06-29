@@ -95,29 +95,8 @@ function ActionHistoryPage() {
     mutationFn: async (row: ActionHistoryRow) => {
       if (!ALLOWED_UNDO_TABLES.has(row.table_name)) throw new Error("לא ניתן לבטל פעולה מסוג זה");
       if (row.undone_at) throw new Error("הפעולה כבר בוטלה");
-
-      const table = row.table_name;
-      const recordId = row.record_id;
-      let result: { error: any };
-
-      if (row.action === "insert") {
-        result = await (supabase as any).from(table).delete().eq("id", recordId);
-      } else if (row.action === "delete") {
-        if (!row.old_data) throw new Error("אין נתוני מקור לשחזור");
-        result = await (supabase as any).from(table).insert(row.old_data);
-      } else {
-        if (!row.old_data) throw new Error("אין נתוני מקור לשחזור");
-        result = await (supabase as any).from(table).update(row.old_data).eq("id", recordId);
-      }
-
-      if (result.error) throw result.error;
-
-      const { data: authData } = await supabase.auth.getUser();
-      const { error: markError } = await (supabase as any)
-        .from("action_history")
-        .update({ undone_at: new Date().toISOString(), undone_by: authData.user?.id ?? null })
-        .eq("id", row.id);
-      if (markError) throw markError;
+      const { error } = await (supabase as any).rpc("undo_action_history", { p_history_id: row.id });
+      if (error) throw error;
     },
     onSuccess: () => {
       toast.success("השינוי בוטל");
