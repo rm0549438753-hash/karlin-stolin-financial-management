@@ -413,6 +413,13 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       title="תנועות לא מסווגות"
       onExport={() => exportTxs(filtered, lookups, "לא מסווגות.xlsx")}
     >
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Kpi label="סה״כ לא מסווגות" value={String(filtered.length)} />
+        <Kpi label="סכום מצטבר" value={formatCurrency(totalAmt)} tone="expense" />
+        <Kpi label="חשבונות" value={String(accountsCount)} />
+        <Kpi label="הוותיק ביותר" value={oldestDate ? formatDate(oldestDate) : "—"} />
+      </div>
+
       <div className="rounded-2xl border bg-card overflow-hidden">
         <div className="px-4 py-3 bg-muted/40 flex flex-wrap gap-2 items-center">
           <div className="relative flex-1 min-w-[220px]">
