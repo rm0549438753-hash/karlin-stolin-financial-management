@@ -405,6 +405,32 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<TransactionRow | null>(null);
   const [printOpen, setPrintOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const { data: role } = useUserRole();
+  const qc = useQueryClient();
+
+  const bulkDel = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const CHUNK = 200;
+      for (let i = 0; i < ids.length; i += CHUNK) {
+        const chunk = ids.slice(i, i + CHUNK);
+        const { error } = await supabase.from("transactions").delete().in("id", chunk);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success(`${selectedIds.size} תנועות נמחקו`);
+      setSelectedIds(new Set());
+      qc.invalidateQueries({ queryKey: ["transactions"] });
+      qc.invalidateQueries({ queryKey: ["reports-tx"] });
+      qc.invalidateQueries({ queryKey: ["tx-dashboard"] });
+      qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "שגיאה"),
+  });
+
 
   const accountsWithUnc = useMemo(() => {
     const counts = new Map<string, number>();
