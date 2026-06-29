@@ -607,18 +607,11 @@ function TransactionsPage() {
                 </TableBody>
               </Table>
             </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t bg-muted/30 text-sm">
-              <div>סך תנועות: <b>{totals.count}</b></div>
-              <div className="flex gap-4">
-                <span>הכנסות: <b className="text-income tabular-nums">{fmtNum(totals.inc)} ₪</b></span>
-                <span>הוצאות: <b className="text-expense tabular-nums">{fmtNum(Math.abs(totals.exp))} ₪</b></span>
-                <span>מאזן: <b className={(totals.net >= 0 ? "text-income " : "text-expense ") + "tabular-nums"}>{fmtNum(totals.net)} ₪</b></span>
-              </div>
-            </div>
           </div>
         </div>
       )}
+
+
 
       <TransactionDialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) setEditing(null); }} initial={editing} account={selectedAccount} lockAccount />
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} account={selectedAccount} />
