@@ -77,7 +77,7 @@ function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              {role?.isAdmin && (
+              {(role?.isAdmin || role?.isEditor) && (
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={path === "/settings"} tooltip="הגדרות" className="text-white hover:bg-white/10 data-[active=true]:bg-white/15 data-[active=true]:text-white data-[active=true]:font-bold py-5 text-base">
                     <Link to="/settings" className="flex items-center gap-3">
@@ -87,6 +87,7 @@ function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
+
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
