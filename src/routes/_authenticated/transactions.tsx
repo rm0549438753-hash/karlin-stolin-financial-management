@@ -482,6 +482,17 @@ function TransactionsPage() {
               <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setCategory([]); setSubcategory([]); setFund([]); setExpType([]); setFrom(""); setTo(""); setOnlyUncat(false); }}>איפוס</Button>
             </div>
 
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 border-b bg-background text-sm">
+              <div>סך תנועות: <b>{totals.count}</b></div>
+              <div className="flex gap-4">
+                <span>הכנסות: <b className="text-income tabular-nums">{fmtNum(totals.inc)} ₪</b></span>
+                <span>הוצאות: <b className="text-expense tabular-nums">{fmtNum(Math.abs(totals.exp))} ₪</b></span>
+                <span>מאזן: <b className={(totals.net >= 0 ? "text-income " : "text-expense ") + "tabular-nums"}>{fmtNum(totals.net)} ₪</b></span>
+              </div>
+            </div>
+
+
+
 
 
             {selectedIds.size > 0 && (
