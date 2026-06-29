@@ -40,8 +40,69 @@ export const adminCreateUser = createServerFn({ method: "POST" })
       .insert({ user_id: userId, role: data.role });
     if (roleInsertErr) throw new Error(roleInsertErr.message);
 
+    // Ensure a profile row exists (no DB trigger on auth.users in this project)
+    await supabaseAdmin.from("profiles").upsert(
+      { id: userId, email: data.email, full_name: data.fullName || data.email, blocked: false },
+      { onConflict: "id" },
+    );
+
     return { ok: true, userId };
   });
+
+export const adminListUsers = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const all: any[] = [];
+    let page = 1;
+    // paginate auth users
+    while (true) {
+      const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 200 });
+      if (error) throw new Error(error.message);
+      all.push(...data.users);
+      if (data.users.length < 200) break;
+      page++;
+    }
+
+    const ids = all.map((u) => u.id);
+    const { data: profiles } = await supabaseAdmin.from("profiles").select("id, full_name, blocked").in("id", ids);
+    const { data: roles } = await supabaseAdmin.from("user_roles").select("user_id, role").in("user_id", ids);
+    const profById = new Map((profiles ?? []).map((p) => [p.id, p]));
+    const rolesByUser = new Map<string, string[]>();
+    (roles ?? []).forEach((r) => {
+      const arr = rolesByUser.get(r.user_id) ?? [];
+      arr.push(r.role);
+      rolesByUser.set(r.user_id, arr);
+    });
+
+    // Backfill missing profile rows so UI/permissions stay consistent
+    const missing = all.filter((u) => !profById.has(u.id));
+    if (missing.length > 0) {
+      await supabaseAdmin.from("profiles").upsert(
+        missing.map((u) => ({
+          id: u.id,
+          email: u.email ?? "",
+          full_name: (u.user_metadata as any)?.full_name ?? u.email ?? "",
+          blocked: !!(u as any).banned_until,
+        })),
+        { onConflict: "id" },
+      );
+    }
+
+    return all.map((u) => {
+      const p = profById.get(u.id);
+      return {
+        id: u.id,
+        email: u.email ?? "",
+        full_name: p?.full_name ?? (u.user_metadata as any)?.full_name ?? u.email ?? "",
+        blocked: p?.blocked ?? !!(u as any).banned_until,
+        roles: rolesByUser.get(u.id) ?? [],
+      };
+    });
+  });
+
 
 export const adminDeleteUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
