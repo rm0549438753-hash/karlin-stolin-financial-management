@@ -414,6 +414,7 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     <ReportShell
       title="תנועות לא מסווגות"
       onExport={() => exportTxs(filtered, lookups, "לא מסווגות.xlsx")}
+      onPrint={() => setPrintOpen(true)}
     >
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Kpi label="סה״כ לא מסווגות" value={String(filtered.length)} />
