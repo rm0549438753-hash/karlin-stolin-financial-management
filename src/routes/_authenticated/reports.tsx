@@ -108,12 +108,17 @@ function ReportsPage() {
           <TabsTrigger value="uncategorized" className="gap-1.5 text-base font-semibold px-4 py-2">
             <AlertTriangle className="w-4 h-4" />לא מסווגות
           </TabsTrigger>
+          <TabsTrigger value="no-date" className="gap-1.5 text-base font-semibold px-4 py-2">
+            <CalendarX className="w-4 h-4" />ללא תאריך
+          </TabsTrigger>
         </TabsList>
 
         {isLoading && <p className="text-sm text-muted-foreground">טוען…</p>}
 
         <TabsContent value="future-checks"><FutureChecksReport txs={txs} lookups={lookups} /></TabsContent>
         <TabsContent value="uncategorized"><UncategorizedReport txs={txs} lookups={lookups} /></TabsContent>
+        <TabsContent value="no-date"><NoDateReport txs={txs} lookups={lookups} /></TabsContent>
+
       </Tabs>
     </AppShell>
   );
