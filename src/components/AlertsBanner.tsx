@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { AlertCircle, CalendarClock } from "lucide-react";
+import { AlertCircle, CalendarClock, CalendarX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccounts } from "@/hooks/use-lookups";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -40,12 +40,24 @@ export function AlertsBanner() {
     },
   });
 
+  const { data: noDateCount = 0 } = useQuery({
+    queryKey: ["alerts-no-date-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("transactions")
+        .select("id", { count: "exact", head: true })
+        .is("transaction_date", null);
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
   const totalChecks = upcomingChecks.reduce((s: number, t: any) => s + Math.abs(Number(t.amount)), 0);
 
-  if (upcomingChecks.length === 0 && uncategorizedCount === 0) return null;
+  if (upcomingChecks.length === 0 && uncategorizedCount === 0 && noDateCount === 0) return null;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
       {upcomingChecks.length > 0 && (
         <div className="rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 flex items-center gap-3">
           <CalendarClock className="w-5 h-5 text-warning shrink-0" />
@@ -76,6 +88,23 @@ export function AlertsBanner() {
           </Link>
         </div>
       )}
+      {noDateCount > 0 && (
+        <div className="rounded-lg border border-rose-400/50 bg-rose-100/50 dark:bg-rose-950/30 px-4 py-3 flex items-center gap-3">
+          <CalendarX className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0" />
+          <div className="flex-1 min-w-0 text-sm">
+            <div className="font-semibold">{noDateCount} תנועות ללא תאריך</div>
+            <div className="text-xs text-muted-foreground">לא נכללות בחישובי הגרפים והעוגות</div>
+          </div>
+          <Link
+            to="/reports"
+            search={{ tab: "no-date" } as any}
+            className="text-xs font-semibold rounded-md bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 shrink-0"
+          >
+            לעדכון תאריך
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
+
