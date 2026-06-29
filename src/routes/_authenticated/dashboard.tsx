@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { AlertsBanner } from "@/components/AlertsBanner";
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { TransactionDialog } from "@/components/TransactionDialog";
 import { formatCurrency } from "@/lib/format";
 import { useAccounts, useCategories, useSubcategories, useExpenseTypes, useFunds } from "@/hooks/use-lookups";
@@ -18,7 +19,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, LabelList,
   PieChart, Pie, Cell,
 } from "recharts";
-import { TrendingUp, TrendingDown, Scale, Download, Printer } from "lucide-react";
+import { TrendingUp, TrendingDown, Scale, Download, Printer, Search, History } from "lucide-react";
 import { format } from "date-fns";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -28,7 +29,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 const CHART_COLORS = ["hsl(220 70% 55%)", "hsl(155 60% 45%)", "hsl(75 80% 55%)", "hsl(25 80% 55%)", "hsl(295 60% 55%)", "hsl(200 70% 50%)", "hsl(340 70% 55%)"];
 const PROJECT_EXPENSE_TYPE = "בית הכנסת - בניה";
 const IRRELEVANT_FUND = "לא רלוונטי";
-const TRANSACTION_SELECT = "id, transaction_date, value_date, amount, account_id, fund_id, expense_type_id, category_id, subcategory_id, description, note, credit, debit";
+const TRANSACTION_SELECT = "id, transaction_date, value_date, amount, account_id, fund_id, expense_type_id, category_id, subcategory_id, description, note, credit, debit, payee, reference";
 const PAGE_SIZE = 1000;
 
 type Tx = {
@@ -45,6 +46,8 @@ type Tx = {
   note: string | null;
   credit: number | null;
   debit: number | null;
+  payee: string | null;
+  reference: string | null;
 };
 
 async function fetchAllDashboardTransactions() {
@@ -147,7 +150,17 @@ function DashboardPage() {
   }, []);
 
   return (
-    <AppShell title="לוח בקרה">
+    <AppShell
+      title="לוח בקרה"
+      actions={
+        <Button asChild variant="secondary" size="sm" className="font-bold">
+          <Link to="/action-history" className="flex items-center gap-1.5">
+            <History className="w-4 h-4" />
+            היסטוריית פעולות
+          </Link>
+        </Button>
+      }
+    >
       <AlertsBanner />
       <Tabs defaultValue="institution" className="space-y-4 mt-4" dir="rtl">
         <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -463,7 +476,32 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
   const catMap = new Map<string, string>(lookups.categories.map((c: any) => [c.id, c.name]));
   const etMap = new Map<string, string>(lookups.expenseTypes.map((e: any) => [e.id, e.name]));
   const acctMap = new Map<string, string>((lookups.accounts ?? []).map((a: any) => [a.id, a.name]));
-  const total = drill?.rows.reduce((s, t) => s + Number(t.amount), 0) ?? 0;
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    setSearch("");
+  }, [drill?.title]);
+
+  const filteredRows = useMemo(() => {
+    const rows = drill?.rows ?? [];
+    const q = search.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((t) => [
+      t.transaction_date,
+      format(new Date(t.transaction_date), "dd/MM/yy"),
+      acctMap.get(t.account_id),
+      t.description,
+      t.note,
+      t.payee,
+      t.reference,
+      t.expense_type_id ? etMap.get(t.expense_type_id) : "",
+      t.category_id ? catMap.get(t.category_id) : "",
+      String(t.amount),
+      formatCurrency(Number(t.amount)),
+    ].some((v) => String(v ?? "").toLowerCase().includes(q)));
+  }, [drill?.rows, search, acctMap, etMap, catMap]);
+
+  const total = filteredRows.reduce((s, t) => s + Number(t.amount), 0);
 
   const goToTx = (t: Tx) => {
     const acc = (t as any).account_id;
@@ -480,7 +518,7 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
         </SheetHeader>
         <div className="mt-2 mb-4 flex items-center justify-between gap-2 flex-wrap">
           <div className="text-sm text-muted-foreground">
-            {drill?.rows.length ?? 0} תנועות · סה"כ:{" "}
+            מציג {filteredRows.length} מתוך {drill?.rows.length ?? 0} תנועות · סה"כ:{" "}
             <span className={total >= 0 ? "text-income" : "text-expense"}>{formatCurrency(total)}</span>
           </div>
           <div className="flex gap-2">
@@ -499,32 +537,44 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
           </div>
 
         </div>
-        <div className="rounded-md border">
-          <Table>
+        <div className="relative mb-3">
+          <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="חיפוש בתיאור / אסמכתה / הערה / שם"
+            className="pr-9 bg-card"
+          />
+        </div>
+        <div className="rounded-2xl border bg-card overflow-hidden">
+          <Table className="border-collapse">
             <TableHeader>
-              <TableRow>
-                <TableHead className="text-right">תאריך</TableHead>
-                <TableHead className="text-right">חשבון</TableHead>
-                <TableHead className="text-right">תיאור</TableHead>
-                <TableHead className="text-right">סוג</TableHead>
-                <TableHead className="text-right">קטגוריה</TableHead>
-                <TableHead className="text-left">סכום</TableHead>
+              <TableRow className="bg-muted/30 hover:bg-muted/30">
+                <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border px-2 py-2 whitespace-nowrap">תאריך</TableHead>
+                <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border px-2 py-2 whitespace-nowrap">חשבון</TableHead>
+                <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border px-2 py-2 whitespace-nowrap">תיאור</TableHead>
+                <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border px-2 py-2 whitespace-nowrap">סוג</TableHead>
+                <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border px-2 py-2 whitespace-nowrap">קטגוריה</TableHead>
+                <TableHead className="text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2 py-2 whitespace-nowrap">סכום</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {drill?.rows.map((t) => (
+              {filteredRows.length === 0 && (
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-12">לא נמצאו תנועות</TableCell></TableRow>
+              )}
+              {filteredRows.map((t, idx) => (
                 <TableRow
                   key={t.id}
-                  className="border-b cursor-pointer hover:bg-primary/5 transition-colors"
+                  className={(idx % 2 ? "bg-muted/20 " : "") + "border-b border-border cursor-pointer hover:bg-primary/5 transition-colors"}
                   onClick={() => goToTx(t)}
                   title="פתח את התנועה בדף התנועות"
                 >
-                  <TableCell className="whitespace-nowrap">{format(new Date(t.transaction_date), "dd/MM/yy")}</TableCell>
-                  <TableCell className="text-right whitespace-nowrap">{(t as any).account_id ? (acctMap.get((t as any).account_id) ?? "—") : "—"}</TableCell>
-                  <TableCell className="text-right">{t.description ?? "—"}</TableCell>
-                  <TableCell className="text-right">{t.expense_type_id ? (etMap.get(t.expense_type_id) as string) : "—"}</TableCell>
-                  <TableCell className="text-right">{t.category_id ? (catMap.get(t.category_id) as string) : "—"}</TableCell>
-                  <TableCell className={`text-left whitespace-nowrap ${Number(t.amount) >= 0 ? "text-income" : "text-expense"}`}>
+                  <TableCell className="whitespace-nowrap tabular-nums border-l border-border/60 px-2 py-1.5 text-xs align-middle">{format(new Date(t.transaction_date), "dd/MM/yy")}</TableCell>
+                  <TableCell className="text-right whitespace-nowrap border-l border-border/60 px-2 py-1.5 text-xs align-middle">{(t as any).account_id ? (acctMap.get((t as any).account_id) ?? "—") : "—"}</TableCell>
+                  <TableCell className="text-right border-l border-border/60 px-2 py-1.5 text-xs align-middle max-w-[280px] truncate">{t.description ?? "—"}</TableCell>
+                  <TableCell className="text-right border-l border-border/60 px-2 py-1.5 text-xs align-middle">{t.expense_type_id ? (etMap.get(t.expense_type_id) as string) : "—"}</TableCell>
+                  <TableCell className="text-right border-l border-border/60 px-2 py-1.5 text-xs align-middle">{t.category_id ? (catMap.get(t.category_id) as string) : "—"}</TableCell>
+                  <TableCell className={`text-left whitespace-nowrap px-2 py-1.5 text-xs font-semibold tabular-nums align-middle ${Number(t.amount) >= 0 ? "text-income" : "text-expense"}`}>
                     {formatCurrency(Number(t.amount))}
                   </TableCell>
                 </TableRow>
