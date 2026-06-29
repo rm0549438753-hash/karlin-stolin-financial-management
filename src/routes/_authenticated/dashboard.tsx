@@ -478,6 +478,7 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
   const etMap = new Map<string, string>(lookups.expenseTypes.map((e: any) => [e.id, e.name]));
   const acctMap = new Map<string, string>((lookups.accounts ?? []).map((a: any) => [a.id, a.name]));
   const [search, setSearch] = useState("");
+  const [printOpen, setPrintOpen] = useState(false);
 
   useEffect(() => {
     setSearch("");
