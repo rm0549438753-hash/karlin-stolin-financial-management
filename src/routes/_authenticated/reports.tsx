@@ -370,6 +370,7 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const [accountFilter, setAccountFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<TransactionRow | null>(null);
+  const [printOpen, setPrintOpen] = useState(false);
 
   const accountsWithUnc = useMemo(() => {
     const counts = new Map<string, number>();
