@@ -154,7 +154,7 @@ function exportTxs(rows: Tx[], lookups: any, filename: string) {
   exportRowsToExcel(data, filename);
 }
 
-function ReportShell({ title, subtitle, onExport, children }: { title: string; subtitle?: string; onExport?: () => void; children: React.ReactNode }) {
+function ReportShell({ title, subtitle, onExport, onPrint, children }: { title: string; subtitle?: string; onExport?: () => void; onPrint?: () => void; children: React.ReactNode }) {
   return (
     <Card className="print-area">
       <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 bg-muted/40 border-b rounded-t-xl">
@@ -168,7 +168,7 @@ function ReportShell({ title, subtitle, onExport, children }: { title: string; s
               <Download className="w-4 h-4 ml-1" />ייצוא לאקסל
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={() => window.print()}>
+          <Button variant="outline" size="sm" onClick={onPrint ?? (() => window.print())}>
             <Printer className="w-4 h-4 ml-1" />הדפסה
           </Button>
         </div>
