@@ -1,19 +1,18 @@
 export const ILS = new Intl.NumberFormat("he-IL", {
   style: "currency",
   currency: "ILS",
-  maximumFractionDigits: 0,
-});
-export const ILS2 = new Intl.NumberFormat("he-IL", {
-  style: "currency",
-  currency: "ILS",
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
-export const NUM = new Intl.NumberFormat("he-IL");
+export const ILS2 = ILS;
+export const NUM = new Intl.NumberFormat("he-IL", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 
-export function formatCurrency(n: number | null | undefined, decimals = false) {
+export function formatCurrency(n: number | null | undefined, _decimals = true) {
   if (n == null || isNaN(n)) return "—";
-  return decimals ? ILS2.format(n) : ILS.format(n);
+  return ILS.format(n);
 }
 
 export function formatDate(d: string | Date | null | undefined) {
