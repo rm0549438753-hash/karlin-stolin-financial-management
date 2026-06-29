@@ -1,0 +1,284 @@
+import { useEffect, useMemo, useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Printer, FileDown } from "lucide-react";
+
+export type PrintColumn = {
+  id: string;
+  header: string;
+  align?: "right" | "left" | "center";
+  format: (row: any) => string;
+};
+export type PrintScope = { id: string; label: string; rows: any[] };
+export type PrintTotals = { label: string; value: string; tone?: "income" | "expense" | "neutral" }[];
+
+export type PrintDialogProps = {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  title: string;             // e.g. "תנועות - בנק מרכנתיל"
+  brand?: string;            // e.g. "מרכז קארלין סטאלין"
+  subtitle?: string;         // e.g. "מתאריך X עד תאריך Y"
+  scopes: PrintScope[];      // 1 or more scopes (current view / selection / etc)
+  columns: PrintColumn[];
+  defaultColumns?: string[]; // ids to preselect (default: all)
+  totals?: PrintTotals;
+};
+
+export function PrintDialog({
+  open, onOpenChange, title, brand = "מרכז קארלין סטאלין",
+  subtitle, scopes, columns, defaultColumns, totals,
+}: PrintDialogProps) {
+  const [scopeId, setScopeId] = useState(scopes[0]?.id ?? "");
+  const [colIds, setColIds] = useState<string[]>(defaultColumns ?? columns.map((c) => c.id));
+  const [orientation, setOrientation] = useState<"portrait" | "landscape">("landscape");
+  const [showHeader, setShowHeader] = useState(true);
+  const [showSubtitle, setShowSubtitle] = useState(true);
+  const [showTotals, setShowTotals] = useState(true);
+  const [showPageNumbers, setShowPageNumbers] = useState(true);
+  const [fontSize, setFontSize] = useState<"sm" | "md" | "lg">("sm");
+  const [zebra, setZebra] = useState(true);
+
+  // Re-init when reopened with different scopes/columns
+  useEffect(() => {
+    if (open) {
+      setScopeId(scopes[0]?.id ?? "");
+      setColIds(defaultColumns ?? columns.map((c) => c.id));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const activeScope = useMemo(() => scopes.find((s) => s.id === scopeId) ?? scopes[0], [scopes, scopeId]);
+  const activeCols = useMemo(() => columns.filter((c) => colIds.includes(c.id)), [columns, colIds]);
+
+  const allColsSelected = colIds.length === columns.length;
+  const toggleAllCols = () => setColIds(allColsSelected ? [] : columns.map((c) => c.id));
+  const toggleCol = (id: string) =>
+    setColIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+  function buildHtml(autoPrint: boolean) {
+    const fontPx = fontSize === "lg" ? 13 : fontSize === "md" ? 11 : 10;
+    const headPx = fontPx + 1;
+    const rows = activeScope?.rows ?? [];
+    const now = new Date().toLocaleString("he-IL");
+
+    const ths = activeCols
+      .map((c) => `<th style="text-align:${c.align ?? "right"}">${escapeHtml(c.header)}</th>`)
+      .join("");
+
+    const trs = rows
+      .map((r, i) => {
+        const tds = activeCols
+          .map((c) => `<td style="text-align:${c.align ?? "right"}">${escapeHtml(c.format(r))}</td>`)
+          .join("");
+        const cls = zebra && i % 2 ? ' class="z"' : "";
+        return `<tr${cls}>${tds}</tr>`;
+      })
+      .join("");
+
+    const totalsHtml = showTotals && totals && totals.length
+      ? `<div class="totals">${totals
+          .map(
+            (t) =>
+              `<div class="t-item"><span class="t-label">${escapeHtml(t.label)}</span><span class="t-val ${t.tone ?? ""}">${escapeHtml(t.value)}</span></div>`,
+          )
+          .join("")}</div>`
+      : "";
+
+    const headerHtml = showHeader
+      ? `<header>
+          <div class="brand">${escapeHtml(brand)}</div>
+          <div class="title">${escapeHtml(title)}</div>
+          ${showSubtitle && subtitle ? `<div class="sub">${escapeHtml(subtitle)}</div>` : ""}
+          <div class="meta">הופק בתאריך: ${escapeHtml(now)} · ${rows.length.toLocaleString("he-IL")} שורות</div>
+        </header>`
+      : "";
+
+    const footerHtml = showPageNumbers
+      ? `<style>@page { @bottom-center { content: "עמוד " counter(page) " מתוך " counter(pages); font-family: Heebo, Arial; font-size: 9pt; color:#666; } }</style>`
+      : "";
+
+    return `<!doctype html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="utf-8" />
+<title>${escapeHtml(title)}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4 ${orientation}; margin: 14mm 12mm 18mm 12mm; }
+  ${footerHtml ? "" : ""}
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #fff; color: #111; font-family: Heebo, Arial, sans-serif; }
+  body { padding: 8px 4px; }
+  header { border-bottom: 2px solid #1a2b50; padding-bottom: 8px; margin-bottom: 10px; }
+  .brand { color: #b88a2a; font-weight: 800; font-size: 16pt; letter-spacing: .5px; }
+  .title { font-size: 13pt; font-weight: 700; margin-top: 2px; }
+  .sub { font-size: 10pt; color: #444; margin-top: 2px; }
+  .meta { font-size: 9pt; color: #666; margin-top: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: ${fontPx}pt; table-layout: auto; }
+  thead th { background: #f3f4f6; color: #1a2b50; text-align: right; padding: 6px 6px; border: 1px solid #cbd2dc; font-weight: 700; font-size: ${headPx}pt; }
+  tbody td { padding: 4px 6px; border: 1px solid #dde2ea; vertical-align: middle; white-space: nowrap; }
+  tbody tr.z td { background: #fafbfd; }
+  tbody tr:hover td { background: #eef2f8; }
+  .totals { display: flex; flex-wrap: wrap; gap: 16px; justify-content: flex-start; margin-top: 12px; padding: 10px 12px; border: 1px solid #cbd2dc; border-radius: 6px; background: #f8fafc; }
+  .t-item { display: flex; gap: 6px; font-size: 10pt; }
+  .t-label { color: #555; font-weight: 600; }
+  .t-val { font-weight: 800; }
+  .t-val.income { color: #137a3a; }
+  .t-val.expense { color: #b1331a; }
+  .toolbar { position: sticky; top: 0; background: #1a2b50; color: #fff; padding: 8px 12px; display: flex; gap: 8px; justify-content: flex-end; }
+  .toolbar button { background: #b88a2a; color: #1a2b50; border: 0; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-weight: 700; font-family: inherit; }
+  .toolbar button.alt { background: #fff; }
+  .hint { font-size: 9pt; color: #fff; opacity: .85; align-self: center; margin-inline-end: auto; }
+  @media print { .toolbar { display: none !important; } body { padding: 0; } }
+</style>
+${footerHtml}
+</head>
+<body>
+  <div class="toolbar no-print">
+    <span class="hint">תצוגה מקדימה — ניתן לבחור "שמירה כ-PDF" בתפריט ההדפסה</span>
+    <button onclick="window.print()">הדפסה</button>
+    <button class="alt" onclick="window.close()">סגירה</button>
+  </div>
+  ${headerHtml}
+  <table>
+    <thead><tr>${ths}</tr></thead>
+    <tbody>${trs || `<tr><td colspan="${activeCols.length}" style="text-align:center;padding:20px;color:#999">אין נתונים להצגה</td></tr>`}</tbody>
+  </table>
+  ${totalsHtml}
+  ${autoPrint ? `<script>window.addEventListener('load', () => setTimeout(() => window.print(), 350));</script>` : ""}
+</body>
+</html>`;
+  }
+
+  function openPrintWindow(autoPrint: boolean) {
+    const html = buildHtml(autoPrint);
+    const w = window.open("", "_blank", "width=1100,height=800");
+    if (!w) {
+      alert("חלון ההדפסה נחסם. אשר חלונות קופצים בדפדפן ונסה שוב.");
+      return;
+    }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    onOpenChange(false);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent dir="rtl" className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle className="text-xl">הגדרות הדפסה</DialogTitle>
+          <DialogDescription>בחר מה להדפיס ואיך הפלט ייראה. השינויים ייושמו על העמוד שייפתח.</DialogDescription>
+        </DialogHeader>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* Scope */}
+          <section className="space-y-2">
+            <div className="text-sm font-bold">היקף הדפסה</div>
+            <RadioGroup value={scopeId} onValueChange={setScopeId} className="space-y-1.5">
+              {scopes.map((s) => (
+                <label key={s.id} className="flex items-center gap-2 cursor-pointer rounded-md border px-3 py-2 hover:bg-muted/50">
+                  <RadioGroupItem value={s.id} id={`scope-${s.id}`} />
+                  <span className="text-sm flex-1">{s.label}</span>
+                  <span className="text-xs text-muted-foreground tabular-nums">{s.rows.length.toLocaleString("he-IL")}</span>
+                </label>
+              ))}
+            </RadioGroup>
+          </section>
+
+          {/* Orientation + size */}
+          <section className="space-y-2">
+            <div className="text-sm font-bold">פריסה</div>
+            <RadioGroup value={orientation} onValueChange={(v) => setOrientation(v as any)} className="grid grid-cols-2 gap-2">
+              <label className="flex items-center gap-2 cursor-pointer rounded-md border px-3 py-2 hover:bg-muted/50">
+                <RadioGroupItem value="landscape" id="o-l" />
+                <span className="text-sm">לרוחב (Landscape)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer rounded-md border px-3 py-2 hover:bg-muted/50">
+                <RadioGroupItem value="portrait" id="o-p" />
+                <span className="text-sm">לאורך (Portrait)</span>
+              </label>
+            </RadioGroup>
+            <div className="text-sm font-bold mt-3">גודל טקסט בטבלה</div>
+            <RadioGroup value={fontSize} onValueChange={(v) => setFontSize(v as any)} className="grid grid-cols-3 gap-2">
+              {([["sm", "קטן"], ["md", "בינוני"], ["lg", "גדול"]] as const).map(([v, l]) => (
+                <label key={v} className="flex items-center gap-2 cursor-pointer rounded-md border px-2 py-1.5 justify-center hover:bg-muted/50">
+                  <RadioGroupItem value={v} id={`fs-${v}`} />
+                  <span className="text-xs">{l}</span>
+                </label>
+              ))}
+            </RadioGroup>
+          </section>
+        </div>
+
+        <Separator />
+
+        {/* Columns */}
+        <section className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-bold">עמודות להדפסה ({colIds.length}/{columns.length})</div>
+            <Button variant="ghost" size="sm" type="button" onClick={toggleAllCols}>
+              {allColsSelected ? "נקה הכל" : "בחר הכל"}
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1.5 max-h-44 overflow-auto pr-1">
+            {columns.map((c) => (
+              <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer py-1">
+                <Checkbox checked={colIds.includes(c.id)} onCheckedChange={() => toggleCol(c.id)} />
+                <span className="truncate">{c.header}</span>
+              </label>
+            ))}
+          </div>
+        </section>
+
+        <Separator />
+
+        {/* Page extras */}
+        <section className="space-y-2">
+          <div className="text-sm font-bold">תוספות לעמוד</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1.5">
+            <ToggleRow checked={showHeader} onChange={setShowHeader} label="כותרת עליונה (מוסד + שם דוח)" />
+            <ToggleRow checked={showSubtitle} onChange={setShowSubtitle} label="טווח תאריכים / כותרת משנה" />
+            <ToggleRow checked={!!totals?.length && showTotals} onChange={setShowTotals} label="סיכומים בתחתית" disabled={!totals?.length} />
+            <ToggleRow checked={showPageNumbers} onChange={setShowPageNumbers} label="מספור עמודים + תאריך הדפסה" />
+            <ToggleRow checked={zebra} onChange={setZebra} label="צביעת שורות מתחלפת (Zebra)" />
+          </div>
+        </section>
+
+        <DialogFooter className="gap-2 sm:gap-2">
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>ביטול</Button>
+          <Button variant="outline" onClick={() => openPrintWindow(false)} disabled={!activeCols.length}>
+            <FileDown className="w-4 h-4 ml-1" /> פתיחת תצוגה מקדימה (PDF)
+          </Button>
+          <Button onClick={() => openPrintWindow(true)} disabled={!activeCols.length}>
+            <Printer className="w-4 h-4 ml-1" /> הדפסה
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ToggleRow({ checked, onChange, label, disabled }: { checked: boolean; onChange: (v: boolean) => void; label: string; disabled?: boolean }) {
+  return (
+    <label className={"flex items-center gap-2 text-sm py-1 " + (disabled ? "opacity-40" : "cursor-pointer")}>
+      <Checkbox checked={checked} onCheckedChange={(v) => onChange(!!v)} disabled={disabled} />
+      <span>{label}</span>
+    </label>
+  );
+}
+
+function escapeHtml(v: any): string {
+  const s = v == null ? "" : String(v);
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
