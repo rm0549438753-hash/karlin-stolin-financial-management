@@ -533,9 +533,11 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
               נבחרו {selectedIds.size} תנועות
             </div>
             <div className="flex gap-2">
-              <Button size="sm" variant="default" onClick={() => setBulkEditOpen(true)}>
-                <Pencil className="w-3.5 h-3.5 ml-1" />שינוי נבחרות
-              </Button>
+              {role?.isEditor && (
+                <Button size="sm" variant="default" onClick={() => setBulkEditOpen(true)}>
+                  <Pencil className="w-3.5 h-3.5 ml-1" />שינוי נבחרות
+                </Button>
+              )}
               {role?.isAdmin && (
                 <Button size="sm" variant="outline" className="text-destructive border-destructive/40" onClick={() => setBulkDeleteOpen(true)}>
                   <Trash2 className="w-3.5 h-3.5 ml-1" />מחיקה
