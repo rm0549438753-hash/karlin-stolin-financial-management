@@ -401,52 +401,61 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
         <Kpi label="הוותיק ביותר" value={oldestDate ? formatDate(oldestDate) : "—"} />
       </div>
 
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="text-sm font-semibold">מציג {filtered.length} תנועות</div>
-        <Select value={accountFilter} onValueChange={setAccountFilter}>
-          <SelectTrigger className="w-72"><SelectValue placeholder="כל החשבונות" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">כל החשבונות ({allUnc.length})</SelectItem>
-            {accountsWithUnc.map((a) => (
-              <SelectItem key={a.id} value={a.id}>{a.name} ({a.count})</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="rounded-2xl border bg-card overflow-hidden">
+        <div className="px-4 py-3 bg-muted/40 flex flex-wrap gap-2 items-center border-b">
+          <div className="text-sm font-semibold">מציג {filtered.length} תנועות</div>
+          <div className="flex-1" />
+          <Select value={accountFilter} onValueChange={setAccountFilter}>
+            <SelectTrigger className="w-72 h-9"><SelectValue placeholder="כל החשבונות" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">כל החשבונות ({allUnc.length})</SelectItem>
+              {accountsWithUnc.map((a) => (
+                <SelectItem key={a.id} value={a.id}>{a.name} ({a.count})</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="overflow-x-auto">
+          <Table className="border-collapse">
+            <TableHeader>
+              <TableRow className="bg-muted/30 hover:bg-muted/30">
+                <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">תאריך</TableHead>
+                <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">חשבון</TableHead>
+                <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">פרטים</TableHead>
+                <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">מוטב</TableHead>
+                <TableHead className="text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">סכום</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.length === 0 && (
+                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-12">הכל מסווג ✓</TableCell></TableRow>
+              )}
+              {filtered.map((t, idx) => (
+                <TableRow
+                  key={t.id}
+                  className={"group cursor-pointer border-b border-border transition-colors hover:bg-primary/5 bg-amber-50/30 " + (idx % 2 ? "bg-muted/20 " : "")}
+                  onClick={() => setEditing(t as unknown as TransactionRow)}
+                >
+                  <TableCell className="whitespace-nowrap tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs align-middle">{formatDate(t.transaction_date)}</TableCell>
+                  <TableCell className="whitespace-nowrap border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs align-middle">{acctMap.get(t.account_id) ?? "—"}</TableCell>
+                  <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs align-middle max-w-[280px] truncate">{t.description ?? "—"}</TableCell>
+                  <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs align-middle max-w-[180px] truncate">{t.payee ?? "—"}</TableCell>
+                  <TableCell className={`text-left font-mono tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs font-semibold align-middle ${Number(t.amount) >= 0 ? "text-income" : "text-expense"}`}>
+                    {formatCurrency(Number(t.amount))}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t bg-muted/30 text-sm text-muted-foreground">
+          <span>סה״כ {filtered.length} תנועות</span>
+          <span className="font-semibold text-expense tabular-nums">{formatCurrency(totalAmt)}</span>
+        </div>
       </div>
 
-      <div className="rounded-2xl border bg-card overflow-x-auto">
-        <Table className="border-collapse">
-          <TableHeader>
-            <TableRow className="bg-muted/30 hover:bg-muted/30">
-              <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">תאריך</TableHead>
-              <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">חשבון</TableHead>
-              <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">פרטים</TableHead>
-              <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">מוטב</TableHead>
-              <TableHead className="text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">סכום</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 && (
-              <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">הכל מסווג ✓</TableCell></TableRow>
-            )}
-            {filtered.map((t, idx) => (
-              <TableRow
-                key={t.id}
-                className={"cursor-pointer hover:bg-primary/5 border-b border-border " + (idx % 2 ? "bg-muted/20" : "")}
-                onClick={() => setEditing(t as unknown as TransactionRow)}
-              >
-                <TableCell className="whitespace-nowrap tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{formatDate(t.transaction_date)}</TableCell>
-                <TableCell className="whitespace-nowrap border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{acctMap.get(t.account_id) ?? "—"}</TableCell>
-                <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{t.description ?? "—"}</TableCell>
-                <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs">{t.payee ?? "—"}</TableCell>
-                <TableCell className={`text-left font-mono tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs ${Number(t.amount) >= 0 ? "text-income" : "text-expense"}`}>
-                  {formatCurrency(Number(t.amount))}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
 
       <TransactionDialog
         open={!!editing}
