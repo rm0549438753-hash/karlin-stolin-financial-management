@@ -599,9 +599,11 @@ function TransactionsPage() {
                         ))}
                         <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-2">
                           <div className="flex items-center justify-center gap-1">
-                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setEditing(r); setDialogOpen(true); }}>
-                              <Pencil className="w-3.5 h-3.5" />
-                            </Button>
+                            {role?.isEditor && (
+                              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setEditing(r); setDialogOpen(true); }}>
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
                             {role?.isAdmin && (
                               <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => setDeleteId(r.id)}>
                                 <Trash2 className="w-3.5 h-3.5" />
