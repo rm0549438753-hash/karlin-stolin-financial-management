@@ -61,6 +61,7 @@ async function fetchAllDashboardTransactions() {
     const { data, error } = await supabase
       .from("transactions")
       .select(TRANSACTION_SELECT)
+      .not("transaction_date", "is", null)
       .order("transaction_date", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
 
@@ -71,6 +72,7 @@ async function fetchAllDashboardTransactions() {
     if (page.length < PAGE_SIZE) break;
     from += PAGE_SIZE;
   }
+
 
   return rows;
 }
