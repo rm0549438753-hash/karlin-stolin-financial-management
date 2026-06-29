@@ -506,6 +506,33 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
         account={editingAccount}
         lockAccount
       />
+
+      <PrintDialog
+        open={printOpen}
+        onOpenChange={setPrintOpen}
+        title="דוח תנועות לא מסווגות"
+        subtitle={accountFilter === "all" ? "כל החשבונות" : `חשבון: ${acctMap.get(accountFilter) ?? ""}`}
+        scopes={[
+          { id: "filtered", label: "כל התנועות הלא מסווגות בתצוגה הנוכחית", rows: filtered },
+          { id: "all", label: "כל התנועות הלא מסווגות (ללא סינון)", rows: allUnc },
+        ]}
+        columns={[
+          { id: "date", header: "תאריך", format: (t) => formatDate(t.transaction_date) },
+          { id: "account", header: "חשבון", format: (t) => acctMap.get(t.account_id) ?? "" },
+          { id: "desc", header: "פרטים", format: (t) => t.description ?? "" },
+          { id: "payee", header: "מוטב", format: (t) => t.payee ?? "" },
+          { id: "ref", header: "אסמכתה", format: (t) => t.reference ?? "" },
+          { id: "note", header: "הערה", format: (t) => t.note ?? "" },
+          { id: "cat", header: "קטגוריה", format: (t) => (t.category_id ? catMap.get(t.category_id) ?? "" : "") },
+          { id: "sub", header: "תת קטגוריה", format: (t) => (t.subcategory_id ? subMap.get(t.subcategory_id) ?? "" : "") },
+          { id: "amount", header: "סכום", align: "left", format: (t) => formatCurrency(Number(t.amount)) },
+        ]}
+        totals={[
+          { label: "סך תנועות", value: filtered.length.toLocaleString("he-IL") },
+          { label: "סכום מצטבר", value: formatCurrency(totalAmt), tone: "expense" },
+          { label: "חשבונות", value: String(accountsCount) },
+        ]}
+      />
     </ReportShell>
   );
 }
