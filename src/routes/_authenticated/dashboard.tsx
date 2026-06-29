@@ -622,6 +622,7 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   );
 
   const [openVault, setOpenVault] = useState<{ id: string; name: string } | null>(null);
+  const [printOpen, setPrintOpen] = useState(false);
 
   const summary = useMemo(() => {
     return vaultFunds.map((f: any) => {
