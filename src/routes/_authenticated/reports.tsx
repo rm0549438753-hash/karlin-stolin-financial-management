@@ -597,7 +597,8 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                     </Button>
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         </div>
