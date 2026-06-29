@@ -412,12 +412,16 @@ function TransactionsPage() {
               )}
             </PopoverContent>
           </Popover>
-          <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} disabled={!selectedAccount}>
-            <Upload className="w-4 h-4 ml-1" />ייבוא קובץ
-          </Button>
-          <Button size="sm" onClick={() => { setEditing(null); setDialogOpen(true); }} disabled={!selectedAccount}>
-            <Plus className="w-4 h-4 ml-1" />תנועה חדשה
-          </Button>
+          {role?.isEditor && (
+            <>
+              <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} disabled={!selectedAccount}>
+                <Upload className="w-4 h-4 ml-1" />ייבוא קובץ
+              </Button>
+              <Button size="sm" onClick={() => { setEditing(null); setDialogOpen(true); }} disabled={!selectedAccount}>
+                <Plus className="w-4 h-4 ml-1" />תנועה חדשה
+              </Button>
+            </>
+          )}
         </>
       }
     >
