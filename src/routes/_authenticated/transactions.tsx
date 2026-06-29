@@ -403,9 +403,11 @@ function TransactionsPage() {
                           {new Date(b.created_at).toLocaleString("he-IL")} · {b.row_count} שורות
                         </div>
                       </div>
-                      <Button size="sm" variant="ghost" className="text-destructive shrink-0" onClick={() => { if (confirm("לבטל ייבוא זה ולמחוק את כל התנועות שלו?")) undoBatch.mutate(b.id); }}>
-                        <Undo2 className="w-3.5 h-3.5 ml-1" />בטל
-                      </Button>
+                      {role?.isEditor && (
+                        <Button size="sm" variant="ghost" className="text-destructive shrink-0" onClick={() => { if (confirm("לבטל ייבוא זה ולמחוק את כל התנועות שלו?")) undoBatch.mutate(b.id); }}>
+                          <Undo2 className="w-3.5 h-3.5 ml-1" />בטל
+                        </Button>
+                      )}
                     </li>
                   ))}
                 </ul>
