@@ -35,7 +35,7 @@ const PAGE_SIZE = 1000;
 
 type Tx = {
   id: string;
-  transaction_date: string;
+  transaction_date: string; // effective date (after coalesce/override)
   value_date: string | null;
   amount: number;
   account_id: string;
@@ -51,23 +51,23 @@ type Tx = {
   reference: string | null;
 };
 
-
+type RawTx = Omit<Tx, "transaction_date"> & { transaction_date: string | null };
 
 async function fetchAllDashboardTransactions() {
-  const rows: Tx[] = [];
+  const rows: RawTx[] = [];
   let from = 0;
 
   while (true) {
     const { data, error } = await supabase
       .from("transactions")
       .select(TRANSACTION_SELECT)
-      .not("transaction_date", "is", null)
-      .order("transaction_date", { ascending: false })
+      .or("transaction_date.not.is.null,value_date.not.is.null")
+      .order("transaction_date", { ascending: false, nullsFirst: false })
       .range(from, from + PAGE_SIZE - 1);
 
     if (error) throw error;
 
-    const page = (data ?? []) as Tx[];
+    const page = (data ?? []) as RawTx[];
     rows.push(...page);
     if (page.length < PAGE_SIZE) break;
     from += PAGE_SIZE;
@@ -78,7 +78,7 @@ async function fetchAllDashboardTransactions() {
 }
 
 function DashboardPage() {
-  const { data: txs = [], isLoading } = useQuery({
+  const { data: rawTxs = [], isLoading } = useQuery({
     queryKey: ["tx-dashboard-full"],
     queryFn: fetchAllDashboardTransactions,
   });
@@ -89,20 +89,25 @@ function DashboardPage() {
   const { data: expenseTypes = [] } = useExpenseTypes();
   const { data: funds = [] } = useFunds();
 
-  // For the checks account, use value_date (תאריך ערך) when available — otherwise fallback to transaction_date.
+  // Effective-date rules:
+  //  - Checks account → always use value_date.
+  //  - Other accounts → transaction_date, fallback to value_date.
+  //  - No date at all → excluded (appears only in the "no date" report).
   const checksAccountIds = useMemo(
     () => new Set(accounts.filter((a: any) => a.schema_type === "checks").map((a: any) => a.id)),
     [accounts],
   );
 
-  const txsEffective = useMemo(
-    () => txs.map((t) => (
-      checksAccountIds.has(t.account_id) && t.value_date
-        ? { ...t, transaction_date: t.value_date }
-        : t
-    )),
-    [txs, checksAccountIds],
+  const txsEffective = useMemo<Tx[]>(
+    () => rawTxs.flatMap((t) => {
+      const effective = checksAccountIds.has(t.account_id)
+        ? t.value_date
+        : (t.transaction_date ?? t.value_date);
+      return effective ? [{ ...t, transaction_date: effective }] : [];
+    }),
+    [rawTxs, checksAccountIds],
   );
+
 
   const projectExpenseTypeId = useMemo(
     () => expenseTypes.find((e) => e.name === PROJECT_EXPENSE_TYPE)?.id,
