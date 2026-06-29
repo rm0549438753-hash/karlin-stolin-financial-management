@@ -35,7 +35,7 @@ const PAGE_SIZE = 1000;
 
 type Tx = {
   id: string;
-  transaction_date: string | null;
+  transaction_date: string;
   value_date: string | null;
   amount: number;
   account_id: string;
@@ -50,6 +50,7 @@ type Tx = {
   payee: string | null;
   reference: string | null;
 };
+
 
 
 async function fetchAllDashboardTransactions() {
