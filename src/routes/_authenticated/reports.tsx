@@ -521,10 +521,40 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setAccountFilter("all"); }}>איפוס</Button>
         </div>
 
+        {selectedIds.size > 0 && (
+          <div className="px-4 py-2.5 bg-primary/10 border-y border-primary/30 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm font-bold text-primary">
+              <Checkbox checked={true} onCheckedChange={() => setSelectedIds(new Set())} />
+              נבחרו {selectedIds.size} תנועות
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="default" onClick={() => setBulkEditOpen(true)}>
+                <Pencil className="w-3.5 h-3.5 ml-1" />שינוי נבחרות
+              </Button>
+              {role?.isAdmin && (
+                <Button size="sm" variant="outline" className="text-destructive border-destructive/40" onClick={() => setBulkDeleteOpen(true)}>
+                  <Trash2 className="w-3.5 h-3.5 ml-1" />מחיקה
+                </Button>
+              )}
+              <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
+                <X className="w-3.5 h-3.5 ml-1" />בטל בחירה
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="overflow-x-auto">
           <Table className="border-collapse">
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
+                <TableHead className="w-8 px-1 border-l border-border text-center">
+                  <Checkbox
+                    checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                    onCheckedChange={toggleAll}
+                    aria-label="בחר הכל"
+                    title="בחר הכל"
+                  />
+                </TableHead>
                 <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">תאריך</TableHead>
                 <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">חשבון</TableHead>
                 <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap">פרטים</TableHead>
@@ -538,7 +568,7 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
             </TableHeader>
             <TableBody>
               {filtered.length === 0 && (
-                <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-12">הכל מסווג ✓</TableCell></TableRow>
+                <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-12">הכל מסווג ✓</TableCell></TableRow>
               )}
               {filtered.map((t, idx) => (
                 <TableRow
