@@ -403,21 +403,27 @@ function TransactionsPage() {
                           {new Date(b.created_at).toLocaleString("he-IL")} · {b.row_count} שורות
                         </div>
                       </div>
-                      <Button size="sm" variant="ghost" className="text-destructive shrink-0" onClick={() => { if (confirm("לבטל ייבוא זה ולמחוק את כל התנועות שלו?")) undoBatch.mutate(b.id); }}>
-                        <Undo2 className="w-3.5 h-3.5 ml-1" />בטל
-                      </Button>
+                      {role?.isEditor && (
+                        <Button size="sm" variant="ghost" className="text-destructive shrink-0" onClick={() => { if (confirm("לבטל ייבוא זה ולמחוק את כל התנועות שלו?")) undoBatch.mutate(b.id); }}>
+                          <Undo2 className="w-3.5 h-3.5 ml-1" />בטל
+                        </Button>
+                      )}
                     </li>
                   ))}
                 </ul>
               )}
             </PopoverContent>
           </Popover>
-          <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} disabled={!selectedAccount}>
-            <Upload className="w-4 h-4 ml-1" />ייבוא קובץ
-          </Button>
-          <Button size="sm" onClick={() => { setEditing(null); setDialogOpen(true); }} disabled={!selectedAccount}>
-            <Plus className="w-4 h-4 ml-1" />תנועה חדשה
-          </Button>
+          {role?.isEditor && (
+            <>
+              <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} disabled={!selectedAccount}>
+                <Upload className="w-4 h-4 ml-1" />ייבוא קובץ
+              </Button>
+              <Button size="sm" onClick={() => { setEditing(null); setDialogOpen(true); }} disabled={!selectedAccount}>
+                <Plus className="w-4 h-4 ml-1" />תנועה חדשה
+              </Button>
+            </>
+          )}
         </>
       }
     >
@@ -502,9 +508,11 @@ function TransactionsPage() {
                   נבחרו {selectedIds.size} תנועות
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="default" onClick={() => setBulkEditOpen(true)}>
-                    <Pencil className="w-3.5 h-3.5 ml-1" />שינוי נבחרות
-                  </Button>
+                  {role?.isEditor && (
+                    <Button size="sm" variant="default" onClick={() => setBulkEditOpen(true)}>
+                      <Pencil className="w-3.5 h-3.5 ml-1" />שינוי נבחרות
+                    </Button>
+                  )}
                   <Button size="sm" variant="outline" onClick={exportSelected}>
                     <Download className="w-3.5 h-3.5 ml-1" />ייצוא נבחרות
                   </Button>
@@ -591,9 +599,11 @@ function TransactionsPage() {
                         ))}
                         <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-2">
                           <div className="flex items-center justify-center gap-1">
-                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setEditing(r); setDialogOpen(true); }}>
-                              <Pencil className="w-3.5 h-3.5" />
-                            </Button>
+                            {role?.isEditor && (
+                              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setEditing(r); setDialogOpen(true); }}>
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
                             {role?.isAdmin && (
                               <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => setDeleteId(r.id)}>
                                 <Trash2 className="w-3.5 h-3.5" />

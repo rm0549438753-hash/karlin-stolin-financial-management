@@ -22,6 +22,7 @@ import {
 import { TrendingUp, TrendingDown, Scale, Download, Printer, Search, History } from "lucide-react";
 import { format } from "date-fns";
 import { PrintDialog, type PrintColumn } from "@/components/PrintDialog";
+import { useUserRole } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -158,6 +159,7 @@ function DashboardPage() {
   const lookups = { accounts, categories, subcategories, expenseTypes, funds };
 
   const [newTxOpen, setNewTxOpen] = useState(false);
+  const { data: role } = useUserRole();
 
   useEffect(() => {
     const open = () => setNewTxOpen(true);
@@ -191,7 +193,7 @@ function DashboardPage() {
             דו"ח קופות (הלוואות)
           </TabsTrigger>
         </TabsList>
-          <Button onClick={() => setNewTxOpen(true)}>+ תנועה חדשה</Button>
+          {role?.isEditor && <Button onClick={() => setNewTxOpen(true)}>+ תנועה חדשה</Button>}
         </div>
 
 

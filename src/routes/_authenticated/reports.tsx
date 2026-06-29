@@ -533,9 +533,11 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
               נבחרו {selectedIds.size} תנועות
             </div>
             <div className="flex gap-2">
-              <Button size="sm" variant="default" onClick={() => setBulkEditOpen(true)}>
-                <Pencil className="w-3.5 h-3.5 ml-1" />שינוי נבחרות
-              </Button>
+              {role?.isEditor && (
+                <Button size="sm" variant="default" onClick={() => setBulkEditOpen(true)}>
+                  <Pencil className="w-3.5 h-3.5 ml-1" />שינוי נבחרות
+                </Button>
+              )}
               {role?.isAdmin && (
                 <Button size="sm" variant="outline" className="text-destructive border-destructive/40" onClick={() => setBulkDeleteOpen(true)}>
                   <Trash2 className="w-3.5 h-3.5 ml-1" />מחיקה
@@ -580,8 +582,8 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                 return (
                 <TableRow
                   key={t.id}
-                  className={"group cursor-pointer border-b border-border transition-colors hover:bg-primary/5 " + (isChecked ? "bg-primary/5 " : idx % 2 ? "bg-muted/20 " : "")}
-                  onClick={() => setEditing(t as unknown as TransactionRow)}
+                  className={"group border-b border-border transition-colors hover:bg-primary/5 " + (role?.isEditor ? "cursor-pointer " : "") + (isChecked ? "bg-primary/5 " : idx % 2 ? "bg-muted/20 " : "")}
+                  onClick={role?.isEditor ? () => setEditing(t as unknown as TransactionRow) : undefined}
                 >
                   <TableCell className="w-8 px-1 text-center border-l border-border/60" onClick={(e) => e.stopPropagation()}>
                     <Checkbox checked={isChecked} onCheckedChange={() => toggleOne(t.id)} aria-label="בחר תנועה" />
@@ -597,9 +599,11 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                     {formatCurrency(Number(t.amount))}
                   </TableCell>
                   <TableCell className="text-center px-2 py-1.5 align-middle">
-                    <Button size="sm" variant="ghost" className="h-7 px-2" onClick={(e) => { e.stopPropagation(); setEditing(t as unknown as TransactionRow); }}>
-                      <Pencil className="w-3.5 h-3.5 ml-1" />עריכה
-                    </Button>
+                    {role?.isEditor && (
+                      <Button size="sm" variant="ghost" className="h-7 px-2" onClick={(e) => { e.stopPropagation(); setEditing(t as unknown as TransactionRow); }}>
+                        <Pencil className="w-3.5 h-3.5 ml-1" />עריכה
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
                 );
@@ -683,6 +687,7 @@ function NoDateReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const fundMap = nameMap(lookups.funds);
   const etMap = nameMap(lookups.expenseTypes);
   const qc = useQueryClient();
+  const { data: role } = useUserRole();
 
   const noDateTxs = useMemo(
     () => txs.filter((t) => !t.transaction_date),
@@ -806,15 +811,17 @@ function NoDateReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                       {formatCurrency(Number(t.amount))}
                     </TableCell>
                     <TableCell className="text-center px-2 py-1.5 align-middle">
-                      <Button
-                        size="sm"
-                        variant="default"
-                        disabled={!draft || isSaving}
-                        onClick={() => { setSavingId(t.id); updateDate.mutate({ id: t.id, date: draft }); }}
-                        className="h-7 px-2"
-                      >
-                        <Save className="w-3.5 h-3.5 ml-1" />שמור
-                      </Button>
+                      {role?.isEditor && (
+                        <Button
+                          size="sm"
+                          variant="default"
+                          disabled={!draft || isSaving}
+                          onClick={() => { setSavingId(t.id); updateDate.mutate({ id: t.id, date: draft }); }}
+                          className="h-7 px-2"
+                        >
+                          <Save className="w-3.5 h-3.5 ml-1" />שמור
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 );

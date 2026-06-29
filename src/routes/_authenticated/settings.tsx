@@ -194,7 +194,7 @@ function UsersPanel() {
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newName, setNewName] = useState("");
-  const [newRole, setNewRole] = useState<"admin" | "editor">("editor");
+  const [newRole, setNewRole] = useState<"admin" | "editor" | "viewer">("editor");
 
   const { data = [] } = useQuery({
     queryKey: ["users-with-roles"],
@@ -216,7 +216,7 @@ function UsersPanel() {
   });
 
   const setRole = useMutation({
-    mutationFn: async ({ userId, role }: { userId: string; role: "admin" | "editor" }) => {
+    mutationFn: async ({ userId, role }: { userId: string; role: "admin" | "editor" | "viewer" }) => {
       await supabase.from("user_roles").delete().eq("user_id", userId);
       const { error } = await supabase.from("user_roles").insert({ user_id: userId, role });
       if (error) throw error;
@@ -253,6 +253,7 @@ function UsersPanel() {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="editor">עורך</SelectItem>
+                <SelectItem value="viewer">צופה (קריאה בלבד)</SelectItem>
                 <SelectItem value="admin">מנהל</SelectItem>
               </SelectContent>
             </Select>
@@ -266,7 +267,7 @@ function UsersPanel() {
 
         <div className="border rounded-lg divide-y">
           {data.map((u: any) => {
-            const current = u.roles.includes("admin") ? "admin" : "editor";
+            const current = u.roles.includes("admin") ? "admin" : u.roles.includes("editor") ? "editor" : "viewer";
             const isMe = me?.id === u.id;
             return (
               <div key={u.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
@@ -280,10 +281,11 @@ function UsersPanel() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Select value={current} onValueChange={(v) => setRole.mutate({ userId: u.id, role: v as any })} disabled={isMe}>
-                    <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="admin">מנהל</SelectItem>
                       <SelectItem value="editor">עורך</SelectItem>
+                      <SelectItem value="viewer">צופה</SelectItem>
                     </SelectContent>
                   </Select>
                   <Button

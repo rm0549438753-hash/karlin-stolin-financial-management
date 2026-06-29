@@ -18,7 +18,7 @@ export const adminCreateUser = createServerFn({ method: "POST" })
       email: z.string().email(),
       password: z.string().min(6),
       fullName: z.string().optional().default(""),
-      role: z.enum(["admin", "editor"]).default("editor"),
+      role: z.enum(["admin", "editor", "viewer"]).default("editor"),
     }),
   )
   .handler(async ({ data, context }) => {
