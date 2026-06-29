@@ -194,7 +194,7 @@ function UsersPanel() {
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newName, setNewName] = useState("");
-  const [newRole, setNewRole] = useState<"admin" | "editor">("editor");
+  const [newRole, setNewRole] = useState<"admin" | "editor" | "viewer">("editor");
 
   const { data = [] } = useQuery({
     queryKey: ["users-with-roles"],
