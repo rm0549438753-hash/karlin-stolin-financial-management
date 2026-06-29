@@ -92,7 +92,7 @@ function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-2 bg-[#0d3b66] border-t border-white/10">
+      <SidebarFooter className="p-2 pb-12 bg-[#0d3b66] border-t border-white/10">
         <UserMenu />
       </SidebarFooter>
     </Sidebar>
