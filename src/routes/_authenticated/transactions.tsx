@@ -13,6 +13,7 @@ import { formatDate } from "@/lib/format";
 import { TransactionDialog, type TransactionRow } from "@/components/TransactionDialog";
 import { ImportDialog } from "@/components/ImportDialog";
 import { BulkEditDialog } from "@/components/BulkEditDialog";
+import { PrintDialog, type PrintColumn } from "@/components/PrintDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -144,6 +145,7 @@ function TransactionsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [printOpen, setPrintOpen] = useState(false);
 
   // Reset selection + uncategorized filter when account changes (banner is per-account)
   useEffect(() => {
@@ -377,7 +379,7 @@ function TransactionsPage() {
           <Button variant="outline" size="sm" onClick={exportCSV} disabled={!selectedAccount}>
             <Download className="w-4 h-4 ml-1" />ייצוא
           </Button>
-          <Button variant="outline" size="sm" onClick={() => window.print()} disabled={!selectedAccount}>
+          <Button variant="outline" size="sm" onClick={() => setPrintOpen(true)} disabled={!selectedAccount || filtered.length === 0}>
             <Printer className="w-4 h-4 ml-1" />הדפסה
           </Button>
 
@@ -612,6 +614,32 @@ function TransactionsPage() {
       <TransactionDialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) setEditing(null); }} initial={editing} account={selectedAccount} lockAccount />
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} account={selectedAccount} />
       <BulkEditDialog open={bulkEditOpen} onOpenChange={setBulkEditOpen} ids={Array.from(selectedIds)} onDone={() => setSelectedIds(new Set())} />
+
+      {selectedAccount && (
+        <PrintDialog
+          open={printOpen}
+          onOpenChange={setPrintOpen}
+          title={`תנועות — ${selectedAccount.name}`}
+          subtitle={[from && `מתאריך ${from}`, to && `עד ${to}`, onlyUncat && "רק לא מסווגות"].filter(Boolean).join(" · ") || undefined}
+          scopes={[
+            { id: "filtered", label: "כל התנועות המסוננות בתצוגה הנוכחית", rows: filtered },
+            { id: "selected", label: "רק התנועות המסומנות", rows: filtered.filter((r: any) => selectedIds.has(r.id)) },
+            { id: "all", label: "כל התנועות בחשבון (ללא סינון)", rows: rows },
+          ]}
+          columns={columns.map<PrintColumn>((c, i) => ({
+            id: `${i}_${c.header}`,
+            header: c.header,
+            align: c.align,
+            format: (r) => extractText(c.render(r as any, ctx)),
+          }))}
+          totals={[
+            { label: "סך תנועות", value: filtered.length.toLocaleString("he-IL") },
+            { label: "הכנסות", value: `${fmtNum(totals.inc)} ₪`, tone: "income" },
+            { label: "הוצאות", value: `${fmtNum(Math.abs(totals.exp))} ₪`, tone: "expense" },
+            { label: "מאזן", value: `${fmtNum(totals.net)} ₪`, tone: totals.net >= 0 ? "income" : "expense" },
+          ]}
+        />
+      )}
 
       <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
         <AlertDialogContent dir="rtl">

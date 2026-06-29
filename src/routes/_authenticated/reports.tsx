@@ -17,6 +17,7 @@ import { TransactionDialog, type TransactionRow } from "@/components/Transaction
 import { formatCurrency, formatDate } from "@/lib/format";
 import { CalendarClock, AlertTriangle, Download, Printer, Search, Pencil } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { PrintDialog } from "@/components/PrintDialog";
 
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LabelList,
@@ -154,7 +155,7 @@ function exportTxs(rows: Tx[], lookups: any, filename: string) {
   exportRowsToExcel(data, filename);
 }
 
-function ReportShell({ title, subtitle, onExport, children }: { title: string; subtitle?: string; onExport?: () => void; children: React.ReactNode }) {
+function ReportShell({ title, subtitle, onExport, onPrint, children }: { title: string; subtitle?: string; onExport?: () => void; onPrint?: () => void; children: React.ReactNode }) {
   return (
     <Card className="print-area">
       <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 bg-muted/40 border-b rounded-t-xl">
@@ -168,7 +169,7 @@ function ReportShell({ title, subtitle, onExport, children }: { title: string; s
               <Download className="w-4 h-4 ml-1" />ייצוא לאקסל
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={() => window.print()}>
+          <Button variant="outline" size="sm" onClick={onPrint ?? (() => window.print())}>
             <Printer className="w-4 h-4 ml-1" />הדפסה
           </Button>
         </div>
@@ -225,6 +226,8 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const compactFmt = (v: number) => new Intl.NumberFormat("he-IL", { notation: "compact", maximumFractionDigits: 1 }).format(v);
 
   const [openMonth, setOpenMonth] = useState<string | null>(null);
+  const [printOpen, setPrintOpen] = useState(false);
+  const acctMap = nameMap(lookups.accounts);
   
 
   const monthLabel = openMonth
@@ -252,6 +255,7 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     <ReportShell
       title="צ׳קים עתידיים"
       onExport={() => exportTxs(future, lookups, "צ׳קים עתידיים.xlsx")}
+      onPrint={() => setPrintOpen(true)}
     >
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <Kpi label="סה״כ צ׳קים עתידיים" value={String(future.length)} />
@@ -351,6 +355,31 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           </Accordion>
         </SheetContent>
       </Sheet>
+
+      <PrintDialog
+        open={printOpen}
+        onOpenChange={setPrintOpen}
+        title="דוח צ׳קים עתידיים"
+        subtitle={checksAcc ? `חשבון: ${checksAcc.name}` : undefined}
+        scopes={[
+          { id: "all", label: "כל הצ׳קים העתידיים", rows: future },
+          ...(openMonth ? [{ id: "month", label: `רק החודש הפתוח (${monthLabel})`, rows: future.filter((t) => (t.value_date ?? t.transaction_date).startsWith(openMonth)) }] : []),
+        ]}
+        columns={[
+          { id: "vdate", header: "תאריך ערך", format: (t) => formatDate(t.value_date ?? t.transaction_date) },
+          { id: "tdate", header: "תאריך תנועה", format: (t) => formatDate(t.transaction_date) },
+          { id: "payee", header: "שם", format: (t) => t.payee ?? "" },
+          { id: "desc", header: "פרטים", format: (t) => t.description ?? "" },
+          { id: "ref", header: "אסמכתה", format: (t) => t.reference ?? "" },
+          { id: "note", header: "הערה", format: (t) => t.note ?? "" },
+          { id: "account", header: "חשבון", format: (t) => acctMap.get(t.account_id) ?? "" },
+          { id: "amount", header: "סכום", align: "left", format: (t) => formatCurrency(Math.abs(Number(t.amount))) },
+        ]}
+        totals={[
+          { label: "סך צ׳קים", value: future.length.toLocaleString("he-IL") },
+          { label: "סכום כולל", value: formatCurrency(totalAmt), tone: "expense" },
+        ]}
+      />
     </ReportShell>
 
   );
@@ -369,6 +398,7 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const [accountFilter, setAccountFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<TransactionRow | null>(null);
+  const [printOpen, setPrintOpen] = useState(false);
 
   const accountsWithUnc = useMemo(() => {
     const counts = new Map<string, number>();
@@ -412,6 +442,7 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     <ReportShell
       title="תנועות לא מסווגות"
       onExport={() => exportTxs(filtered, lookups, "לא מסווגות.xlsx")}
+      onPrint={() => setPrintOpen(true)}
     >
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Kpi label="סה״כ לא מסווגות" value={String(filtered.length)} />
@@ -502,6 +533,33 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
         initial={editing}
         account={editingAccount}
         lockAccount
+      />
+
+      <PrintDialog
+        open={printOpen}
+        onOpenChange={setPrintOpen}
+        title="דוח תנועות לא מסווגות"
+        subtitle={accountFilter === "all" ? "כל החשבונות" : `חשבון: ${acctMap.get(accountFilter) ?? ""}`}
+        scopes={[
+          { id: "filtered", label: "כל התנועות הלא מסווגות בתצוגה הנוכחית", rows: filtered },
+          { id: "all", label: "כל התנועות הלא מסווגות (ללא סינון)", rows: allUnc },
+        ]}
+        columns={[
+          { id: "date", header: "תאריך", format: (t) => formatDate(t.transaction_date) },
+          { id: "account", header: "חשבון", format: (t) => acctMap.get(t.account_id) ?? "" },
+          { id: "desc", header: "פרטים", format: (t) => t.description ?? "" },
+          { id: "payee", header: "מוטב", format: (t) => t.payee ?? "" },
+          { id: "ref", header: "אסמכתה", format: (t) => t.reference ?? "" },
+          { id: "note", header: "הערה", format: (t) => t.note ?? "" },
+          { id: "cat", header: "קטגוריה", format: (t) => (t.category_id ? catMap.get(t.category_id) ?? "" : "") },
+          { id: "sub", header: "תת קטגוריה", format: (t) => (t.subcategory_id ? subMap.get(t.subcategory_id) ?? "" : "") },
+          { id: "amount", header: "סכום", align: "left", format: (t) => formatCurrency(Number(t.amount)) },
+        ]}
+        totals={[
+          { label: "סך תנועות", value: filtered.length.toLocaleString("he-IL") },
+          { label: "סכום מצטבר", value: formatCurrency(totalAmt), tone: "expense" },
+          { label: "חשבונות", value: String(accountsCount) },
+        ]}
       />
     </ReportShell>
   );
