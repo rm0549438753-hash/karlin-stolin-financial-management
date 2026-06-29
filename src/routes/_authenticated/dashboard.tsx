@@ -640,6 +640,11 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
 
   const [openVault, setOpenVault] = useState<{ id: string; name: string } | null>(null);
   const [printOpen, setPrintOpen] = useState(false);
+  const navigate = useNavigate();
+  const goToTx = (t: Tx) => {
+    const acc = lookups.accounts.find((a: any) => a.id === t.account_id)?.id ?? "";
+    navigate({ to: "/transactions", search: { account: acc, highlight: t.id } });
+  };
 
   const summary = useMemo(() => {
     return vaultFunds.map((f: any) => {
