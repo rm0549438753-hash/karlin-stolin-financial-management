@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { useUserRole, useAuthUser } from "@/hooks/use-auth";
 import { useServerFn } from "@tanstack/react-start";
 import { adminCreateUser, adminDeleteUser, adminSetUserBlocked, adminListUsers } from "@/lib/admin-users.functions";
+import { syncFromGoogleSheet } from "@/lib/sheets-sync.functions";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
