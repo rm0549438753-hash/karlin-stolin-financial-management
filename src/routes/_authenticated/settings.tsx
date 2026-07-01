@@ -332,3 +332,97 @@ function UsersPanel() {
     </Card>
   );
 }
+
+function SheetsSyncPanel() {
+  const qc = useQueryClient();
+  const [sheetUrl, setSheetUrl] = useState("https://docs.google.com/spreadsheets/d/1dJUbkiRRwVbEozEwpD_KCgh8ur9BclFoxmYjRP2q8fs/edit");
+  const [preview, setPreview] = useState<any>(null);
+  const syncFn = useServerFn(
+    // lazy import to avoid pulling into non-admin bundles
+    (require("@/lib/sheets-sync.functions") as typeof import("@/lib/sheets-sync.functions")).syncFromGoogleSheet,
+  );
+
+  function extractId(u: string): string | null {
+    const m = u.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+    return m ? m[1] : u.trim() || null;
+  }
+
+  const previewMut = useMutation({
+    mutationFn: async () => {
+      const id = extractId(sheetUrl);
+      if (!id) throw new Error("קישור לא תקין");
+      return await syncFn({ data: { spreadsheetId: id, apply: false } });
+    },
+    onSuccess: (r) => { setPreview(r); toast.success("הצצה מוכנה"); },
+    onError: (e: any) => toast.error(e.message ?? "שגיאה"),
+  });
+
+  const applyMut = useMutation({
+    mutationFn: async () => {
+      const id = extractId(sheetUrl);
+      if (!id) throw new Error("קישור לא תקין");
+      return await syncFn({ data: { spreadsheetId: id, apply: true } });
+    },
+    onSuccess: (r) => {
+      toast.success(`סונכרן: ${r.totalInserted} נוספו, ${r.totalDeleted} נמחקו`);
+      setPreview(r);
+      qc.invalidateQueries();
+    },
+    onError: (e: any) => toast.error(e.message ?? "שגיאת סנכרון"),
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>סנכרון תנועות מגוגל שיטס</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="text-sm text-muted-foreground leading-6">
+          מסנכרן חד-כיוונית מהגיליון אל הממשק. כל גיליון (טאב) מזוהה לפי שם החשבון.
+          זיהוי תנועה: תאריך + תאריך ערך + תיאור + אסמכתא + זכות/חובה. תנועות שקיימות בממשק ולא בגיליון — יימחקו.
+          <br />
+          שים לב: כפתור "הצצה" מראה מה יקרה בלי לשנות דבר. "סנכרן עכשיו" מבצע את השינויים.
+        </div>
+        <div className="flex gap-2">
+          <Input dir="ltr" value={sheetUrl} onChange={(e) => setSheetUrl(e.target.value)} placeholder="Google Sheets URL" />
+          <Button variant="outline" disabled={previewMut.isPending} onClick={() => previewMut.mutate()}>
+            {previewMut.isPending ? "בודק…" : "הצצה"}
+          </Button>
+          <Button disabled={applyMut.isPending} onClick={() => applyMut.mutate()}>
+            {applyMut.isPending ? "מסנכרן…" : "סנכרן עכשיו"}
+          </Button>
+        </div>
+
+        {preview && (
+          <div className="border rounded-xl overflow-hidden">
+            <div className="grid grid-cols-4 gap-2 p-3 bg-muted/50 font-medium text-sm">
+              <div>חשבון</div>
+              <div className="text-center">להוספה</div>
+              <div className="text-center">למחיקה</div>
+              <div className="text-center">ללא שינוי</div>
+            </div>
+            {preview.perAccount.map((p: any) => (
+              <div key={p.accountId} className="grid grid-cols-4 gap-2 p-3 border-t text-sm">
+                <div className="truncate">{p.accountName}</div>
+                <div className="text-center text-green-700 font-semibold">{p.toInsert}</div>
+                <div className="text-center text-red-700 font-semibold">{p.toDelete}</div>
+                <div className="text-center text-muted-foreground">{p.unchanged}</div>
+              </div>
+            ))}
+            <div className="grid grid-cols-4 gap-2 p-3 border-t bg-muted/30 text-sm font-bold">
+              <div>סה״כ</div>
+              <div className="text-center text-green-700">{preview.totalInsert}</div>
+              <div className="text-center text-red-700">{preview.totalDelete}</div>
+              <div className="text-center">—</div>
+            </div>
+            {preview.skippedSheets?.length > 0 && (
+              <div className="p-3 border-t text-xs text-muted-foreground">
+                גיליונות שדולגו (אין להם חשבון תואם): {preview.skippedSheets.join(", ")}
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
