@@ -217,11 +217,17 @@ async function parseAllSheets(
         const d = Number(obj.debit) || 0;
         if (c || d) obj.amount = c - d;
       }
-      // For checks: credits are actually expenses (mirror import script)
-      if (t.account.schema_type === "checks" && obj.credit != null && obj.debit == null) {
-        obj.debit = obj.credit;
-        obj.credit = null;
-        if (obj.amount != null) obj.amount = -Math.abs(obj.amount);
+      // For checks account, DB stores: debit=|amount|, credit=null, amount=-|amount|.
+      // Sheet has only "סכום" (positive amount) — normalize the same way.
+      if (t.account.schema_type === "checks") {
+        if (obj.credit != null && obj.debit == null) {
+          obj.debit = obj.credit;
+          obj.credit = null;
+        }
+        if (obj.debit == null && obj.amount != null) {
+          obj.debit = Math.abs(Number(obj.amount));
+        }
+        if (obj.amount != null) obj.amount = -Math.abs(Number(obj.amount));
       }
       rows.push(obj);
     }
@@ -313,7 +319,12 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
     }
 
     // Per-account diff
-    const perAccount: { accountId: string; accountName: string; sheetTitle: string; toInsert: number; toDelete: number; unchanged: number }[] = [];
+    type SampleRow = { date: string | null; description: string | null; amount: number | null };
+    const perAccount: {
+      accountId: string; accountName: string; sheetTitle: string;
+      toInsert: number; toDelete: number; unchanged: number;
+      insertSamples: SampleRow[]; deleteSamples: SampleRow[];
+    }[] = [];
     let totalInserted = 0, totalDeleted = 0;
 
     for (const s of sheets) {
@@ -325,7 +336,7 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
       while (true) {
         const { data: page, error } = await supabase
           .from("transactions")
-          .select("id,transaction_date,value_date,description,reference,credit,debit,amount")
+          .select("id,transaction_date,value_date,description,reference,credit,debit,amount,payee")
           .eq("account_id", s.accountId)
           .range(from, from + PAGE - 1);
         if (error) throw error;
@@ -336,15 +347,15 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
 
       // build multisets (key -> list of ids for db, or count for sheet)
       const dbByKey = new Map<string, string[]>();
+      const dbById = new Map<string, any>();
       for (const r of dbRows) {
         const k = rowKey(r);
         const arr = dbByKey.get(k) ?? [];
         arr.push(r.id);
         dbByKey.set(k, arr);
+        dbById.set(r.id, r);
       }
       const sheetKeys: string[] = s.rows.map(rowKey);
-      const sheetKeyCounts = new Map<string, number>();
-      sheetKeys.forEach((k) => sheetKeyCounts.set(k, (sheetKeyCounts.get(k) ?? 0) + 1));
 
       // determine inserts: sheet rows whose key count > db count (for that key), pick first extras
       const inserts: SheetRow[] = [];
@@ -366,6 +377,12 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
       const deleteIds: string[] = [];
       for (const r of dbRows) if (!usedDbIds.has(r.id)) deleteIds.push(r.id);
 
+      const rowToSample = (r: any): SampleRow => ({
+        date: r.transaction_date ?? r.value_date ?? null,
+        description: r.description ?? r.payee ?? r._payee ?? null,
+        amount: r.amount ?? (r.credit != null || r.debit != null ? (Number(r.credit) || 0) - (Number(r.debit) || 0) : null),
+      });
+
       perAccount.push({
         accountId: s.accountId,
         accountName: s.accountName,
@@ -373,7 +390,10 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
         toInsert: inserts.length,
         toDelete: deleteIds.length,
         unchanged,
+        insertSamples: inserts.slice(0, 200).map(rowToSample),
+        deleteSamples: deleteIds.slice(0, 200).map((id) => rowToSample(dbById.get(id) ?? {})),
       });
+
 
       if (!data.apply) continue;
 
