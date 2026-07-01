@@ -338,10 +338,7 @@ function SheetsSyncPanel() {
   const qc = useQueryClient();
   const [sheetUrl, setSheetUrl] = useState("https://docs.google.com/spreadsheets/d/1dJUbkiRRwVbEozEwpD_KCgh8ur9BclFoxmYjRP2q8fs/edit");
   const [preview, setPreview] = useState<any>(null);
-  const syncFn = useServerFn(
-    // lazy import to avoid pulling into non-admin bundles
-    (require("@/lib/sheets-sync.functions") as typeof import("@/lib/sheets-sync.functions")).syncFromGoogleSheet,
-  );
+  const syncFn = useServerFn(syncFromGoogleSheet);
 
   function extractId(u: string): string | null {
     const m = u.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
