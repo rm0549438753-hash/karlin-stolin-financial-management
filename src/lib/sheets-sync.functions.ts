@@ -306,8 +306,9 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
         .single();
       if (error) throw error;
       const cn = catNameById.get(created.category_id) ?? "";
-      subMap.set(`${cn}||${normName(created.name)}`, created.id);
-      subMap.set(`||${normName(created.name)}`, created.id);
+      const nn = normName(created.name) ?? "";
+      subMap.set(`${cn}||${nn}`, created.id);
+      subMap.set(`||${nn}`, created.id);
       return created.id;
     }
 
