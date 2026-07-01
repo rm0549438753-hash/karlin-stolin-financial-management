@@ -36,6 +36,7 @@ function SettingsPage() {
           <TabsTrigger value="expense_types">סוגי הוצאה</TabsTrigger>
           <TabsTrigger value="categories">קטגוריות</TabsTrigger>
           <TabsTrigger value="subcategories">תת-קטגוריות</TabsTrigger>
+          {role?.isAdmin && <TabsTrigger value="sheets">סנכרון גוגל שיטס</TabsTrigger>}
           {role?.isAdmin && <TabsTrigger value="users">משתמשים והרשאות</TabsTrigger>}
         </TabsList>
         <TabsContent value="accounts"><LookupCRUD table="accounts" label="חשבונות" hasKind /></TabsContent>
@@ -43,6 +44,7 @@ function SettingsPage() {
         <TabsContent value="expense_types"><LookupCRUD table="expense_types" label="סוגי הוצאה" /></TabsContent>
         <TabsContent value="categories"><LookupCRUD table="categories" label="קטגוריות" /></TabsContent>
         <TabsContent value="subcategories"><LookupCRUD table="subcategories" label="תת-קטגוריות" hasCategory /></TabsContent>
+        {role?.isAdmin && <TabsContent value="sheets"><SheetsSyncPanel /></TabsContent>}
         {role?.isAdmin && <TabsContent value="users"><UsersPanel /></TabsContent>}
       </Tabs>
     </AppShell>
