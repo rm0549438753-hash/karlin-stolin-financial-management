@@ -824,7 +824,7 @@ function NoDateReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                           size="sm"
                           variant="default"
                           disabled={!draft || isSaving}
-                          onClick={() => { setSavingId(t.id); updateDate.mutate({ id: t.id, date: draft }); }}
+                          onClick={() => { setSavingId(t.id); updateDate.mutate({ id: t.id, date: draft, isChecks: checksAccountIds.has(t.account_id) }); }}
                           className="h-7 px-2"
                         >
                           <Save className="w-3.5 h-3.5 ml-1" />שמור
