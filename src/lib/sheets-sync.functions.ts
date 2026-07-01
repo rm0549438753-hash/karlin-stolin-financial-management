@@ -217,11 +217,17 @@ async function parseAllSheets(
         const d = Number(obj.debit) || 0;
         if (c || d) obj.amount = c - d;
       }
-      // For checks: credits are actually expenses (mirror import script)
-      if (t.account.schema_type === "checks" && obj.credit != null && obj.debit == null) {
-        obj.debit = obj.credit;
-        obj.credit = null;
-        if (obj.amount != null) obj.amount = -Math.abs(obj.amount);
+      // For checks account, DB stores: debit=|amount|, credit=null, amount=-|amount|.
+      // Sheet has only "סכום" (positive amount) — normalize the same way.
+      if (t.account.schema_type === "checks") {
+        if (obj.credit != null && obj.debit == null) {
+          obj.debit = obj.credit;
+          obj.credit = null;
+        }
+        if (obj.debit == null && obj.amount != null) {
+          obj.debit = Math.abs(Number(obj.amount));
+        }
+        if (obj.amount != null) obj.amount = -Math.abs(Number(obj.amount));
       }
       rows.push(obj);
     }
