@@ -689,9 +689,15 @@ function NoDateReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const qc = useQueryClient();
   const { data: role } = useUserRole();
 
+  const checksAccountIds = useMemo(
+    () => new Set(((lookups.accounts as any[]) ?? []).filter((a) => a.schema_type === "checks").map((a) => a.id)),
+    [lookups.accounts],
+  );
   const noDateTxs = useMemo(
-    () => txs.filter((t) => !t.transaction_date),
-    [txs],
+    // Checks account: dateless only when value_date is missing.
+    // Other accounts: dateless when both transaction_date and value_date are missing.
+    () => txs.filter((t) => checksAccountIds.has(t.account_id) ? !t.value_date : (!t.transaction_date && !t.value_date)),
+    [txs, checksAccountIds],
   );
 
   const [accountFilter, setAccountFilter] = useState<string>("all");
