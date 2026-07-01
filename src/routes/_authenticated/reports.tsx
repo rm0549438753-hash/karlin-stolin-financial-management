@@ -689,9 +689,15 @@ function NoDateReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const qc = useQueryClient();
   const { data: role } = useUserRole();
 
+  const checksAccountIds = useMemo(
+    () => new Set(((lookups.accounts as any[]) ?? []).filter((a) => a.schema_type === "checks").map((a) => a.id)),
+    [lookups.accounts],
+  );
   const noDateTxs = useMemo(
-    () => txs.filter((t) => !t.transaction_date),
-    [txs],
+    // Checks account: dateless only when value_date is missing.
+    // Other accounts: dateless when both transaction_date and value_date are missing.
+    () => txs.filter((t) => checksAccountIds.has(t.account_id) ? !t.value_date : (!t.transaction_date && !t.value_date)),
+    [txs, checksAccountIds],
   );
 
   const [accountFilter, setAccountFilter] = useState<string>("all");
@@ -720,8 +726,10 @@ function NoDateReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const totalAmt = useMemo(() => filtered.reduce((s, t) => s + Math.abs(Number(t.amount)), 0), [filtered]);
 
   const updateDate = useMutation({
-    mutationFn: async ({ id, date }: { id: string; date: string }) => {
-      const { error } = await supabase.from("transactions").update({ transaction_date: date }).eq("id", id);
+    mutationFn: async ({ id, date, isChecks }: { id: string; date: string; isChecks: boolean }) => {
+      // For checks account the effective date is value_date; update it there.
+      const patch = isChecks ? { value_date: date } : { transaction_date: date };
+      const { error } = await supabase.from("transactions").update(patch).eq("id", id);
       if (error) throw error;
     },
     onSuccess: (_d, vars) => {
@@ -816,7 +824,7 @@ function NoDateReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                           size="sm"
                           variant="default"
                           disabled={!draft || isSaving}
-                          onClick={() => { setSavingId(t.id); updateDate.mutate({ id: t.id, date: draft }); }}
+                          onClick={() => { setSavingId(t.id); updateDate.mutate({ id: t.id, date: draft, isChecks: checksAccountIds.has(t.account_id) }); }}
                           className="h-7 px-2"
                         >
                           <Save className="w-3.5 h-3.5 ml-1" />שמור

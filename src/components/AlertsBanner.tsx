@@ -40,15 +40,32 @@ export function AlertsBanner() {
     },
   });
 
+  const checksAccountId = checksAccount?.id;
   const { data: noDateCount = 0 } = useQuery({
-    queryKey: ["alerts-no-date-count"],
+    queryKey: ["alerts-no-date-count", checksAccountId ?? "none"],
     queryFn: async () => {
-      const { count, error } = await supabase
+      // Checks account is dateless only when value_date is missing.
+      // Other accounts are dateless when both transaction_date and value_date are missing.
+      let others = supabase
         .from("transactions")
         .select("id", { count: "exact", head: true })
-        .is("transaction_date", null);
-      if (error) throw error;
-      return count ?? 0;
+        .is("transaction_date", null)
+        .is("value_date", null);
+      if (checksAccountId) others = others.neq("account_id", checksAccountId);
+      const { count: othersCount, error: e1 } = await others;
+      if (e1) throw e1;
+
+      let checksCount = 0;
+      if (checksAccountId) {
+        const { count, error: e2 } = await supabase
+          .from("transactions")
+          .select("id", { count: "exact", head: true })
+          .eq("account_id", checksAccountId)
+          .is("value_date", null);
+        if (e2) throw e2;
+        checksCount = count ?? 0;
+      }
+      return (othersCount ?? 0) + checksCount;
     },
   });
 
