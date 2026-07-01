@@ -726,8 +726,10 @@ function NoDateReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const totalAmt = useMemo(() => filtered.reduce((s, t) => s + Math.abs(Number(t.amount)), 0), [filtered]);
 
   const updateDate = useMutation({
-    mutationFn: async ({ id, date }: { id: string; date: string }) => {
-      const { error } = await supabase.from("transactions").update({ transaction_date: date }).eq("id", id);
+    mutationFn: async ({ id, date, isChecks }: { id: string; date: string; isChecks: boolean }) => {
+      // For checks account the effective date is value_date; update it there.
+      const patch = isChecks ? { value_date: date } : { transaction_date: date };
+      const { error } = await supabase.from("transactions").update(patch).eq("id", id);
       if (error) throw error;
     },
     onSuccess: (_d, vars) => {
