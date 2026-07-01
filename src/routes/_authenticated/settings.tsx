@@ -393,21 +393,16 @@ function SheetsSyncPanel() {
 
         {preview && (
           <div className="border rounded-xl overflow-hidden">
-            <div className="grid grid-cols-4 gap-2 p-3 bg-muted/50 font-medium text-sm">
+            <div className="grid grid-cols-[1fr_100px_100px_100px] gap-2 p-3 bg-muted/50 font-medium text-sm">
               <div>חשבון</div>
               <div className="text-center">להוספה</div>
               <div className="text-center">למחיקה</div>
               <div className="text-center">ללא שינוי</div>
             </div>
             {preview.perAccount.map((p: any) => (
-              <div key={p.accountId} className="grid grid-cols-4 gap-2 p-3 border-t text-sm">
-                <div className="truncate">{p.accountName}</div>
-                <div className="text-center text-green-700 font-semibold">{p.toInsert}</div>
-                <div className="text-center text-red-700 font-semibold">{p.toDelete}</div>
-                <div className="text-center text-muted-foreground">{p.unchanged}</div>
-              </div>
+              <AccountDiffRow key={p.accountId} p={p} />
             ))}
-            <div className="grid grid-cols-4 gap-2 p-3 border-t bg-muted/30 text-sm font-bold">
+            <div className="grid grid-cols-[1fr_100px_100px_100px] gap-2 p-3 border-t bg-muted/30 text-sm font-bold">
               <div>סה״כ</div>
               <div className="text-center text-green-700">{preview.totalInsert}</div>
               <div className="text-center text-red-700">{preview.totalDelete}</div>
@@ -422,5 +417,66 @@ function SheetsSyncPanel() {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function AccountDiffRow({ p }: { p: any }) {
+  const [open, setOpen] = useState(false);
+  const hasChanges = p.toInsert > 0 || p.toDelete > 0;
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => hasChanges && setOpen((v) => !v)}
+        className={`w-full grid grid-cols-[1fr_100px_100px_100px] gap-2 p-3 border-t text-sm text-right ${hasChanges ? "hover:bg-muted/40 cursor-pointer" : "cursor-default"}`}
+      >
+        <div className="truncate flex items-center gap-2">
+          {hasChanges && <span className="text-xs">{open ? "▾" : "▸"}</span>}
+          <span>{p.accountName}</span>
+        </div>
+        <div className="text-center text-green-700 font-semibold">{p.toInsert}</div>
+        <div className="text-center text-red-700 font-semibold">{p.toDelete}</div>
+        <div className="text-center text-muted-foreground">{p.unchanged}</div>
+      </button>
+      {open && hasChanges && (
+        <div className="border-t bg-muted/20 p-3 space-y-3">
+          {p.insertSamples?.length > 0 && (
+            <div>
+              <div className="text-xs font-semibold text-green-700 mb-1">
+                להוספה ({p.toInsert}{p.insertSamples.length < p.toInsert ? `, מוצגות ${p.insertSamples.length}` : ""})
+              </div>
+              <DiffTable rows={p.insertSamples} />
+            </div>
+          )}
+          {p.deleteSamples?.length > 0 && (
+            <div>
+              <div className="text-xs font-semibold text-red-700 mb-1">
+                למחיקה ({p.toDelete}{p.deleteSamples.length < p.toDelete ? `, מוצגות ${p.deleteSamples.length}` : ""})
+              </div>
+              <DiffTable rows={p.deleteSamples} />
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
+function DiffTable({ rows }: { rows: { date: string | null; description: string | null; amount: number | null }[] }) {
+  return (
+    <div className="rounded border bg-background max-h-64 overflow-auto text-xs">
+      <div className="grid grid-cols-[100px_1fr_110px] gap-2 px-2 py-1 bg-muted/40 font-medium sticky top-0">
+        <div>תאריך</div>
+        <div>תיאור / שם</div>
+        <div className="text-left">סכום</div>
+      </div>
+      {rows.map((r, i) => (
+        <div key={i} className="grid grid-cols-[100px_1fr_110px] gap-2 px-2 py-1 border-t">
+          <div>{r.date ?? "—"}</div>
+          <div className="truncate">{r.description ?? "—"}</div>
+          <div className="text-left tabular-nums">{r.amount == null ? "—" : r.amount.toLocaleString("he-IL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+        </div>
+      ))}
+    </div>
   );
 }
