@@ -172,34 +172,81 @@ ${footerHtml}
   const [downloading, setDownloading] = useState(false);
   async function downloadPdf() {
     setDownloading(true);
+    // Render into an off-screen container inside the CURRENT document so fonts
+    // and CSS are guaranteed available for html2canvas.
+    const holder = document.createElement("div");
+    holder.setAttribute("dir", "rtl");
+    holder.style.cssText =
+      "position:fixed;left:-100000px;top:0;width:" +
+      (orientation === "landscape" ? "1400px" : "980px") +
+      ";background:#fff;z-index:-1;";
     const html = buildHtml(false);
-    const iframe = document.createElement("iframe");
-    iframe.style.cssText = "position:fixed;left:-10000px;top:0;width:1200px;height:800px;border:0;visibility:hidden;";
-    document.body.appendChild(iframe);
+    const bodyMatch = html.match(/<body>([\s\S]*?)<\/body>/i);
+    const styleMatch = html.match(/<style>([\s\S]*?)<\/style>/i);
+    holder.innerHTML =
+      (styleMatch ? `<style>${styleMatch[1]}</style>` : "") +
+      (bodyMatch ? bodyMatch[1] : html);
+    holder.querySelectorAll(".toolbar").forEach((el) => el.remove());
+    document.body.appendChild(holder);
     try {
-      const doc = iframe.contentDocument!;
-      doc.open(); doc.write(html); doc.close();
-      await new Promise((r) => setTimeout(r, 500));
-      try { await (doc as any).fonts?.ready; } catch { /* noop */ }
-      const html2pdf = (await import("html2pdf.js")).default as any;
+      try { await (document as any).fonts?.ready; } catch { /* noop */ }
+      await new Promise((r) => setTimeout(r, 150));
+
+      const [{ default: html2canvas }, jspdfMod] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+      const { jsPDF } = jspdfMod as any;
+
+      const canvas = await html2canvas(holder, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+        windowWidth: holder.scrollWidth,
+      });
+
+      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 8;
+      const imgW = pageW - margin * 2;
+      const imgH = (canvas.height * imgW) / canvas.width;
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+
+      if (imgH <= pageH - margin * 2) {
+        pdf.addImage(imgData, "JPEG", margin, margin, imgW, imgH);
+      } else {
+        const pxPerMm = canvas.width / imgW;
+        const pageHpx = (pageH - margin * 2) * pxPerMm;
+        let y = 0;
+        let first = true;
+        while (y < canvas.height) {
+          const sliceH = Math.min(pageHpx, canvas.height - y);
+          const slice = document.createElement("canvas");
+          slice.width = canvas.width;
+          slice.height = sliceH;
+          const ctx = slice.getContext("2d")!;
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, slice.width, slice.height);
+          ctx.drawImage(canvas, 0, y, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+          const sliceData = slice.toDataURL("image/jpeg", 0.95);
+          const sliceHmm = sliceH / pxPerMm;
+          if (!first) pdf.addPage();
+          pdf.addImage(sliceData, "JPEG", margin, margin, imgW, sliceHmm);
+          y += sliceH;
+          first = false;
+        }
+      }
+
       const filename = `${title.replace(/[\\/:*?"<>|]+/g, "_")}.pdf`;
-      await html2pdf()
-        .from(doc.body)
-        .set({
-          margin: [10, 8, 12, 8],
-          filename,
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
-          jsPDF: { unit: "mm", format: "a4", orientation },
-          pagebreak: { mode: ["css", "legacy"] },
-        })
-        .save();
+      pdf.save(filename);
       onOpenChange(false);
     } catch (e) {
       console.error("PDF download failed", e);
       alert("הורדת ה-PDF נכשלה. נסה שוב או השתמש בתצוגה מקדימה.");
     } finally {
-      document.body.removeChild(iframe);
+      document.body.removeChild(holder);
       setDownloading(false);
     }
   }
