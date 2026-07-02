@@ -255,8 +255,8 @@ ${footerHtml}
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent dir="rtl" className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle className="text-xl">הגדרות הדפסה</DialogTitle>
-          <DialogDescription>בחר מה להדפיס ואיך הפלט ייראה. השינויים ייושמו על העמוד שייפתח.</DialogDescription>
+          <DialogTitle className="text-xl">ייצוא ל-PDF</DialogTitle>
+          <DialogDescription>בחר עמודות והגדרות תצוגה. ניתן לצפות בתצוגה מקדימה או להוריד קובץ PDF.</DialogDescription>
         </DialogHeader>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
