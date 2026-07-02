@@ -296,8 +296,8 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           <ResponsiveContainer width="100%" height={320}>
             <BarChart data={monthly} margin={{ top: 24, right: 10, left: 10, bottom: 8 }}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" fontSize={12} reversed />
-              <YAxis fontSize={12} orientation="right" tickFormatter={compactFmt} />
+              <XAxis dataKey="month" fontSize={12} />
+              <YAxis fontSize={12} orientation="left" tickFormatter={compactFmt} />
               <Tooltip formatter={(v: number) => formatCurrency(v)} />
               <Bar
                 dataKey="סכום"
@@ -319,11 +319,27 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       <Sheet open={!!openMonth} onOpenChange={(o) => { if (!o) setOpenMonth(null); }}>
         <SheetContent side="left" className="w-full sm:max-w-3xl overflow-y-auto">
           <SheetHeader className="border-b pb-3 mb-4">
-            <SheetTitle className="text-2xl">{monthLabel}</SheetTitle>
-            <p className="text-sm text-muted-foreground">
-              {dayBuckets.length} ימים · סה״כ{" "}
-              <b className="text-expense">{formatCurrency(dayBuckets.reduce((s, d) => s + d.sum, 0))}</b>
-            </p>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <SheetTitle className="text-2xl">{monthLabel}</SheetTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {dayBuckets.length} ימים · סה״כ{" "}
+                  <b className="text-expense">{formatCurrency(dayBuckets.reduce((s, d) => s + d.sum, 0))}</b>
+                </p>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <ExportMenu
+                  onExcel={() => {
+                    const monthRows = future.filter((t) => (t.value_date ?? t.transaction_date).startsWith(openMonth ?? ""));
+                    exportTxs(monthRows, lookups, `צ׳קים עתידיים - ${monthLabel}.xlsx`);
+                  }}
+                  onPdf={() => setPrintOpen(true)}
+                />
+                <Button size="sm" variant="outline" onClick={() => setPrintOpen(true)}>
+                  <Printer className="w-4 h-4 ml-1" />הדפסה
+                </Button>
+              </div>
+            </div>
           </SheetHeader>
 
           <Accordion type="multiple" className="space-y-2">
@@ -410,8 +426,8 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
         title="דוח צ׳קים עתידיים"
         subtitle={checksAcc ? `חשבון: ${checksAcc.name}` : undefined}
         scopes={[
-          { id: "all", label: "כל הצ׳קים העתידיים", rows: future },
           ...(openMonth ? [{ id: "month", label: `רק החודש הפתוח (${monthLabel})`, rows: future.filter((t) => (t.value_date ?? t.transaction_date).startsWith(openMonth)) }] : []),
+          { id: "all", label: "כל הצ׳קים העתידיים", rows: future },
         ]}
         columns={[
           { id: "vdate", header: "תאריך ערך", format: (t) => formatDate(t.value_date ?? t.transaction_date) },

@@ -540,8 +540,8 @@ function TransactionsPage() {
             <div className="overflow-x-auto">
               <Table className="border-collapse">
                 <TableHeader>
-                  <TableRow className="bg-muted/30 hover:bg-muted/30">
-                    <TableHead className="w-8 px-1 border-l border-border text-center">
+                  <TableRow className="bg-muted/95 hover:bg-muted/95 backdrop-blur">
+                    <TableHead className="w-8 px-1 border-l border-border text-center sticky top-24 z-20 bg-muted/95 backdrop-blur">
                       <Checkbox
                         checked={allSelected ? true : someSelected ? "indeterminate" : false}
                         onCheckedChange={toggleAll}
@@ -556,7 +556,7 @@ function TransactionsPage() {
                           key={c.header}
                           onClick={isDate ? () => setDateSort((s) => (s === "desc" ? "asc" : "desc")) : undefined}
                           className={
-                            "text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap " +
+                            "text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap sticky top-24 z-20 bg-muted/95 backdrop-blur " +
                             (c.align === "left" ? "text-left" : c.align === "center" ? "text-center" : "text-right") +
                             (isDate ? " cursor-pointer select-none hover:text-primary" : "")
                           }
@@ -567,7 +567,7 @@ function TransactionsPage() {
                         </TableHead>
                       );
                     })}
-                    <TableHead className="text-center w-24 border-l border-border last:border-l-0 px-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">פעולות</TableHead>
+                    <TableHead className="text-center w-24 border-l border-border last:border-l-0 px-3 text-xs font-bold uppercase tracking-wider text-muted-foreground sticky top-24 z-20 bg-muted/95 backdrop-blur">פעולות</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
