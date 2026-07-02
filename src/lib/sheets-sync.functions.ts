@@ -604,6 +604,7 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
 
     return {
       applied: data.apply,
+      spreadsheetId: data.spreadsheetId,
       perAccount,
       skippedSheets: skipped,
       totalInsert: perAccount.reduce((a, x) => a + x.toInsert, 0),
