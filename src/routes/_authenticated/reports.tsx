@@ -410,8 +410,8 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
         title="דוח צ׳קים עתידיים"
         subtitle={checksAcc ? `חשבון: ${checksAcc.name}` : undefined}
         scopes={[
-          { id: "all", label: "כל הצ׳קים העתידיים", rows: future },
           ...(openMonth ? [{ id: "month", label: `רק החודש הפתוח (${monthLabel})`, rows: future.filter((t) => (t.value_date ?? t.transaction_date).startsWith(openMonth)) }] : []),
+          { id: "all", label: "כל הצ׳קים העתידיים", rows: future },
         ]}
         columns={[
           { id: "vdate", header: "תאריך ערך", format: (t) => formatDate(t.value_date ?? t.transaction_date) },
