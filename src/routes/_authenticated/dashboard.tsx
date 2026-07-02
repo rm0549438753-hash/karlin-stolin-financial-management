@@ -744,15 +744,11 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
               <span className={openTotal >= 0 ? "text-income" : "text-expense"}>{formatCurrency(openTotal)}</span>
             </div>
             <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
+              <ExportMenu
                 disabled={!openRows.length}
-                onClick={() => openVault && exportTxsToExcel(openRows, lookups, `דוח קופה - ${openVault.name}.xlsx`)}
-              >
-                <Download className="w-4 h-4 ml-1" />
-                ייצוא לאקסל
-              </Button>
+                onExcel={() => openVault && exportTxsToExcel(openRows, lookups, `דוח קופה - ${openVault.name}.xlsx`)}
+                onPdf={() => openVault && exportTxsToPdf(openRows, lookups, `דוח קופה - ${openVault.name}`)}
+              />
               <Button size="sm" variant="outline" onClick={() => setPrintOpen(true)} disabled={!openRows.length}>
                 <Printer className="w-4 h-4 ml-1" />הדפסה
               </Button>
