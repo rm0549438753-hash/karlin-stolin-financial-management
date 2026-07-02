@@ -94,10 +94,13 @@ function toStr(v: any): string | null {
   return s === "" ? null : s;
 }
 
-// Composite dedup key for a transaction row
-function rowKey(r: any): string {
+// Composite dedup key for a transaction row.
+// For checks accounts the sheet has only value_date (no transaction_date),
+// so we match by value_date only to avoid false diffs.
+function rowKey(r: any, schemaType?: string): string {
+  const isChecks = schemaType === "checks";
   const parts = [
-    r.transaction_date ?? "",
+    isChecks ? "" : (r.transaction_date ?? ""),
     r.value_date ?? "",
     (r.description ?? "").toString().trim().replace(/\s+/g, " "),
     (r.reference ?? "").toString().trim(),
