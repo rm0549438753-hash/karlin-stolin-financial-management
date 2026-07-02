@@ -235,9 +235,30 @@ async function parseAllSheets(
       }
       rows.push(obj);
     }
+    // Assign stable per-account synthetic IDs (hash + occurrence index)
+    const occ = new Map<string, number>();
+    for (const r of rows) {
+      const h = hashSheetRow(r);
+      const n = (occ.get(h) ?? 0);
+      occ.set(h, n + 1);
+      r._id = `${h}#${n}`;
+    }
     out.push({ sheetTitle: t.title, accountId: t.account.id, accountName: t.account.name, schemaType: t.account.schema_type, rows });
   });
   return { sheets: out, skipped };
+}
+
+function hashSheetRow(r: any): string {
+  const s = JSON.stringify([
+    r.transaction_date ?? "", r.value_date ?? "",
+    r.description ?? "", r.reference ?? "", r.payee ?? "",
+    r.credit ?? "", r.debit ?? "", r.amount ?? "", r.balance ?? "", r.fee ?? "",
+    r._fund_name ?? "", r._expense_type_name ?? "", r._category_name ?? "", r._subcategory_name ?? "",
+    r.note ?? "",
+  ]);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return h.toString(16);
 }
 
 async function ensureAdmin(context: any) {
