@@ -288,10 +288,13 @@ ${footerHtml}
 
         <DialogFooter className="gap-2 sm:gap-2">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>ביטול</Button>
-          <Button variant="outline" onClick={() => openPrintWindow(false)} disabled={!activeCols.length}>
-            <FileDown className="w-4 h-4 ml-1" /> פתיחת תצוגה מקדימה (PDF)
+          <Button variant="outline" onClick={() => openPrintWindow(false)} disabled={!activeCols.length || downloading}>
+            <FileDown className="w-4 h-4 ml-1" /> תצוגה מקדימה
           </Button>
-          <Button onClick={() => openPrintWindow(true)} disabled={!activeCols.length}>
+          <Button onClick={downloadPdf} disabled={!activeCols.length || downloading}>
+            <FileDown className="w-4 h-4 ml-1" /> {downloading ? "מייצא..." : "הורדת PDF"}
+          </Button>
+          <Button variant="secondary" onClick={() => openPrintWindow(true)} disabled={!activeCols.length || downloading}>
             <Printer className="w-4 h-4 ml-1" /> הדפסה
           </Button>
         </DialogFooter>
