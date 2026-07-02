@@ -428,6 +428,16 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
         scopes={[
           ...(openMonth ? [{ id: "month", label: `רק החודש הפתוח (${monthLabel})`, rows: future.filter((t) => (t.value_date ?? t.transaction_date).startsWith(openMonth)) }] : []),
           { id: "all", label: "כל הצ׳קים העתידיים", rows: future },
+          ...Array.from(new Set(future.map((t) => (t.association ?? "").trim()).filter(Boolean)))
+            .sort((a, b) => a.localeCompare(b, "he"))
+            .map((assoc) => ({
+              id: `assoc-${assoc}`,
+              label: `עמותה: ${assoc}`,
+              rows: future.filter((t) => (t.association ?? "").trim() === assoc),
+            })),
+          ...(future.some((t) => !(t.association ?? "").trim())
+            ? [{ id: "assoc-none", label: "ללא עמותה", rows: future.filter((t) => !(t.association ?? "").trim()) }]
+            : []),
         ]}
         columns={[
           { id: "vdate", header: "תאריך ערך", format: (t) => formatDate(t.value_date ?? t.transaction_date) },
