@@ -217,14 +217,14 @@ function DashboardPage() {
 }
 
 /* ===================== Export helper ===================== */
-function exportTxsToExcel(rows: Tx[], lookups: any, filename: string) {
+function buildExportRows(rows: Tx[], lookups: any) {
   const catMap = new Map<string, string>(lookups.categories.map((c: any) => [c.id, c.name]));
   const subMap = new Map<string, string>(lookups.subcategories.map((s: any) => [s.id, s.name]));
   const etMap = new Map<string, string>(lookups.expenseTypes.map((e: any) => [e.id, e.name]));
   const acctMap = new Map<string, string>(lookups.accounts.map((a: any) => [a.id, a.name]));
   const fundMap = new Map<string, string>(lookups.funds.map((f: any) => [f.id, f.name]));
 
-  const data = rows.map((t) => {
+  return rows.map((t) => {
     const a = Number(t.amount);
     const credit = t.credit != null ? Number(t.credit) : (a > 0 ? a : 0);
     const debit = t.debit != null ? Number(t.debit) : (a < 0 ? -a : 0);
@@ -241,10 +241,20 @@ function exportTxsToExcel(rows: Tx[], lookups: any, filename: string) {
       "הערה": t.note ?? "",
     };
   });
+}
+
+function exportTxsToExcel(rows: Tx[], lookups: any, filename: string) {
+  const data = buildExportRows(rows, lookups);
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "פירוט");
   XLSX.writeFile(wb, filename);
+}
+
+function exportTxsToPdf(rows: Tx[], lookups: any, title: string) {
+  const data = buildExportRows(rows, lookups);
+  const { headers, data: matrix } = objectsToTable(data);
+  exportRowsAsPdf(title, headers, matrix);
 }
 
 /* ===================== Overview (Tabs 1 + 2) ===================== */
