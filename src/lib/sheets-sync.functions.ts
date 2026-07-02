@@ -434,6 +434,7 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
 
       // Enrichers
       const sheetToFull = (r: SheetRow): FullRow => ({
+        id: String(r._id ?? ""),
         transaction_date: r.transaction_date ?? null,
         value_date: r.value_date ?? null,
         description: r.description ?? null,
