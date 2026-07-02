@@ -156,10 +156,11 @@ async function parseAllSheets(
   accounts: { id: string; name: string; schema_type: string }[],
 ): Promise<{ sheets: ParsedSheet[]; skipped: string[] }> {
   const meta = await gatewayFetch(`/google_sheets/v4/spreadsheets/${spreadsheetId}`, {
-    fields: "sheets.properties(title,gridProperties)",
+    fields: "sheets.properties(title,sheetId,gridProperties)",
   });
-  const titles: { title: string; rowCount: number }[] = (meta.sheets ?? []).map((s: any) => ({
+  const titles: { title: string; sheetGid: number | null; rowCount: number }[] = (meta.sheets ?? []).map((s: any) => ({
     title: s.properties.title,
+    sheetGid: s.properties.sheetId ?? null,
     rowCount: s.properties.gridProperties?.rowCount ?? 1000,
   }));
 
@@ -200,6 +201,7 @@ async function parseAllSheets(
     for (let i = hIdx + 1; i < aoa.length; i++) {
       const r = aoa[i] ?? [];
       if (!r.some((c) => c != null && String(c).trim() !== "")) continue;
+      const _sheetRowIndex = i + 1; // 1-based row in the sheet
       const obj: SheetRow = {};
       headers.forEach((h, j) => {
         const field = getMappedField(h);
