@@ -138,6 +138,7 @@ type ParsedSheet = {
   sheetTitle: string;
   accountId: string;
   accountName: string;
+  schemaType: string;
   rows: SheetRow[]; // normalized rows with keys matching transactions columns + _name fields
 };
 
