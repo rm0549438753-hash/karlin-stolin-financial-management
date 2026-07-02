@@ -18,7 +18,7 @@ export function AlertsBanner() {
       const weekAhead = wk.toISOString().slice(0, 10);
       const { data, error } = await supabase
         .from("transactions")
-        .select("id, value_date, amount, description")
+        .select("id, value_date, amount, description, payee")
         .eq("account_id", checksAccount!.id)
         .gte("value_date", today)
         .lte("value_date", weekAhead);
