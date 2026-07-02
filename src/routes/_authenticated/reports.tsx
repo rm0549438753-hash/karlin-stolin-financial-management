@@ -39,7 +39,7 @@ export const Route = createFileRoute("/_authenticated/reports")({
 });
 
 const PAGE_SIZE = 1000;
-const TX_SELECT = "id, transaction_date, value_date, amount, account_id, fund_id, expense_type_id, category_id, subcategory_id, description, note, credit, debit, payee, balance, reference, fee, channel";
+const TX_SELECT = "id, transaction_date, value_date, amount, account_id, fund_id, expense_type_id, category_id, subcategory_id, description, note, credit, debit, payee, balance, reference, fee, channel, association";
 
 type Tx = {
   id: string;
