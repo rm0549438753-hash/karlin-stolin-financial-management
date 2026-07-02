@@ -14,27 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      _pagi_desc_import: {
-        Row: {
-          amt: number | null
-          dsc: string | null
-          ref: string | null
-          vd: string | null
-        }
-        Insert: {
-          amt?: number | null
-          dsc?: string | null
-          ref?: string | null
-          vd?: string | null
-        }
-        Update: {
-          amt?: number | null
-          dsc?: string | null
-          ref?: string | null
-          vd?: string | null
-        }
-        Relationships: []
-      }
       accounts: {
         Row: {
           created_at: string
