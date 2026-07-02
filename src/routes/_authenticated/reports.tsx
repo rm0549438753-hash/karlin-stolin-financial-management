@@ -296,8 +296,8 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           <ResponsiveContainer width="100%" height={320}>
             <BarChart data={monthly} margin={{ top: 24, right: 10, left: 10, bottom: 8 }}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" fontSize={12} reversed />
-              <YAxis fontSize={12} orientation="right" tickFormatter={compactFmt} />
+              <XAxis dataKey="month" fontSize={12} />
+              <YAxis fontSize={12} orientation="left" tickFormatter={compactFmt} />
               <Tooltip formatter={(v: number) => formatCurrency(v)} />
               <Bar
                 dataKey="סכום"
