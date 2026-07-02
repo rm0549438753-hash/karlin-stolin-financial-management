@@ -144,6 +144,7 @@ async function gatewayFetch(path: string, params?: Record<string, string | strin
 type SheetRow = Record<string, any>;
 type ParsedSheet = {
   sheetTitle: string;
+  sheetGid: number | null;
   accountId: string;
   accountName: string;
   schemaType: string;
