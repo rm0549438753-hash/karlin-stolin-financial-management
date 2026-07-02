@@ -33,7 +33,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 const CHART_COLORS = ["hsl(220 70% 55%)", "hsl(155 60% 45%)", "hsl(75 80% 55%)", "hsl(25 80% 55%)", "hsl(295 60% 55%)", "hsl(200 70% 50%)", "hsl(340 70% 55%)"];
 const PROJECT_EXPENSE_TYPE = "בית הכנסת - בניה";
 const IRRELEVANT_FUND = "לא רלוונטי";
-const TRANSACTION_SELECT = "id, transaction_date, value_date, amount, account_id, fund_id, expense_type_id, category_id, subcategory_id, description, note, credit, debit, payee, reference";
+const TRANSACTION_SELECT = "id, transaction_date, value_date, amount, account_id, fund_id, expense_type_id, category_id, subcategory_id, description, note, credit, debit, payee, reference, association";
 const PAGE_SIZE = 1000;
 
 type Tx = {
@@ -52,6 +52,7 @@ type Tx = {
   debit: number | null;
   payee: string | null;
   reference: string | null;
+  association: string | null;
 };
 
 type RawTx = Omit<Tx, "transaction_date"> & { transaction_date: string | null };
