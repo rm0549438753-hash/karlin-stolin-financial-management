@@ -357,6 +357,7 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
 
     // Per-account diff
     type FullRow = {
+      id: string; // synthetic id (sheet hash#occ) or DB uuid
       transaction_date: string | null;
       value_date: string | null;
       description: string | null;
