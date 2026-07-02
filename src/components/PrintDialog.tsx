@@ -341,9 +341,6 @@ ${footerHtml}
           <Button onClick={downloadPdf} disabled={!activeCols.length || downloading}>
             <FileDown className="w-4 h-4 ml-1" /> {downloading ? "מייצא..." : "הורדת PDF"}
           </Button>
-          <Button variant="secondary" onClick={() => openPrintWindow(true)} disabled={!activeCols.length || downloading}>
-            <Printer className="w-4 h-4 ml-1" /> הדפסה
-          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
