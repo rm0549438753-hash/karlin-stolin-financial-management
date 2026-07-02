@@ -393,19 +393,21 @@ function SheetsSyncPanel() {
 
         {preview && (
           <div className="border rounded-xl overflow-hidden">
-            <div className="grid grid-cols-[1fr_100px_100px_100px] gap-2 p-3 bg-muted/50 font-medium text-sm">
+            <div className="grid grid-cols-[1fr_90px_90px_90px_90px] gap-2 p-3 bg-muted/50 font-medium text-sm">
               <div>חשבון</div>
               <div className="text-center">להוספה</div>
+              <div className="text-center">לעדכון</div>
               <div className="text-center">למחיקה</div>
               <div className="text-center">ללא שינוי</div>
             </div>
             {preview.perAccount.map((p: any) => (
               <AccountDiffRow key={p.accountId} p={p} />
             ))}
-            <div className="grid grid-cols-[1fr_100px_100px_100px] gap-2 p-3 border-t bg-muted/30 text-sm font-bold">
+            <div className="grid grid-cols-[1fr_90px_90px_90px_90px] gap-2 p-3 border-t bg-muted/30 text-sm font-bold">
               <div>סה״כ</div>
-              <div className="text-center text-green-700">{preview.totalInsert}</div>
-              <div className="text-center text-red-700">{preview.totalDelete}</div>
+              <div className="text-center text-green-700">{preview.perAccount.reduce((a: number, x: any) => a + x.toInsert, 0)}</div>
+              <div className="text-center text-amber-700">{preview.perAccount.reduce((a: number, x: any) => a + (x.toModify ?? 0), 0)}</div>
+              <div className="text-center text-red-700">{preview.perAccount.reduce((a: number, x: any) => a + x.toDelete, 0)}</div>
               <div className="text-center">—</div>
             </div>
             {preview.skippedSheets?.length > 0 && (
@@ -420,32 +422,76 @@ function SheetsSyncPanel() {
   );
 }
 
+const FIELD_LABELS: Record<string, string> = {
+  transaction_date: "תאריך",
+  value_date: "תאריך ערך",
+  description: "תיאור",
+  reference: "אסמכתא",
+  payee: "שם / מוטב",
+  note: "הערה",
+  credit: "זכות",
+  debit: "חובה",
+  amount: "סכום",
+  balance: "יתרה",
+  fee: "עמלה",
+  fund_name: "קופה",
+  expense_type_name: "סוג",
+  category_name: "קטגוריה",
+  subcategory_name: "תת-קטגוריה",
+};
+const FIELD_ORDER = Object.keys(FIELD_LABELS);
+const NUMERIC_FIELDS = new Set(["credit", "debit", "amount", "balance", "fee"]);
+
+function fmtVal(field: string, v: any): string {
+  if (v == null || v === "") return "—";
+  if (NUMERIC_FIELDS.has(field)) return Number(v).toLocaleString("he-IL", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return String(v);
+}
+function normCompare(field: string, v: any): string {
+  if (v == null || v === "") return "";
+  if (NUMERIC_FIELDS.has(field)) return Number(v).toFixed(2);
+  return String(v).trim().replace(/\s+/g, " ");
+}
+
 function AccountDiffRow({ p }: { p: any }) {
   const [open, setOpen] = useState(false);
-  const hasChanges = p.toInsert > 0 || p.toDelete > 0;
+  const hasChanges = p.toInsert > 0 || p.toDelete > 0 || (p.toModify ?? 0) > 0;
   return (
     <>
       <button
         type="button"
         onClick={() => hasChanges && setOpen((v) => !v)}
-        className={`w-full grid grid-cols-[1fr_100px_100px_100px] gap-2 p-3 border-t text-sm text-right ${hasChanges ? "hover:bg-muted/40 cursor-pointer" : "cursor-default"}`}
+        className={`w-full grid grid-cols-[1fr_90px_90px_90px_90px] gap-2 p-3 border-t text-sm text-right ${hasChanges ? "hover:bg-muted/40 cursor-pointer" : "cursor-default"}`}
       >
         <div className="truncate flex items-center gap-2">
           {hasChanges && <span className="text-xs">{open ? "▾" : "▸"}</span>}
           <span>{p.accountName}</span>
         </div>
         <div className="text-center text-green-700 font-semibold">{p.toInsert}</div>
+        <div className="text-center text-amber-700 font-semibold">{p.toModify ?? 0}</div>
         <div className="text-center text-red-700 font-semibold">{p.toDelete}</div>
         <div className="text-center text-muted-foreground">{p.unchanged}</div>
       </button>
       {open && hasChanges && (
-        <div className="border-t bg-muted/20 p-3 space-y-3">
+        <div className="border-t bg-muted/20 p-3 space-y-4">
+          {p.modifiedSamples?.length > 0 && (
+            <div>
+              <div className="text-xs font-semibold text-amber-700 mb-1">
+                לעדכון ({p.toModify}{p.modifiedSamples.length < p.toModify ? `, מוצגות ${p.modifiedSamples.length}` : ""}) — השינויים מודגשים
+              </div>
+              <div className="space-y-2">
+                {p.modifiedSamples.map((pair: any, i: number) => (
+                  <ModifiedPairCard key={i} pair={pair} />
+                ))}
+              </div>
+            </div>
+          )}
           {p.insertSamples?.length > 0 && (
             <div>
               <div className="text-xs font-semibold text-green-700 mb-1">
                 להוספה ({p.toInsert}{p.insertSamples.length < p.toInsert ? `, מוצגות ${p.insertSamples.length}` : ""})
               </div>
-              <DiffTable rows={p.insertSamples} />
+              <FullRowsTable rows={p.insertSamples} />
             </div>
           )}
           {p.deleteSamples?.length > 0 && (
@@ -453,7 +499,7 @@ function AccountDiffRow({ p }: { p: any }) {
               <div className="text-xs font-semibold text-red-700 mb-1">
                 למחיקה ({p.toDelete}{p.deleteSamples.length < p.toDelete ? `, מוצגות ${p.deleteSamples.length}` : ""})
               </div>
-              <DiffTable rows={p.deleteSamples} />
+              <FullRowsTable rows={p.deleteSamples} />
             </div>
           )}
         </div>
@@ -462,21 +508,49 @@ function AccountDiffRow({ p }: { p: any }) {
   );
 }
 
-function DiffTable({ rows }: { rows: { date: string | null; description: string | null; amount: number | null }[] }) {
+function ModifiedPairCard({ pair }: { pair: { sheet: any; db: any } }) {
+  const diffFields = FIELD_ORDER.filter((f) => normCompare(f, pair.sheet[f]) !== normCompare(f, pair.db[f]));
   return (
-    <div className="rounded border bg-background max-h-64 overflow-auto text-xs">
-      <div className="grid grid-cols-[100px_1fr_110px] gap-2 px-2 py-1 bg-muted/40 font-medium sticky top-0">
-        <div>תאריך</div>
-        <div>תיאור / שם</div>
-        <div className="text-left">סכום</div>
+    <div className="rounded border bg-background p-2 text-xs">
+      <div className="grid grid-cols-[90px_1fr_1fr] gap-2 font-medium text-muted-foreground border-b pb-1 mb-1">
+        <div>שדה</div>
+        <div>בממשק (לפני)</div>
+        <div>בגיליון (אחרי)</div>
+      </div>
+      {FIELD_ORDER.map((f) => {
+        const changed = diffFields.includes(f);
+        const before = fmtVal(f, pair.db[f]);
+        const after = fmtVal(f, pair.sheet[f]);
+        // Skip fields that are empty on both sides and unchanged, to reduce noise
+        if (!changed && before === "—" && after === "—") return null;
+        return (
+          <div key={f} className={`grid grid-cols-[90px_1fr_1fr] gap-2 py-0.5 ${changed ? "bg-amber-50 dark:bg-amber-950/30" : ""}`}>
+            <div className="text-muted-foreground">{FIELD_LABELS[f]}</div>
+            <div className={changed ? "text-red-700 font-medium line-through decoration-red-400/60" : ""}>{before}</div>
+            <div className={changed ? "text-green-700 font-medium" : ""}>{after}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function FullRowsTable({ rows }: { rows: any[] }) {
+  return (
+    <div className="rounded border bg-background max-h-80 overflow-auto text-xs">
+      <div className="grid gap-2 px-2 py-1 bg-muted/40 font-medium sticky top-0" style={{ gridTemplateColumns: `repeat(${FIELD_ORDER.length}, minmax(80px, 1fr))` }}>
+        {FIELD_ORDER.map((f) => <div key={f} className="truncate">{FIELD_LABELS[f]}</div>)}
       </div>
       {rows.map((r, i) => (
-        <div key={i} className="grid grid-cols-[100px_1fr_110px] gap-2 px-2 py-1 border-t">
-          <div>{r.date ?? "—"}</div>
-          <div className="truncate">{r.description ?? "—"}</div>
-          <div className="text-left tabular-nums">{r.amount == null ? "—" : r.amount.toLocaleString("he-IL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+        <div key={i} className="grid gap-2 px-2 py-1 border-t" style={{ gridTemplateColumns: `repeat(${FIELD_ORDER.length}, minmax(80px, 1fr))` }}>
+          {FIELD_ORDER.map((f) => (
+            <div key={f} className={`truncate ${NUMERIC_FIELDS.has(f) ? "tabular-nums text-left" : ""}`} title={fmtVal(f, r[f])}>
+              {fmtVal(f, r[f])}
+            </div>
+          ))}
         </div>
       ))}
     </div>
   );
 }
+
