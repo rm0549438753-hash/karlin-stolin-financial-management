@@ -389,7 +389,7 @@ function TransactionsPage() {
       title={title}
       actions={
         <>
-          <ExportMenu disabled={!selectedAccount} onExcel={exportAllExcel} onPdf={exportAllPdf} />
+          <ExportMenu disabled={!selectedAccount} onExcel={exportAllExcel} onPdf={() => setPrintOpen(true)} />
           <Button variant="outline" size="sm" onClick={() => setPrintOpen(true)} disabled={!selectedAccount || filtered.length === 0}>
             <Printer className="w-4 h-4 ml-1" />הדפסה
           </Button>
