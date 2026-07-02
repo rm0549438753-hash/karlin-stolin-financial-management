@@ -322,17 +322,42 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
       return created.id;
     }
 
+    // Build id → name maps for enriching DB rows
+    const fundNameById = new Map<string, string>();
+    (fundsRes.data ?? []).forEach((r: any) => fundNameById.set(r.id, r.name));
+    const etNameById = new Map<string, string>();
+    (etRes.data ?? []).forEach((r: any) => etNameById.set(r.id, r.name));
+    const subNameById = new Map<string, string>();
+    (subRes.data ?? []).forEach((r: any) => subNameById.set(r.id, r.name));
+
     // Per-account diff
-    type SampleRow = { date: string | null; description: string | null; amount: number | null };
+    type FullRow = {
+      transaction_date: string | null;
+      value_date: string | null;
+      description: string | null;
+      reference: string | null;
+      payee: string | null;
+      note: string | null;
+      credit: number | null;
+      debit: number | null;
+      amount: number | null;
+      balance: number | null;
+      fee: number | null;
+      fund_name: string | null;
+      expense_type_name: string | null;
+      category_name: string | null;
+      subcategory_name: string | null;
+    };
+    type ModifiedPair = { sheet: FullRow; db: FullRow };
     const perAccount: {
-      accountId: string; accountName: string; sheetTitle: string;
-      toInsert: number; toDelete: number; unchanged: number;
-      insertSamples: SampleRow[]; deleteSamples: SampleRow[];
+      accountId: string; accountName: string; sheetTitle: string; schemaType: string;
+      toInsert: number; toDelete: number; unchanged: number; toModify: number;
+      insertSamples: FullRow[]; deleteSamples: FullRow[]; modifiedSamples: ModifiedPair[];
     }[] = [];
     let totalInserted = 0, totalDeleted = 0;
 
     for (const s of sheets) {
-      // fetch all existing DB rows for account
+      // fetch all existing DB rows for account (all fields needed for the diff view)
       const dbRows: any[] = [];
       const PAGE = 1000;
       let from = 0;
@@ -340,7 +365,7 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
       while (true) {
         const { data: page, error } = await supabase
           .from("transactions")
-          .select("id,transaction_date,value_date,description,reference,credit,debit,amount,payee")
+          .select("id,transaction_date,value_date,description,reference,credit,debit,amount,balance,fee,payee,note,fund_id,expense_type_id,category_id,subcategory_id")
           .eq("account_id", s.accountId)
           .range(from, from + PAGE - 1);
         if (error) throw error;
@@ -353,13 +378,13 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
       const dbByKey = new Map<string, string[]>();
       const dbById = new Map<string, any>();
       for (const r of dbRows) {
-        const k = rowKey(r);
+        const k = rowKey(r, s.schemaType);
         const arr = dbByKey.get(k) ?? [];
         arr.push(r.id);
         dbByKey.set(k, arr);
         dbById.set(r.id, r);
       }
-      const sheetKeys: string[] = s.rows.map(rowKey);
+      const sheetKeys: string[] = s.rows.map((r) => rowKey(r, s.schemaType));
 
       // determine inserts: sheet rows whose key count > db count (for that key), pick first extras
       const inserts: SheetRow[] = [];
@@ -381,22 +406,90 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
       const deleteIds: string[] = [];
       for (const r of dbRows) if (!usedDbIds.has(r.id)) deleteIds.push(r.id);
 
-      const rowToSample = (r: any): SampleRow => ({
-        date: r.transaction_date ?? r.value_date ?? null,
-        description: r.description ?? r.payee ?? r._payee ?? null,
-        amount: r.amount ?? (r.credit != null || r.debit != null ? (Number(r.credit) || 0) - (Number(r.debit) || 0) : null),
+      // Enrichers
+      const sheetToFull = (r: SheetRow): FullRow => ({
+        transaction_date: r.transaction_date ?? null,
+        value_date: r.value_date ?? null,
+        description: r.description ?? null,
+        reference: r.reference ?? null,
+        payee: r.payee ?? null,
+        note: r.note ?? null,
+        credit: r.credit ?? null,
+        debit: r.debit ?? null,
+        amount: r.amount ?? null,
+        balance: r.balance ?? null,
+        fee: r.fee ?? null,
+        fund_name: r._fund_name ?? null,
+        expense_type_name: r._expense_type_name ?? null,
+        category_name: r._category_name ?? null,
+        subcategory_name: r._subcategory_name ?? null,
       });
+      const dbToFull = (r: any): FullRow => ({
+        transaction_date: r.transaction_date ?? null,
+        value_date: r.value_date ?? null,
+        description: r.description ?? null,
+        reference: r.reference ?? null,
+        payee: r.payee ?? null,
+        note: r.note ?? null,
+        credit: r.credit == null ? null : Number(r.credit),
+        debit: r.debit == null ? null : Number(r.debit),
+        amount: r.amount == null ? null : Number(r.amount),
+        balance: r.balance == null ? null : Number(r.balance),
+        fee: r.fee == null ? null : Number(r.fee),
+        fund_name: r.fund_id ? (fundNameById.get(r.fund_id) ?? null) : null,
+        expense_type_name: r.expense_type_id ? (etNameById.get(r.expense_type_id) ?? null) : null,
+        category_name: r.category_id ? (catNameById.get(r.category_id) ?? null) : null,
+        subcategory_name: r.subcategory_id ? (subNameById.get(r.subcategory_id) ?? null) : null,
+      });
+
+      // Try to pair leftover inserts↔deletes as "modifications" by looser key: (date, |amount|)
+      const looseKey = (r: any, source: "sheet" | "db"): string => {
+        const isChecks = s.schemaType === "checks";
+        const date = isChecks
+          ? (r.value_date ?? "")
+          : (r.transaction_date ?? r.value_date ?? "");
+        let amt: number | null = null;
+        if (source === "sheet") amt = r.amount ?? ((Number(r.credit) || 0) - (Number(r.debit) || 0));
+        else amt = r.amount != null ? Number(r.amount) : ((Number(r.credit) || 0) - (Number(r.debit) || 0));
+        return `${date}|${amt == null ? "" : Math.abs(amt).toFixed(2)}`;
+      };
+      const dbLeftoverByLoose = new Map<string, string[]>();
+      for (const id of deleteIds) {
+        const k = looseKey(dbById.get(id), "db");
+        const arr = dbLeftoverByLoose.get(k) ?? [];
+        arr.push(id);
+        dbLeftoverByLoose.set(k, arr);
+      }
+      const modified: ModifiedPair[] = [];
+      const pairedInsertIdx = new Set<number>();
+      const pairedDeleteIds = new Set<string>();
+      inserts.forEach((r, i) => {
+        const k = looseKey(r, "sheet");
+        const bucket = dbLeftoverByLoose.get(k);
+        if (bucket && bucket.length > 0) {
+          const dbId = bucket.shift()!;
+          pairedInsertIdx.add(i);
+          pairedDeleteIds.add(dbId);
+          modified.push({ sheet: sheetToFull(r), db: dbToFull(dbById.get(dbId)) });
+        }
+      });
+      const pureInserts = inserts.filter((_, i) => !pairedInsertIdx.has(i));
+      const pureDeleteIds = deleteIds.filter((id) => !pairedDeleteIds.has(id));
 
       perAccount.push({
         accountId: s.accountId,
         accountName: s.accountName,
         sheetTitle: s.sheetTitle,
-        toInsert: inserts.length,
-        toDelete: deleteIds.length,
+        schemaType: s.schemaType,
+        toInsert: pureInserts.length,
+        toDelete: pureDeleteIds.length,
+        toModify: modified.length,
         unchanged,
-        insertSamples: inserts.slice(0, 200).map(rowToSample),
-        deleteSamples: deleteIds.slice(0, 200).map((id) => rowToSample(dbById.get(id) ?? {})),
+        insertSamples: pureInserts.slice(0, 200).map(sheetToFull),
+        deleteSamples: pureDeleteIds.slice(0, 200).map((id) => dbToFull(dbById.get(id) ?? {})),
+        modifiedSamples: modified.slice(0, 200),
       });
+
 
 
       if (!data.apply) continue;
