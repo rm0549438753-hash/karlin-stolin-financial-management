@@ -60,6 +60,7 @@ type Tx = {
   reference: string | null;
   fee: number | null;
   channel: string | null;
+  association: string | null;
 };
 
 async function fetchAllTransactions(): Promise<Tx[]> {
