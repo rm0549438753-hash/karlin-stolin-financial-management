@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Printer, FileDown } from "lucide-react";
+import { FileDown } from "lucide-react";
 
 export type PrintColumn = {
   id: string;
