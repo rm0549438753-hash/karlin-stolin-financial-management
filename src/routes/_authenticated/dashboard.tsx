@@ -451,8 +451,8 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           <ResponsiveContainer width="100%" height={360}>
             <BarChart data={monthly} margin={{ top: 20, right: 8, left: 8, bottom: 8 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="label" fontSize={12} reversed />
-              <YAxis fontSize={12} orientation="right" tickFormatter={compactFmt} />
+              <XAxis dataKey="label" fontSize={12} />
+              <YAxis fontSize={12} orientation="left" tickFormatter={compactFmt} />
               <Tooltip formatter={(v: number) => formatCurrency(v)} />
               <Legend />
               <Bar dataKey="הכנסות" fill="hsl(155 65% 42%)" radius={[4, 4, 0, 0]} cursor="pointer"
