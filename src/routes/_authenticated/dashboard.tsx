@@ -233,6 +233,7 @@ function buildExportRows(rows: Tx[], lookups: any) {
       "תאריך": format(new Date(t.transaction_date), "dd/MM/yyyy"),
       "חשבון": acctMap.get(t.account_id) ?? "",
       "פרטים": (t.description ?? t.payee ?? ""),
+      "עמותה": (t as any).association ?? "",
       "סוג": t.expense_type_id ? etMap.get(t.expense_type_id) ?? "" : "",
       "קטגוריה": t.category_id ? catMap.get(t.category_id) ?? "" : "",
       "תת-קטגוריה": t.subcategory_id ? subMap.get(t.subcategory_id) ?? "" : "",
