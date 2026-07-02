@@ -23,6 +23,8 @@ import { BulkEditDialog } from "@/components/BulkEditDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { ExportMenu } from "@/components/ExportMenu";
+import { exportRowsAsPdf, objectsToTable } from "@/lib/export-pdf";
 import { useUserRole } from "@/hooks/use-auth";
 
 import {
