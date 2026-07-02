@@ -603,14 +603,15 @@ function AccountDiffRow({ p, spreadsheetId }: { p: any; spreadsheetId?: string }
   );
 }
 
-function UpdatePairCard({ pair, accountId }: { pair: { sheet: any; db: any }; accountId: string }) {
+function UpdatePairCard({ pair, accountId, spreadsheetId, sheetGid }: { pair: { sheet: any; db: any; dbId: string }; accountId: string; spreadsheetId?: string; sheetGid?: number | null }) {
   const { isMarked, toggle } = useExcl();
   const excluded = isMarked(accountId, "update", pair.sheet.id);
-  // Only show classification diffs (that's all we update in place)
   const diffFields = Array.from(CLASS_FIELDS).filter(
     (f) => normCompare(f, pair.sheet[f]) !== normCompare(f, pair.db[f]),
   );
   const contextFields = ["transaction_date", "value_date", "reference", "amount", "description", "payee"];
+  const appHref = txUrl(accountId, pair.dbId);
+  const sheetHref = sheetUrl(spreadsheetId, sheetGid, pair.sheet.sheetRowIndex);
   return (
     <div className={`rounded border bg-background p-2 text-xs ${excluded ? "opacity-50" : ""}`}>
       <div className="flex items-center gap-2 mb-1 justify-between">
@@ -624,8 +625,14 @@ function UpdatePairCard({ pair, accountId }: { pair: { sheet: any; db: any }; ac
       </div>
       <div className="grid grid-cols-[100px_1fr_1fr] gap-2 font-medium text-muted-foreground border-b pb-1 mb-1">
         <div>שדה</div>
-        <div>בממשק (נוכחי)</div>
-        <div>בגיליון (חדש)</div>
+        <div>
+          בממשק (נוכחי){" "}
+          <a href={appHref} target="_blank" rel="noreferrer" className="text-primary underline text-[10px]">פתח</a>
+        </div>
+        <div>
+          בגיליון (חדש){" "}
+          {sheetHref && <a href={sheetHref} target="_blank" rel="noreferrer" className="text-primary underline text-[10px]">פתח</a>}
+        </div>
       </div>
       {Array.from(CLASS_FIELDS).map((f) => {
         const changed = diffFields.includes(f);
@@ -643,32 +650,40 @@ function UpdatePairCard({ pair, accountId }: { pair: { sheet: any; db: any }; ac
   );
 }
 
-function FullRowsTable({ rows, accountId, kind, defaultChecked }: { rows: any[]; accountId: string; kind: Kind; defaultChecked: boolean }) {
+function FullRowsTable({ rows, accountId, kind, defaultChecked, source, spreadsheetId, sheetGid }: { rows: any[]; accountId: string; kind: Kind; defaultChecked: boolean; source?: "sheet" | "db"; spreadsheetId?: string; sheetGid?: number | null }) {
   const { isMarked, toggle } = useExcl();
   return (
     <div className="rounded border bg-background max-h-80 overflow-auto text-xs">
       <div
         className="grid gap-2 px-2 py-1 bg-muted/40 font-medium sticky top-0"
-        style={{ gridTemplateColumns: `28px repeat(${FIELD_ORDER.length}, minmax(80px, 1fr))` }}
+        style={{ gridTemplateColumns: `28px 40px repeat(${FIELD_ORDER.length}, minmax(80px, 1fr))` }}
       >
+        <div></div>
         <div></div>
         {FIELD_ORDER.map((f) => <div key={f} className="truncate">{FIELD_LABELS[f]}</div>)}
       </div>
       {rows.map((r) => {
         const marked = isMarked(accountId, kind, r.id);
-        // For insert/update: default checked; marked = excluded. For review: default unchecked; marked = selected for delete.
         const checked = defaultChecked ? !marked : marked;
         const rowClass = defaultChecked
           ? (marked ? "opacity-50 bg-muted/30" : "")
           : (marked ? "bg-red-50 dark:bg-red-950/20" : "");
+        const href = source === "db"
+          ? txUrl(accountId, r.id)
+          : sheetUrl(spreadsheetId, sheetGid, r.sheetRowIndex);
         return (
           <div
             key={r.id}
             className={`grid gap-2 px-2 py-1 border-t items-center ${rowClass}`}
-            style={{ gridTemplateColumns: `28px repeat(${FIELD_ORDER.length}, minmax(80px, 1fr))` }}
+            style={{ gridTemplateColumns: `28px 40px repeat(${FIELD_ORDER.length}, minmax(80px, 1fr))` }}
           >
             <div>
               <Checkbox checked={checked} onCheckedChange={() => toggle(accountId, kind, r.id)} />
+            </div>
+            <div>
+              {href ? (
+                <a href={href} target="_blank" rel="noreferrer" className="text-primary underline text-[10px]" title={source === "db" ? "פתח בממשק" : "פתח בגיליון"}>פתח</a>
+              ) : null}
             </div>
             {FIELD_ORDER.map((f) => (
               <div key={f} className={`truncate ${NUMERIC_FIELDS.has(f) ? "tabular-nums text-left" : ""}`} title={fmtVal(f, r[f])}>
