@@ -138,13 +138,13 @@ function exportRowsToExcel(rows: any[], filename: string) {
   XLSX.writeFile(wb, filename);
 }
 
-function exportTxs(rows: Tx[], lookups: any, filename: string) {
+function buildTxRows(rows: Tx[], lookups: any) {
   const acct = nameMap(lookups.accounts);
   const fund = nameMap(lookups.funds);
   const et = nameMap(lookups.expenseTypes);
   const cat = nameMap(lookups.categories);
   const sub = nameMap(lookups.subcategories);
-  const data = rows.map((t) => {
+  return rows.map((t) => {
     const a = Number(t.amount);
     const credit = t.credit != null ? Number(t.credit) : (a > 0 ? a : 0);
     const debit = t.debit != null ? Number(t.debit) : (a < 0 ? -a : 0);
@@ -163,10 +163,19 @@ function exportTxs(rows: Tx[], lookups: any, filename: string) {
       "הערה": t.note ?? "",
     };
   });
-  exportRowsToExcel(data, filename);
 }
 
-function ReportShell({ title, subtitle, onExport, onPrint, children }: { title: string; subtitle?: string; onExport?: () => void; onPrint?: () => void; children: React.ReactNode }) {
+function exportTxs(rows: Tx[], lookups: any, filename: string) {
+  exportRowsToExcel(buildTxRows(rows, lookups), filename);
+}
+
+function exportTxsPdf(rows: Tx[], lookups: any, title: string) {
+  const data = buildTxRows(rows, lookups);
+  const { headers, data: matrix } = objectsToTable(data);
+  exportRowsAsPdf(title, headers, matrix);
+}
+
+function ReportShell({ title, subtitle, onExport, onExportPdf, onPrint, children }: { title: string; subtitle?: string; onExport?: () => void; onExportPdf?: () => void; onPrint?: () => void; children: React.ReactNode }) {
   return (
     <Card className="print-area">
       <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 bg-muted/40 border-b rounded-t-xl">
@@ -175,10 +184,8 @@ function ReportShell({ title, subtitle, onExport, onPrint, children }: { title: 
           {subtitle && <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>}
         </div>
         <div className="flex gap-2 no-print">
-          {onExport && (
-            <Button variant="outline" size="sm" onClick={onExport}>
-              <Download className="w-4 h-4 ml-1" />ייצוא לאקסל
-            </Button>
+          {onExport && onExportPdf && (
+            <ExportMenu onExcel={onExport} onPdf={onExportPdf} />
           )}
           <Button variant="outline" size="sm" onClick={onPrint ?? (() => window.print())}>
             <Printer className="w-4 h-4 ml-1" />הדפסה
