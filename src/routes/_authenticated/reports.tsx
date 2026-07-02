@@ -417,6 +417,7 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           { id: "vdate", header: "תאריך ערך", format: (t) => formatDate(t.value_date ?? t.transaction_date) },
           { id: "tdate", header: "תאריך תנועה", format: (t) => formatDate(t.transaction_date) },
           { id: "payee", header: "שם", format: (t) => t.payee ?? "" },
+          { id: "assoc", header: "עמותה", format: (t) => t.association ?? "" },
           { id: "desc", header: "פרטים", format: (t) => (t.description ?? t.payee ?? "") },
           { id: "ref", header: "אסמכתה", format: (t) => t.reference ?? "" },
           { id: "note", header: "הערה", format: (t) => t.note ?? "" },
