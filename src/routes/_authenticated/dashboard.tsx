@@ -23,6 +23,8 @@ import { TrendingUp, TrendingDown, Scale, Download, Printer, Search, History } f
 import { format } from "date-fns";
 import { PrintDialog, type PrintColumn } from "@/components/PrintDialog";
 import { useUserRole } from "@/hooks/use-auth";
+import { ExportMenu } from "@/components/ExportMenu";
+import { exportRowsAsPdf, objectsToTable } from "@/lib/export-pdf";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
