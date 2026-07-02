@@ -519,6 +519,7 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
         accountId: s.accountId,
         accountName: s.accountName,
         sheetTitle: s.sheetTitle,
+        sheetGid: s.sheetGid,
         schemaType: s.schemaType,
         toInsert: effectiveInserts.length,
         toUpdate: effectiveUpdates.length,
