@@ -231,6 +231,7 @@ async function parseAllSheets(
       }
       // Skip rows without any usable amount — can't insert (DB requires amount).
       if (absAmount(obj) == null) continue;
+      obj._sheetRowIndex = _sheetRowIndex;
       rows.push(obj);
     }
     // Stable per-account synthetic IDs
@@ -241,7 +242,7 @@ async function parseAllSheets(
       occ.set(h, n + 1);
       r._id = `${h}#${n}`;
     }
-    out.push({ sheetTitle: t.title, accountId: t.account.id, accountName: t.account.name, schemaType: t.account.schema_type, rows });
+    out.push({ sheetTitle: t.title, sheetGid: t.sheetGid, accountId: t.account.id, accountName: t.account.name, schemaType: t.account.schema_type, rows });
   });
   return { sheets: out, skipped };
 }
