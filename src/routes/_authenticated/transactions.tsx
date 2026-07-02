@@ -18,6 +18,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import * as XLSX from "xlsx";
+import { ExportMenu } from "@/components/ExportMenu";
+import { exportRowsAsPdf } from "@/lib/export-pdf";
 import { useUserRole } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_authenticated/transactions")({
@@ -350,23 +353,33 @@ function TransactionsPage() {
     if (typeof v === "object" && "props" in v) return extractText((v as any).props?.children);
     return "";
   }
-  function exportRows(list: any[], filename: string) {
+  function buildExportMatrix(list: any[]) {
     const headers = columns.map((c) => c.header);
-    const rowsCsv = list.map((r) => columns.map((col) => extractText(col.render(r as any, ctx))));
-    const csv = [headers, ...rowsCsv].map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
-    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = filename;
-    a.click(); URL.revokeObjectURL(url);
+    const rows = list.map((r) => columns.map((col) => extractText(col.render(r as any, ctx))));
+    return { headers, rows };
   }
-  function exportCSV() {
-    exportRows(filtered, `transactions_${new Date().toISOString().slice(0, 10)}.csv`);
+  function exportExcel(list: any[], filename: string) {
+    const { headers, rows } = buildExportMatrix(list);
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "תנועות");
+    XLSX.writeFile(wb, filename);
   }
-  function exportSelected() {
+  function exportPdf(list: any[], title: string) {
+    const { headers, rows } = buildExportMatrix(list);
+    exportRowsAsPdf(title, headers, rows);
+  }
+  const exportBaseName = selectedAccount ? selectedAccount.name : "transactions";
+  const exportAllExcel = () => exportExcel(filtered, `${exportBaseName}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  const exportAllPdf = () => exportPdf(filtered, exportBaseName);
+  const exportSelectedExcel = () => {
     const list = filtered.filter((r: any) => selectedIds.has(r.id));
-    exportRows(list, `transactions_selected_${new Date().toISOString().slice(0, 10)}.csv`);
-  }
+    exportExcel(list, `${exportBaseName}_selected_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
+  const exportSelectedPdf = () => {
+    const list = filtered.filter((r: any) => selectedIds.has(r.id));
+    exportPdf(list, `${exportBaseName} — נבחרות`);
+  };
 
 
   const title = selectedAccount ? selectedAccount.name : "תנועות";
@@ -376,9 +389,7 @@ function TransactionsPage() {
       title={title}
       actions={
         <>
-          <Button variant="outline" size="sm" onClick={exportCSV} disabled={!selectedAccount}>
-            <Download className="w-4 h-4 ml-1" />ייצוא
-          </Button>
+          <ExportMenu disabled={!selectedAccount} onExcel={exportAllExcel} onPdf={exportAllPdf} />
           <Button variant="outline" size="sm" onClick={() => setPrintOpen(true)} disabled={!selectedAccount || filtered.length === 0}>
             <Printer className="w-4 h-4 ml-1" />הדפסה
           </Button>
@@ -513,9 +524,7 @@ function TransactionsPage() {
                       <Pencil className="w-3.5 h-3.5 ml-1" />שינוי נבחרות
                     </Button>
                   )}
-                  <Button size="sm" variant="outline" onClick={exportSelected}>
-                    <Download className="w-3.5 h-3.5 ml-1" />ייצוא נבחרות
-                  </Button>
+                  <ExportMenu label="ייצוא נבחרות" onExcel={exportSelectedExcel} onPdf={exportSelectedPdf} />
                   {role?.isAdmin && (
                     <Button size="sm" variant="outline" className="text-destructive border-destructive/40" onClick={() => setBulkDeleteOpen(true)}>
                       <Trash2 className="w-3.5 h-3.5 ml-1" />מחיקה

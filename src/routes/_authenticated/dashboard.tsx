@@ -23,6 +23,8 @@ import { TrendingUp, TrendingDown, Scale, Download, Printer, Search, History } f
 import { format } from "date-fns";
 import { PrintDialog, type PrintColumn } from "@/components/PrintDialog";
 import { useUserRole } from "@/hooks/use-auth";
+import { ExportMenu } from "@/components/ExportMenu";
+import { exportRowsAsPdf, objectsToTable } from "@/lib/export-pdf";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -215,14 +217,14 @@ function DashboardPage() {
 }
 
 /* ===================== Export helper ===================== */
-function exportTxsToExcel(rows: Tx[], lookups: any, filename: string) {
+function buildExportRows(rows: Tx[], lookups: any) {
   const catMap = new Map<string, string>(lookups.categories.map((c: any) => [c.id, c.name]));
   const subMap = new Map<string, string>(lookups.subcategories.map((s: any) => [s.id, s.name]));
   const etMap = new Map<string, string>(lookups.expenseTypes.map((e: any) => [e.id, e.name]));
   const acctMap = new Map<string, string>(lookups.accounts.map((a: any) => [a.id, a.name]));
   const fundMap = new Map<string, string>(lookups.funds.map((f: any) => [f.id, f.name]));
 
-  const data = rows.map((t) => {
+  return rows.map((t) => {
     const a = Number(t.amount);
     const credit = t.credit != null ? Number(t.credit) : (a > 0 ? a : 0);
     const debit = t.debit != null ? Number(t.debit) : (a < 0 ? -a : 0);
@@ -239,10 +241,20 @@ function exportTxsToExcel(rows: Tx[], lookups: any, filename: string) {
       "הערה": t.note ?? "",
     };
   });
+}
+
+function exportTxsToExcel(rows: Tx[], lookups: any, filename: string) {
+  const data = buildExportRows(rows, lookups);
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "פירוט");
   XLSX.writeFile(wb, filename);
+}
+
+function exportTxsToPdf(rows: Tx[], lookups: any, title: string) {
+  const data = buildExportRows(rows, lookups);
+  const { headers, data: matrix } = objectsToTable(data);
+  exportRowsAsPdf(title, headers, matrix);
 }
 
 /* ===================== Overview (Tabs 1 + 2) ===================== */
@@ -541,15 +553,11 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
             <span className={total >= 0 ? "text-income" : "text-expense"}>{formatCurrency(total)}</span>
           </div>
           <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
+            <ExportMenu
               disabled={!drill?.rows.length}
-              onClick={() => drill && exportTxsToExcel(drill.rows, lookups, `${drill.title}.xlsx`)}
-            >
-              <Download className="w-4 h-4 ml-1" />
-              ייצוא לאקסל
-            </Button>
+              onExcel={() => drill && exportTxsToExcel(drill.rows, lookups, `${drill.title}.xlsx`)}
+              onPdf={() => drill && exportTxsToPdf(drill.rows, lookups, drill.title)}
+            />
             <Button size="sm" variant="outline" onClick={() => setPrintOpen(true)} disabled={!drill?.rows.length}>
               <Printer className="w-4 h-4 ml-1" />הדפסה
             </Button>
@@ -736,15 +744,11 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
               <span className={openTotal >= 0 ? "text-income" : "text-expense"}>{formatCurrency(openTotal)}</span>
             </div>
             <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
+              <ExportMenu
                 disabled={!openRows.length}
-                onClick={() => openVault && exportTxsToExcel(openRows, lookups, `דוח קופה - ${openVault.name}.xlsx`)}
-              >
-                <Download className="w-4 h-4 ml-1" />
-                ייצוא לאקסל
-              </Button>
+                onExcel={() => openVault && exportTxsToExcel(openRows, lookups, `דוח קופה - ${openVault.name}.xlsx`)}
+                onPdf={() => openVault && exportTxsToPdf(openRows, lookups, `דוח קופה - ${openVault.name}`)}
+              />
               <Button size="sm" variant="outline" onClick={() => setPrintOpen(true)} disabled={!openRows.length}>
                 <Printer className="w-4 h-4 ml-1" />הדפסה
               </Button>
