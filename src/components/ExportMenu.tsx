@@ -34,7 +34,7 @@ export function ExportMenu({
           {label}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" dir="rtl" className="min-w-[10rem]">
+      <DropdownMenuContent align="end" className="min-w-[10rem]">
         <DropdownMenuItem onClick={onExcel} className="gap-2 cursor-pointer">
           <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
           אקסל (XLSX)
