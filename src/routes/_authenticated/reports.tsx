@@ -157,6 +157,7 @@ function buildTxRows(rows: Tx[], lookups: any) {
       "חשבון": acct.get(t.account_id) ?? "",
       "פרטים": (t.description ?? t.payee ?? ""),
       "מוטב": t.payee ?? "",
+      "עמותה": t.association ?? "",
       "סוג": t.expense_type_id ? et.get(t.expense_type_id) ?? "" : "",
       "קטגוריה": t.category_id ? cat.get(t.category_id) ?? "" : "",
       "תת-קטגוריה": t.subcategory_id ? sub.get(t.subcategory_id) ?? "" : "",
