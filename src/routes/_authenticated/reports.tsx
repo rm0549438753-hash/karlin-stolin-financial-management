@@ -319,11 +319,27 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       <Sheet open={!!openMonth} onOpenChange={(o) => { if (!o) setOpenMonth(null); }}>
         <SheetContent side="left" className="w-full sm:max-w-3xl overflow-y-auto">
           <SheetHeader className="border-b pb-3 mb-4">
-            <SheetTitle className="text-2xl">{monthLabel}</SheetTitle>
-            <p className="text-sm text-muted-foreground">
-              {dayBuckets.length} ימים · סה״כ{" "}
-              <b className="text-expense">{formatCurrency(dayBuckets.reduce((s, d) => s + d.sum, 0))}</b>
-            </p>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <SheetTitle className="text-2xl">{monthLabel}</SheetTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {dayBuckets.length} ימים · סה״כ{" "}
+                  <b className="text-expense">{formatCurrency(dayBuckets.reduce((s, d) => s + d.sum, 0))}</b>
+                </p>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <ExportMenu
+                  onExcel={() => {
+                    const monthRows = future.filter((t) => (t.value_date ?? t.transaction_date).startsWith(openMonth ?? ""));
+                    exportTxs(monthRows, lookups, `צ׳קים עתידיים - ${monthLabel}.xlsx`);
+                  }}
+                  onPdf={() => setPrintOpen(true)}
+                />
+                <Button size="sm" variant="outline" onClick={() => setPrintOpen(true)}>
+                  <Printer className="w-4 h-4 ml-1" />הדפסה
+                </Button>
+              </div>
+            </div>
           </SheetHeader>
 
           <Accordion type="multiple" className="space-y-2">
