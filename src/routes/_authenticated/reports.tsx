@@ -275,6 +275,7 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     <ReportShell
       title="צ׳קים עתידיים"
       onExport={() => exportTxs(future, lookups, "צ׳קים עתידיים.xlsx")}
+      onExportPdf={() => exportTxsPdf(future, lookups, "צ׳קים עתידיים")}
       onPrint={() => setPrintOpen(true)}
     >
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -503,6 +504,7 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     <ReportShell
       title="תנועות לא מסווגות"
       onExport={() => exportTxs(filtered, lookups, "לא מסווגות.xlsx")}
+      onExportPdf={() => exportTxsPdf(filtered, lookups, "לא מסווגות")}
       onPrint={() => setPrintOpen(true)}
     >
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -758,6 +760,7 @@ function NoDateReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       title="תנועות ללא תאריך"
       subtitle="תנועות אלו לא נכללות בחישובי הגרפים והעוגות בלוח הבקרה"
       onExport={() => exportTxs(filtered as any, lookups, "ללא תאריך.xlsx")}
+      onExportPdf={() => exportTxsPdf(filtered as any, lookups, "ללא תאריך")}
     >
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <Kpi label="סה״כ ללא תאריך" value={String(filtered.length)} />
