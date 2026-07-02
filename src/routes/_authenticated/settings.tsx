@@ -335,15 +335,55 @@ function UsersPanel() {
   );
 }
 
+type ExclKey = string; // `${accountId}::${rowId}`
+type ExclusionCtx = {
+  isExcluded: (accountId: string, kind: "insert" | "delete", id: string) => boolean;
+  toggle: (accountId: string, kind: "insert" | "delete", id: string) => void;
+  setBulk: (accountId: string, kind: "insert" | "delete", ids: string[], excluded: boolean) => void;
+};
+const ExclusionContext = createContext<ExclusionCtx | null>(null);
+const useExcl = () => useContext(ExclusionContext)!;
+const eKey = (a: string, k: "insert" | "delete", id: string): ExclKey => `${a}::${k}::${id}`;
+
 function SheetsSyncPanel() {
   const qc = useQueryClient();
   const [sheetUrl, setSheetUrl] = useState("https://docs.google.com/spreadsheets/d/1dJUbkiRRwVbEozEwpD_KCgh8ur9BclFoxmYjRP2q8fs/edit");
   const [preview, setPreview] = useState<any>(null);
+  const [excluded, setExcluded] = useState<Set<ExclKey>>(new Set());
   const syncFn = useServerFn(syncFromGoogleSheet);
 
   function extractId(u: string): string | null {
     const m = u.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
     return m ? m[1] : u.trim() || null;
+  }
+
+  const exclCtx: ExclusionCtx = useMemo(() => ({
+    isExcluded: (a, k, id) => excluded.has(eKey(a, k, id)),
+    toggle: (a, k, id) => setExcluded((prev) => {
+      const next = new Set(prev);
+      const key = eKey(a, k, id);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    }),
+    setBulk: (a, k, ids, exclude) => setExcluded((prev) => {
+      const next = new Set(prev);
+      for (const id of ids) {
+        const key = eKey(a, k, id);
+        if (exclude) next.add(key); else next.delete(key);
+      }
+      return next;
+    }),
+  }), [excluded]);
+
+  function buildExclusionsPayload(): Record<string, { insertIds: string[]; deleteIds: string[] }> {
+    const out: Record<string, { insertIds: string[]; deleteIds: string[] }> = {};
+    for (const key of excluded) {
+      const [a, k, id] = key.split("::");
+      if (!out[a]) out[a] = { insertIds: [], deleteIds: [] };
+      if (k === "insert") out[a].insertIds.push(id);
+      else out[a].deleteIds.push(id);
+    }
+    return out;
   }
 
   const previewMut = useMutation({
@@ -352,7 +392,7 @@ function SheetsSyncPanel() {
       if (!id) throw new Error("קישור לא תקין");
       return await syncFn({ data: { spreadsheetId: id, apply: false } });
     },
-    onSuccess: (r) => { setPreview(r); toast.success("הצצה מוכנה"); },
+    onSuccess: (r) => { setPreview(r); setExcluded(new Set()); toast.success("הצצה מוכנה"); },
     onError: (e: any) => toast.error(e.message ?? "שגיאה"),
   });
 
@@ -360,66 +400,70 @@ function SheetsSyncPanel() {
     mutationFn: async () => {
       const id = extractId(sheetUrl);
       if (!id) throw new Error("קישור לא תקין");
-      return await syncFn({ data: { spreadsheetId: id, apply: true } });
+      return await syncFn({ data: { spreadsheetId: id, apply: true, exclusions: buildExclusionsPayload() } });
     },
     onSuccess: (r) => {
       toast.success(`סונכרן: ${r.totalInserted} נוספו, ${r.totalDeleted} נמחקו`);
       setPreview(r);
+      setExcluded(new Set());
       qc.invalidateQueries();
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאת סנכרון"),
   });
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>סנכרון תנועות מגוגל שיטס</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="text-sm text-muted-foreground leading-6">
-          מסנכרן חד-כיוונית מהגיליון אל הממשק. כל גיליון (טאב) מזוהה לפי שם החשבון.
-          זיהוי תנועה: תאריך + תאריך ערך + תיאור + אסמכתא + זכות/חובה. תנועות שקיימות בממשק ולא בגיליון — יימחקו.
-          <br />
-          שים לב: כפתור "הצצה" מראה מה יקרה בלי לשנות דבר. "סנכרן עכשיו" מבצע את השינויים.
-        </div>
-        <div className="flex gap-2">
-          <Input dir="ltr" value={sheetUrl} onChange={(e) => setSheetUrl(e.target.value)} placeholder="Google Sheets URL" />
-          <Button variant="outline" disabled={previewMut.isPending} onClick={() => previewMut.mutate()}>
-            {previewMut.isPending ? "בודק…" : "הצצה"}
-          </Button>
-          <Button disabled={applyMut.isPending} onClick={() => applyMut.mutate()}>
-            {applyMut.isPending ? "מסנכרן…" : "סנכרן עכשיו"}
-          </Button>
-        </div>
+  const totalExcluded = excluded.size;
 
-        {preview && (
-          <div className="border rounded-xl overflow-hidden">
-            <div className="grid grid-cols-[1fr_90px_90px_90px_90px] gap-2 p-3 bg-muted/50 font-medium text-sm">
-              <div>חשבון</div>
-              <div className="text-center">להוספה</div>
-              <div className="text-center">לעדכון</div>
-              <div className="text-center">למחיקה</div>
-              <div className="text-center">ללא שינוי</div>
-            </div>
-            {preview.perAccount.map((p: any) => (
-              <AccountDiffRow key={p.accountId} p={p} />
-            ))}
-            <div className="grid grid-cols-[1fr_90px_90px_90px_90px] gap-2 p-3 border-t bg-muted/30 text-sm font-bold">
-              <div>סה״כ</div>
-              <div className="text-center text-green-700">{preview.perAccount.reduce((a: number, x: any) => a + x.toInsert, 0)}</div>
-              <div className="text-center text-amber-700">{preview.perAccount.reduce((a: number, x: any) => a + (x.toModify ?? 0), 0)}</div>
-              <div className="text-center text-red-700">{preview.perAccount.reduce((a: number, x: any) => a + x.toDelete, 0)}</div>
-              <div className="text-center">—</div>
-            </div>
-            {preview.skippedSheets?.length > 0 && (
-              <div className="p-3 border-t text-xs text-muted-foreground">
-                גיליונות שדולגו (אין להם חשבון תואם): {preview.skippedSheets.join(", ")}
-              </div>
-            )}
+  return (
+    <ExclusionContext.Provider value={exclCtx}>
+      <Card>
+        <CardHeader>
+          <CardTitle>סנכרון תנועות מגוגל שיטס</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="text-sm text-muted-foreground leading-6">
+            מסנכרן חד-כיוונית מהגיליון אל הממשק. כל גיליון (טאב) מזוהה לפי שם החשבון.
+            <br />
+            לחצו "הצצה" כדי לראות מה יקרה. אפשר לסמן/להסיר סימון של תנועות בודדות — רק המסומנות יסונכרנו. "סנכרן עכשיו" מבצע את השינויים.
           </div>
-        )}
-      </CardContent>
-    </Card>
+          <div className="flex gap-2">
+            <Input dir="ltr" value={sheetUrl} onChange={(e) => setSheetUrl(e.target.value)} placeholder="Google Sheets URL" />
+            <Button variant="outline" disabled={previewMut.isPending} onClick={() => previewMut.mutate()}>
+              {previewMut.isPending ? "בודק…" : "הצצה"}
+            </Button>
+            <Button disabled={applyMut.isPending} onClick={() => applyMut.mutate()}>
+              {applyMut.isPending ? "מסנכרן…" : totalExcluded > 0 ? `סנכרן (${totalExcluded} הוחרגו)` : "סנכרן עכשיו"}
+            </Button>
+          </div>
+
+          {preview && (
+            <div className="border rounded-xl overflow-hidden">
+              <div className="grid grid-cols-[1fr_90px_90px_90px_90px] gap-2 p-3 bg-muted/50 font-medium text-sm">
+                <div>חשבון</div>
+                <div className="text-center">להוספה</div>
+                <div className="text-center">לעדכון</div>
+                <div className="text-center">למחיקה</div>
+                <div className="text-center">ללא שינוי</div>
+              </div>
+              {preview.perAccount.map((p: any) => (
+                <AccountDiffRow key={p.accountId} p={p} />
+              ))}
+              <div className="grid grid-cols-[1fr_90px_90px_90px_90px] gap-2 p-3 border-t bg-muted/30 text-sm font-bold">
+                <div>סה״כ</div>
+                <div className="text-center text-green-700">{preview.perAccount.reduce((a: number, x: any) => a + x.toInsert, 0)}</div>
+                <div className="text-center text-amber-700">{preview.perAccount.reduce((a: number, x: any) => a + (x.toModify ?? 0), 0)}</div>
+                <div className="text-center text-red-700">{preview.perAccount.reduce((a: number, x: any) => a + x.toDelete, 0)}</div>
+                <div className="text-center">—</div>
+              </div>
+              {preview.skippedSheets?.length > 0 && (
+                <div className="p-3 border-t text-xs text-muted-foreground">
+                  גיליונות שדולגו (אין להם חשבון תואם): {preview.skippedSheets.join(", ")}
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </ExclusionContext.Provider>
   );
 }
 
@@ -454,13 +498,26 @@ function normCompare(field: string, v: any): string {
   return String(v).trim().replace(/\s+/g, " ");
 }
 
+function BulkToggle({ accountId, kind, ids }: { accountId: string; kind: "insert" | "delete"; ids: string[] }) {
+  const { isExcluded, setBulk } = useExcl();
+  const allExcluded = ids.length > 0 && ids.every((id) => isExcluded(accountId, kind, id));
+  return (
+    <button
+      type="button"
+      onClick={() => setBulk(accountId, kind, ids, !allExcluded)}
+      className="text-[11px] text-muted-foreground underline hover:text-foreground"
+    >
+      {allExcluded ? "החזר הכל" : "הסר הכל"}
+    </button>
+  );
+}
+
 function AccountDiffRow({ p }: { p: any }) {
   const [open, setOpen] = useState(false);
   const hasChanges = p.toInsert > 0 || p.toDelete > 0 || (p.toModify ?? 0) > 0;
   return (
     <>
-      <button
-        type="button"
+      <div
         onClick={() => hasChanges && setOpen((v) => !v)}
         className={`w-full grid grid-cols-[1fr_90px_90px_90px_90px] gap-2 p-3 border-t text-sm text-right ${hasChanges ? "hover:bg-muted/40 cursor-pointer" : "cursor-default"}`}
       >
@@ -472,35 +529,50 @@ function AccountDiffRow({ p }: { p: any }) {
         <div className="text-center text-amber-700 font-semibold">{p.toModify ?? 0}</div>
         <div className="text-center text-red-700 font-semibold">{p.toDelete}</div>
         <div className="text-center text-muted-foreground">{p.unchanged}</div>
-      </button>
+      </div>
       {open && hasChanges && (
         <div className="border-t bg-muted/20 p-3 space-y-4">
           {p.modifiedSamples?.length > 0 && (
             <div>
-              <div className="text-xs font-semibold text-amber-700 mb-1">
-                לעדכון ({p.toModify}{p.modifiedSamples.length < p.toModify ? `, מוצגות ${p.modifiedSamples.length}` : ""}) — השינויים מודגשים
+              <div className="text-xs font-semibold text-amber-700 mb-1 flex items-center justify-between">
+                <span>לעדכון ({p.modifiedSamples.length}) — השינויים מודגשים</span>
+                <BulkToggle
+                  accountId={p.accountId}
+                  kind="insert"
+                  ids={p.modifiedSamples.map((m: any) => m.sheet.id)}
+                />
               </div>
               <div className="space-y-2">
                 {p.modifiedSamples.map((pair: any, i: number) => (
-                  <ModifiedPairCard key={i} pair={pair} />
+                  <ModifiedPairCard key={i} pair={pair} accountId={p.accountId} />
                 ))}
               </div>
             </div>
           )}
           {p.insertSamples?.length > 0 && (
             <div>
-              <div className="text-xs font-semibold text-green-700 mb-1">
-                להוספה ({p.toInsert}{p.insertSamples.length < p.toInsert ? `, מוצגות ${p.insertSamples.length}` : ""})
+              <div className="text-xs font-semibold text-green-700 mb-1 flex items-center justify-between">
+                <span>להוספה ({p.insertSamples.length})</span>
+                <BulkToggle
+                  accountId={p.accountId}
+                  kind="insert"
+                  ids={p.insertSamples.map((r: any) => r.id)}
+                />
               </div>
-              <FullRowsTable rows={p.insertSamples} />
+              <FullRowsTable rows={p.insertSamples} accountId={p.accountId} kind="insert" />
             </div>
           )}
           {p.deleteSamples?.length > 0 && (
             <div>
-              <div className="text-xs font-semibold text-red-700 mb-1">
-                למחיקה ({p.toDelete}{p.deleteSamples.length < p.toDelete ? `, מוצגות ${p.deleteSamples.length}` : ""})
+              <div className="text-xs font-semibold text-red-700 mb-1 flex items-center justify-between">
+                <span>למחיקה ({p.deleteSamples.length})</span>
+                <BulkToggle
+                  accountId={p.accountId}
+                  kind="delete"
+                  ids={p.deleteSamples.map((r: any) => r.id)}
+                />
               </div>
-              <FullRowsTable rows={p.deleteSamples} />
+              <FullRowsTable rows={p.deleteSamples} accountId={p.accountId} kind="delete" />
             </div>
           )}
         </div>
@@ -509,10 +581,23 @@ function AccountDiffRow({ p }: { p: any }) {
   );
 }
 
-function ModifiedPairCard({ pair }: { pair: { sheet: any; db: any } }) {
+function ModifiedPairCard({ pair, accountId }: { pair: { sheet: any; db: any }; accountId: string }) {
+  const { isExcluded, toggle } = useExcl();
+  const excluded = isExcluded(accountId, "insert", pair.sheet.id) || isExcluded(accountId, "delete", pair.db.id);
   const diffFields = FIELD_ORDER.filter((f) => normCompare(f, pair.sheet[f]) !== normCompare(f, pair.db[f]));
+  const onToggle = () => {
+    // toggle both sides together so modifications stay atomic
+    toggle(accountId, "insert", pair.sheet.id);
+    toggle(accountId, "delete", pair.db.id);
+  };
   return (
-    <div className="rounded border bg-background p-2 text-xs">
+    <div className={`rounded border bg-background p-2 text-xs ${excluded ? "opacity-50" : ""}`}>
+      <div className="flex items-center gap-2 mb-1">
+        <Checkbox checked={!excluded} onCheckedChange={onToggle} id={`m-${pair.sheet.id}`} />
+        <label htmlFor={`m-${pair.sheet.id}`} className="text-[11px] text-muted-foreground cursor-pointer">
+          {excluded ? "לא ייכלל בסנכרון" : "כלול בסנכרון"}
+        </label>
+      </div>
       <div className="grid grid-cols-[90px_1fr_1fr] gap-2 font-medium text-muted-foreground border-b pb-1 mb-1">
         <div>שדה</div>
         <div>בממשק (לפני)</div>
@@ -522,7 +607,6 @@ function ModifiedPairCard({ pair }: { pair: { sheet: any; db: any } }) {
         const changed = diffFields.includes(f);
         const before = fmtVal(f, pair.db[f]);
         const after = fmtVal(f, pair.sheet[f]);
-        // Skip fields that are empty on both sides and unchanged, to reduce noise
         if (!changed && before === "—" && after === "—") return null;
         return (
           <div key={f} className={`grid grid-cols-[90px_1fr_1fr] gap-2 py-0.5 ${changed ? "bg-amber-50 dark:bg-amber-950/30" : ""}`}>
@@ -536,22 +620,38 @@ function ModifiedPairCard({ pair }: { pair: { sheet: any; db: any } }) {
   );
 }
 
-function FullRowsTable({ rows }: { rows: any[] }) {
+function FullRowsTable({ rows, accountId, kind }: { rows: any[]; accountId: string; kind: "insert" | "delete" }) {
+  const { isExcluded, toggle } = useExcl();
   return (
     <div className="rounded border bg-background max-h-80 overflow-auto text-xs">
-      <div className="grid gap-2 px-2 py-1 bg-muted/40 font-medium sticky top-0" style={{ gridTemplateColumns: `repeat(${FIELD_ORDER.length}, minmax(80px, 1fr))` }}>
+      <div
+        className="grid gap-2 px-2 py-1 bg-muted/40 font-medium sticky top-0"
+        style={{ gridTemplateColumns: `28px repeat(${FIELD_ORDER.length}, minmax(80px, 1fr))` }}
+      >
+        <div></div>
         {FIELD_ORDER.map((f) => <div key={f} className="truncate">{FIELD_LABELS[f]}</div>)}
       </div>
-      {rows.map((r, i) => (
-        <div key={i} className="grid gap-2 px-2 py-1 border-t" style={{ gridTemplateColumns: `repeat(${FIELD_ORDER.length}, minmax(80px, 1fr))` }}>
-          {FIELD_ORDER.map((f) => (
-            <div key={f} className={`truncate ${NUMERIC_FIELDS.has(f) ? "tabular-nums text-left" : ""}`} title={fmtVal(f, r[f])}>
-              {fmtVal(f, r[f])}
+      {rows.map((r) => {
+        const excluded = isExcluded(accountId, kind, r.id);
+        return (
+          <div
+            key={r.id}
+            className={`grid gap-2 px-2 py-1 border-t items-center ${excluded ? "opacity-50 bg-muted/30" : ""}`}
+            style={{ gridTemplateColumns: `28px repeat(${FIELD_ORDER.length}, minmax(80px, 1fr))` }}
+          >
+            <div>
+              <Checkbox checked={!excluded} onCheckedChange={() => toggle(accountId, kind, r.id)} />
             </div>
-          ))}
-        </div>
-      ))}
+            {FIELD_ORDER.map((f) => (
+              <div key={f} className={`truncate ${NUMERIC_FIELDS.has(f) ? "tabular-nums text-left" : ""}`} title={fmtVal(f, r[f])}>
+                {fmtVal(f, r[f])}
+              </div>
+            ))}
+          </div>
+        );
+      })}
     </div>
   );
 }
+
 
