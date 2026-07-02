@@ -229,7 +229,7 @@ function exportTxsToExcel(rows: Tx[], lookups: any, filename: string) {
     return {
       "תאריך": format(new Date(t.transaction_date), "dd/MM/yyyy"),
       "חשבון": acctMap.get(t.account_id) ?? "",
-      "פרטים": t.description ?? "",
+      "פרטים": (t.description ?? t.payee ?? ""),
       "סוג": t.expense_type_id ? etMap.get(t.expense_type_id) ?? "" : "",
       "קטגוריה": t.category_id ? catMap.get(t.category_id) ?? "" : "",
       "תת-קטגוריה": t.subcategory_id ? subMap.get(t.subcategory_id) ?? "" : "",
@@ -568,7 +568,7 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
           columns={[
             { id: "date", header: "תאריך", align: "right", format: (t: Tx) => format(new Date(t.transaction_date), "dd/MM/yy") },
             { id: "account", header: "חשבון", align: "right", format: (t: Tx) => acctMap.get(t.account_id) ?? "—" },
-            { id: "desc", header: "תיאור", align: "right", format: (t: Tx) => t.description ?? "—" },
+            { id: "desc", header: "תיאור", align: "right", format: (t: Tx) => (t.description ?? t.payee ?? "—") },
             { id: "payee", header: "שם מוטב", align: "right", format: (t: Tx) => t.payee ?? "—" },
             { id: "ref", header: "אסמכתה", align: "right", format: (t: Tx) => t.reference ?? "—" },
             { id: "type", header: "סוג", align: "right", format: (t: Tx) => (t.expense_type_id ? (etMap.get(t.expense_type_id) as string) : "—") },
@@ -614,7 +614,7 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
                 >
                   <TableCell className="whitespace-nowrap tabular-nums border-l border-border/60 px-2 py-1.5 text-xs align-middle">{format(new Date(t.transaction_date), "dd/MM/yy")}</TableCell>
                   <TableCell className="text-right whitespace-nowrap border-l border-border/60 px-2 py-1.5 text-xs align-middle">{(t as any).account_id ? (acctMap.get((t as any).account_id) ?? "—") : "—"}</TableCell>
-                  <TableCell className="text-right border-l border-border/60 px-2 py-1.5 text-xs align-middle max-w-[280px] truncate">{t.description ?? "—"}</TableCell>
+                  <TableCell className="text-right border-l border-border/60 px-2 py-1.5 text-xs align-middle max-w-[280px] truncate">{(t.description ?? t.payee ?? "—")}</TableCell>
                   <TableCell className="text-right border-l border-border/60 px-2 py-1.5 text-xs align-middle">{t.expense_type_id ? (etMap.get(t.expense_type_id) as string) : "—"}</TableCell>
                   <TableCell className="text-right border-l border-border/60 px-2 py-1.5 text-xs align-middle">{t.category_id ? (catMap.get(t.category_id) as string) : "—"}</TableCell>
                   <TableCell className={`text-left whitespace-nowrap px-2 py-1.5 text-xs font-semibold tabular-nums align-middle ${Number(t.amount) >= 0 ? "text-income" : "text-expense"}`}>
@@ -760,7 +760,7 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
             columns={[
               { id: "date", header: "תאריך", align: "right", format: (t: Tx) => format(new Date(t.transaction_date), "dd/MM/yy") },
               { id: "account", header: "חשבון", align: "right", format: (t: Tx) => acctMap.get(t.account_id) ?? "—" },
-              { id: "desc", header: "פרטים", align: "right", format: (t: Tx) => t.description ?? "—" },
+              { id: "desc", header: "פרטים", align: "right", format: (t: Tx) => (t.description ?? t.payee ?? "—") },
               { id: "payee", header: "שם מוטב", align: "right", format: (t: Tx) => t.payee ?? "—" },
               { id: "ref", header: "אסמכתה", align: "right", format: (t: Tx) => t.reference ?? "—" },
               { id: "type", header: "סוג", align: "right", format: (t: Tx) => (t.expense_type_id ? (etMap.get(t.expense_type_id) as string) : "—") },
@@ -800,7 +800,7 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                       <TableRow key={t.id} className="border-b cursor-pointer hover:bg-accent/50" onClick={() => goToTx(t)}>
                         <TableCell className="text-right whitespace-nowrap">{format(new Date(t.transaction_date), "dd/MM/yy")}</TableCell>
                         <TableCell className="text-right whitespace-nowrap">{acctMap.get(t.account_id) ?? "—"}</TableCell>
-                        <TableCell className="text-right">{t.description ?? "—"}</TableCell>
+                        <TableCell className="text-right">{(t.description ?? t.payee ?? "—")}</TableCell>
                         <TableCell className="text-right">{t.expense_type_id ? (etMap.get(t.expense_type_id) as string) : "—"}</TableCell>
                         <TableCell className="text-right">{t.category_id ? (catMap.get(t.category_id) as string) : "—"}</TableCell>
                         <TableCell className="text-right">{t.subcategory_id ? (subMap.get(t.subcategory_id) as string) : "—"}</TableCell>

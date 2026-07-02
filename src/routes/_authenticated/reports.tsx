@@ -152,7 +152,7 @@ function exportTxs(rows: Tx[], lookups: any, filename: string) {
       "תאריך": format(new Date(t.transaction_date), "dd/MM/yyyy"),
       "תאריך ערך": t.value_date ? format(new Date(t.value_date), "dd/MM/yyyy") : "",
       "חשבון": acct.get(t.account_id) ?? "",
-      "פרטים": t.description ?? "",
+      "פרטים": (t.description ?? t.payee ?? ""),
       "מוטב": t.payee ?? "",
       "סוג": t.expense_type_id ? et.get(t.expense_type_id) ?? "" : "",
       "קטגוריה": t.category_id ? cat.get(t.category_id) ?? "" : "",
@@ -350,7 +350,7 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                               navigate({ to: "/transactions", search: { account: t.account_id, highlight: t.id } });
                             }}
                           >
-                            <TableCell className="border-l border-border/60 last:border-l-0 px-3 py-2 text-sm">{t.description ?? "—"}</TableCell>
+                            <TableCell className="border-l border-border/60 last:border-l-0 px-3 py-2 text-sm">{(t.description ?? t.payee ?? "—")}</TableCell>
                             <TableCell className="border-l border-border/60 last:border-l-0 px-3 py-2 text-sm">{t.payee ?? "—"}</TableCell>
                             <TableCell className="border-l border-border/60 last:border-l-0 px-3 py-2 text-sm">{t.expense_type_id ? et.get(t.expense_type_id) : "—"}</TableCell>
                             <TableCell className="border-l border-border/60 last:border-l-0 px-3 py-2 text-sm">{t.fund_id ? fund.get(t.fund_id) : "—"}</TableCell>
@@ -380,7 +380,7 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           { id: "vdate", header: "תאריך ערך", format: (t) => formatDate(t.value_date ?? t.transaction_date) },
           { id: "tdate", header: "תאריך תנועה", format: (t) => formatDate(t.transaction_date) },
           { id: "payee", header: "שם", format: (t) => t.payee ?? "" },
-          { id: "desc", header: "פרטים", format: (t) => t.description ?? "" },
+          { id: "desc", header: "פרטים", format: (t) => (t.description ?? t.payee ?? "") },
           { id: "ref", header: "אסמכתה", format: (t) => t.reference ?? "" },
           { id: "note", header: "הערה", format: (t) => t.note ?? "" },
           { id: "account", header: "חשבון", format: (t) => acctMap.get(t.account_id) ?? "" },
@@ -590,7 +590,7 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                   </TableCell>
                   <TableCell className="whitespace-nowrap tabular-nums border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs align-middle">{formatDate(t.transaction_date)}</TableCell>
                   <TableCell className="whitespace-nowrap border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs align-middle">{acctMap.get(t.account_id) ?? "—"}</TableCell>
-                  <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs align-middle max-w-[280px] truncate">{t.description ?? "—"}</TableCell>
+                  <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs align-middle max-w-[280px] truncate">{(t.description ?? t.payee ?? "—")}</TableCell>
                   <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs align-middle max-w-[180px] truncate">{t.payee ?? "—"}</TableCell>
                   <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs align-middle"><UncatBadge /></TableCell>
                   <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs align-middle"><UncatBadge /></TableCell>
@@ -639,7 +639,7 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
         columns={[
           { id: "date", header: "תאריך", format: (t) => formatDate(t.transaction_date) },
           { id: "account", header: "חשבון", format: (t) => acctMap.get(t.account_id) ?? "" },
-          { id: "desc", header: "פרטים", format: (t) => t.description ?? "" },
+          { id: "desc", header: "פרטים", format: (t) => (t.description ?? t.payee ?? "") },
           { id: "payee", header: "מוטב", format: (t) => t.payee ?? "" },
           { id: "ref", header: "אסמכתה", format: (t) => t.reference ?? "" },
           { id: "note", header: "הערה", format: (t) => t.note ?? "" },
@@ -811,7 +811,7 @@ function NoDateReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                       />
                     </TableCell>
                     <TableCell className="whitespace-nowrap border-l border-border/60 px-2 py-1.5 text-xs align-middle">{acctMap.get(t.account_id) ?? "—"}</TableCell>
-                    <TableCell className="border-l border-border/60 px-2 py-1.5 text-xs align-middle max-w-[260px] truncate">{t.description ?? "—"}</TableCell>
+                    <TableCell className="border-l border-border/60 px-2 py-1.5 text-xs align-middle max-w-[260px] truncate">{(t.description ?? t.payee ?? "—")}</TableCell>
                     <TableCell className="border-l border-border/60 px-2 py-1.5 text-xs align-middle max-w-[160px] truncate">{t.payee ?? "—"}</TableCell>
                     <TableCell className="border-l border-border/60 px-2 py-1.5 text-xs align-middle">{t.expense_type_id ? etMap.get(t.expense_type_id) ?? "—" : "—"}</TableCell>
                     <TableCell className="border-l border-border/60 px-2 py-1.5 text-xs align-middle">{t.fund_id ? fundMap.get(t.fund_id) ?? "—" : "—"}</TableCell>
