@@ -504,21 +504,36 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
       const pureInserts = inserts.filter((_, i) => !pairedInsertIdx.has(i));
       const pureDeleteIds = deleteIds.filter((id) => !pairedDeleteIds.has(id));
 
+      // Apply per-account exclusions from the client (unchecked rows in the preview UI)
+      const excl = data.exclusions?.[s.accountId];
+      const excludeInsertIds = new Set(excl?.insertIds ?? []);
+      const excludeDeleteIds = new Set(excl?.deleteIds ?? []);
+      // A "modification" is a paired insert+delete. If either side is excluded,
+      // treat the other side as excluded too so we don't half-apply the change.
+      for (const m of modified) {
+        const insExcluded = excludeInsertIds.has(m.sheet.id);
+        const delExcluded = excludeDeleteIds.has(m.db.id);
+        if (insExcluded && !delExcluded) excludeDeleteIds.add(m.db.id);
+        if (delExcluded && !insExcluded) excludeInsertIds.add(m.sheet.id);
+      }
+      const effectiveInserts = inserts.filter((r) => !excludeInsertIds.has(String(r._id ?? "")));
+      const effectiveDeleteIds = deleteIds.filter((id) => !excludeDeleteIds.has(id));
+
+      // Report totals reflecting the user's selection
+      const excludedModCount = modified.filter((m) => excludeInsertIds.has(m.sheet.id) || excludeDeleteIds.has(m.db.id)).length;
       perAccount.push({
         accountId: s.accountId,
         accountName: s.accountName,
         sheetTitle: s.sheetTitle,
         schemaType: s.schemaType,
-        toInsert: pureInserts.length,
-        toDelete: pureDeleteIds.length,
-        toModify: modified.length,
+        toInsert: pureInserts.filter((r) => !excludeInsertIds.has(String(r._id ?? ""))).length,
+        toDelete: pureDeleteIds.filter((id) => !excludeDeleteIds.has(id)).length,
+        toModify: modified.length - excludedModCount,
         unchanged,
-        insertSamples: pureInserts.slice(0, 200).map(sheetToFull),
-        deleteSamples: pureDeleteIds.slice(0, 200).map((id) => dbToFull(dbById.get(id) ?? {})),
-        modifiedSamples: modified.slice(0, 200),
+        insertSamples: pureInserts.map(sheetToFull),
+        deleteSamples: pureDeleteIds.map((id) => dbToFull(dbById.get(id) ?? {})),
+        modifiedSamples: modified,
       });
-
-
 
       if (!data.apply) continue;
 
@@ -528,7 +543,7 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
         .insert({
           account_id: s.accountId,
           file_name: `Google Sheets sync (${s.sheetTitle})`,
-          row_count: inserts.length,
+          row_count: effectiveInserts.length,
           created_by: context.userId,
         })
         .select()
@@ -537,13 +552,13 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
 
       // Resolve lookups + build insert payloads
       const payloads: any[] = [];
-      for (const r of inserts) {
+      for (const r of effectiveInserts) {
         const fundId = r._fund_name ? await ensureLookup("funds", r._fund_name, fundMap) : null;
         const etId = r._expense_type_name ? await ensureLookup("expense_types", r._expense_type_name, etMap) : null;
         const catId = r._category_name ? await ensureLookup("categories", r._category_name, catMap) : null;
         const subId = r._subcategory_name ? await ensureSubcat(r._category_name ?? null, r._subcategory_name as string) : null;
         const out: any = { account_id: s.accountId, import_batch_id: batch.id };
-        for (const [k, v] of Object.entries(r)) if (!NAME_FIELDS.has(k)) out[k] = v;
+        for (const [k, v] of Object.entries(r)) if (!NAME_FIELDS.has(k) && k !== "_id") out[k] = v;
         out.fund_id = fundId;
         out.expense_type_id = etId;
         out.category_id = catId;
@@ -557,6 +572,7 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
         if (error) throw error;
       }
       totalInserted += payloads.length;
+
 
       // Delete in chunks
       for (let i = 0; i < deleteIds.length; i += 200) {
