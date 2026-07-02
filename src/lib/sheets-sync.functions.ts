@@ -387,11 +387,12 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
       expense_type_name: string | null;
       category_name: string | null;
       subcategory_name: string | null;
+      sheetRowIndex?: number | null;
     };
     type UpdatePair = { sheet: FullRow; db: FullRow; dbId: string };
 
     const perAccount: {
-      accountId: string; accountName: string; sheetTitle: string; schemaType: string;
+      accountId: string; accountName: string; sheetTitle: string; sheetGid: number | null; schemaType: string;
       toInsert: number; toUpdate: number; review: number; unchanged: number;
       inserts: FullRow[]; updates: UpdatePair[]; reviewRows: FullRow[];
     }[] = [];
@@ -442,6 +443,7 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
         expense_type_name: r._expense_type_name ?? null,
         category_name: r._category_name ?? null,
         subcategory_name: r._subcategory_name ?? null,
+        sheetRowIndex: r._sheetRowIndex ?? null,
       });
       const dbToFull = (r: any): FullRow => ({
         id: String(r.id ?? ""),
