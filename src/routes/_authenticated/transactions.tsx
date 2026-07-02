@@ -524,9 +524,7 @@ function TransactionsPage() {
                       <Pencil className="w-3.5 h-3.5 ml-1" />שינוי נבחרות
                     </Button>
                   )}
-                  <Button size="sm" variant="outline" onClick={exportSelected}>
-                    <Download className="w-3.5 h-3.5 ml-1" />ייצוא נבחרות
-                  </Button>
+                  <ExportMenu label="ייצוא נבחרות" onExcel={exportSelectedExcel} onPdf={exportSelectedPdf} />
                   {role?.isAdmin && (
                     <Button size="sm" variant="outline" className="text-destructive border-destructive/40" onClick={() => setBulkDeleteOpen(true)}>
                       <Trash2 className="w-3.5 h-3.5 ml-1" />מחיקה
