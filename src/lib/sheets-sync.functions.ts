@@ -269,7 +269,11 @@ async function ensureAdmin(context: any) {
 
 export const syncFromGoogleSheet = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { spreadsheetId: string; apply: boolean }) => d)
+  .inputValidator((d: {
+    spreadsheetId: string;
+    apply: boolean;
+    exclusions?: Record<string, { insertIds?: string[]; deleteIds?: string[] }>;
+  }) => d)
   .handler(async ({ data, context }) => {
     await ensureAdmin(context);
     const supabase = context.supabase;
