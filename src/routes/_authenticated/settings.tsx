@@ -466,7 +466,7 @@ function SheetsSyncPanel() {
                 <div className="text-center text-muted-foreground">ללא שינוי</div>
               </div>
               {preview.perAccount.map((p: any) => (
-                <AccountDiffRow key={p.accountId} p={p} />
+                <AccountDiffRow key={p.accountId} p={p} spreadsheetId={preview.spreadsheetId} />
               ))}
               <div className="grid grid-cols-[1fr_90px_90px_90px_90px] gap-2 p-3 border-t bg-muted/30 text-sm font-bold">
                 <div>סה״כ</div>
@@ -535,7 +535,18 @@ function BulkToggle({ accountId, kind, ids, label }: { accountId: string; kind: 
   );
 }
 
-function AccountDiffRow({ p }: { p: any }) {
+function sheetUrl(spreadsheetId: string | undefined, gid: number | null | undefined, rowIndex?: number | null) {
+  if (!spreadsheetId) return null;
+  const base = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
+  const g = gid != null ? `gid=${gid}` : "";
+  const r = rowIndex ? `&range=A${rowIndex}` : "";
+  return `${base}#${g}${r}`;
+}
+function txUrl(accountId: string, txId: string) {
+  return `/transactions?account=${encodeURIComponent(accountId)}&highlight=${encodeURIComponent(txId)}`;
+}
+
+function AccountDiffRow({ p, spreadsheetId }: { p: any; spreadsheetId?: string }) {
   const [open, setOpen] = useState(false);
   const hasChanges = p.toInsert > 0 || p.toUpdate > 0 || p.review > 0;
   return (
@@ -563,7 +574,7 @@ function AccountDiffRow({ p }: { p: any }) {
               </div>
               <div className="space-y-2">
                 {p.updates.map((pair: any) => (
-                  <UpdatePairCard key={pair.sheet.id} pair={pair} accountId={p.accountId} />
+                  <UpdatePairCard key={pair.sheet.id} pair={pair} accountId={p.accountId} spreadsheetId={spreadsheetId} sheetGid={p.sheetGid} />
                 ))}
               </div>
             </section>
@@ -574,7 +585,7 @@ function AccountDiffRow({ p }: { p: any }) {
                 <span>להוספה ({p.inserts.length})</span>
                 <BulkToggle accountId={p.accountId} kind="insert" ids={p.inserts.map((r: any) => r.id)} />
               </div>
-              <FullRowsTable rows={p.inserts} accountId={p.accountId} kind="insert" defaultChecked />
+              <FullRowsTable rows={p.inserts} accountId={p.accountId} kind="insert" defaultChecked source="sheet" spreadsheetId={spreadsheetId} sheetGid={p.sheetGid} />
             </section>
           )}
           {p.reviewRows?.length > 0 && (
@@ -583,7 +594,7 @@ function AccountDiffRow({ p }: { p: any }) {
                 <span>לבדיקה ({p.reviewRows.length}) — קיימות רק בממשק. סמן רק את מה שברצונך למחוק.</span>
                 <BulkToggle accountId={p.accountId} kind="review" ids={p.reviewRows.map((r: any) => r.id)} label={["סמן הכל למחיקה", "בטל סימון"]} />
               </div>
-              <FullRowsTable rows={p.reviewRows} accountId={p.accountId} kind="review" defaultChecked={false} />
+              <FullRowsTable rows={p.reviewRows} accountId={p.accountId} kind="review" defaultChecked={false} source="db" />
             </section>
           )}
         </div>
