@@ -507,6 +507,8 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
   const catMap = new Map<string, string>(lookups.categories.map((c: any) => [c.id, c.name]));
   const etMap = new Map<string, string>(lookups.expenseTypes.map((e: any) => [e.id, e.name]));
   const acctMap = new Map<string, string>((lookups.accounts ?? []).map((a: any) => [a.id, a.name]));
+  const checksAccountIds = new Set<string>((lookups.accounts ?? []).filter((a: any) => a.schema_type === "checks").map((a: any) => a.id));
+  const showAssoc = (drill?.rows ?? []).some((t: any) => checksAccountIds.has(t.account_id));
   const [search, setSearch] = useState("");
   const [printOpen, setPrintOpen] = useState(false);
 
@@ -526,6 +528,7 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
       t.note,
       t.payee,
       t.reference,
+      (t as any).association,
       t.expense_type_id ? etMap.get(t.expense_type_id) : "",
       t.category_id ? catMap.get(t.category_id) : "",
       String(t.amount),
