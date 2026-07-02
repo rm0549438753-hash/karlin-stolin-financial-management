@@ -575,12 +575,12 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
 
 
       // Delete in chunks
-      for (let i = 0; i < deleteIds.length; i += 200) {
-        const chunk = deleteIds.slice(i, i + 200);
+      for (let i = 0; i < effectiveDeleteIds.length; i += 200) {
+        const chunk = effectiveDeleteIds.slice(i, i + 200);
         const { error } = await supabase.from("transactions").delete().in("id", chunk);
         if (error) throw error;
       }
-      totalDeleted += deleteIds.length;
+      totalDeleted += effectiveDeleteIds.length;
     }
 
     return {
