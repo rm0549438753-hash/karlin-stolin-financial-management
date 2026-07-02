@@ -12,6 +12,11 @@ const HEADER_MAP: Record<string, string> = {
   "פירוט": "description",
   "אסמכתה": "reference",
   "אסמכתא": "reference",
+  "מספר צ'ק": "reference",
+  "מספר צק": "reference",
+  "מס' צ'ק": "reference",
+  "מס צ'ק": "reference",
+  "צ'ק": "reference",
   "זכות": "credit",
   "חובה": "debit",
   "סכום הכנסה": "credit",
@@ -64,8 +69,11 @@ function normAccountName(s: string): string {
     .trim()
     .toLowerCase();
 }
+function normRef(v: any): string {
+  if (v == null) return "";
+  return String(v).replace(/[\s\-_.]/g, "").trim();
+}
 function serialToDateStr(n: number): string | null {
-  // Google Sheets serial: days since 1899-12-30
   const ms = Math.round((n - 25569) * 86400 * 1000);
   const d = new Date(ms);
   if (isNaN(d.getTime())) return null;
@@ -94,21 +102,21 @@ function toStr(v: any): string | null {
   return s === "" ? null : s;
 }
 
-// Composite dedup key for a transaction row.
-// For checks accounts the sheet has only value_date (no transaction_date),
-// so we match by value_date only to avoid false diffs.
-function rowKey(r: any, schemaType?: string): string {
-  const isChecks = schemaType === "checks";
-  const parts = [
-    isChecks ? "" : (r.transaction_date ?? ""),
-    r.value_date ?? "",
-    (r.description ?? "").toString().trim().replace(/\s+/g, " "),
-    (r.reference ?? "").toString().trim(),
-    r.credit == null ? "" : Number(r.credit).toFixed(2),
-    r.debit == null ? "" : Number(r.debit).toFixed(2),
-    r.amount == null ? "" : Number(r.amount).toFixed(2),
-  ];
-  return parts.join("|");
+// Compute the effective absolute amount for a row (used as match key)
+function absAmount(r: any): number | null {
+  if (r.amount != null && !isNaN(Number(r.amount))) return Math.abs(Number(r.amount));
+  const c = Number(r.credit) || 0;
+  const d = Number(r.debit) || 0;
+  if (c || d) return Math.abs(c - d);
+  return null;
+}
+
+// Match key: absolute amount + reference (check number / asmachta).
+// Dates and free-text descriptions are ignored — user does not care about those diffs.
+function matchKey(r: any): string {
+  const amt = absAmount(r);
+  const ref = normRef(r.reference);
+  return `${amt == null ? "" : amt.toFixed(2)}|${ref}`;
 }
 
 async function gatewayFetch(path: string, params?: Record<string, string | string[]>): Promise<any> {
@@ -139,7 +147,7 @@ type ParsedSheet = {
   accountId: string;
   accountName: string;
   schemaType: string;
-  rows: SheetRow[]; // normalized rows with keys matching transactions columns + _name fields
+  rows: SheetRow[];
 };
 
 async function parseAllSheets(
@@ -177,7 +185,6 @@ async function parseAllSheets(
   targeted.forEach((t, idx) => {
     const aoa: any[][] = valueRanges[idx]?.values ?? [];
     if (aoa.length === 0) return;
-    // detect header row (best of first 25)
     let hIdx = 0, best = 0;
     const scanLimit = Math.min(25, aoa.length);
     for (let i = 0; i < scanLimit; i++) {
@@ -187,23 +194,11 @@ async function parseAllSheets(
     }
     if (best === 0) return;
     const headers = (aoa[hIdx] ?? []).map((h) => normHeader(h));
-    const txnDateIdx = headers.findIndex((h) => getMappedField(h) === "transaction_date");
-    const valDateIdx = headers.findIndex((h) => getMappedField(h) === "value_date");
-    const amountIdxs = headers
-      .map((h, i) => ({ f: getMappedField(h), i }))
-      .filter((x) => x.f === "credit" || x.f === "debit" || x.f === "amount")
-      .map((x) => x.i);
 
     const rows: SheetRow[] = [];
     for (let i = hIdx + 1; i < aoa.length; i++) {
       const r = aoa[i] ?? [];
       if (!r.some((c) => c != null && String(c).trim() !== "")) continue;
-      const hasTxnDate = txnDateIdx >= 0 && toDateStr(r[txnDateIdx]) != null;
-      const hasValDate = valDateIdx >= 0 && toDateStr(r[valDateIdx]) != null;
-      const hasAmount = amountIdxs.some((j) => { const n = toNum(r[j]); return n != null && n !== 0; });
-      if (txnDateIdx >= 0 || valDateIdx >= 0) {
-        if (!hasTxnDate && !hasValDate && !hasAmount) continue;
-      }
       const obj: SheetRow = {};
       headers.forEach((h, j) => {
         const field = getMappedField(h);
@@ -215,14 +210,12 @@ async function parseAllSheets(
         else if (field === "future_check") obj[field] = v === true || String(v ?? "").trim() === "✓" || String(v ?? "").trim() === "כן";
         else obj[field] = toStr(v);
       });
-      // derive amount if missing
       if (obj.amount == null) {
         const c = Number(obj.credit) || 0;
         const d = Number(obj.debit) || 0;
         if (c || d) obj.amount = c - d;
       }
-      // For checks account, DB stores: debit=|amount|, credit=null, amount=-|amount|.
-      // Sheet has only "סכום" (positive amount) — normalize the same way.
+      // For checks account, DB stores debit=|amount|, credit=null, amount=-|amount|.
       if (t.account.schema_type === "checks") {
         if (obj.credit != null && obj.debit == null) {
           obj.debit = obj.credit;
@@ -233,13 +226,15 @@ async function parseAllSheets(
         }
         if (obj.amount != null) obj.amount = -Math.abs(Number(obj.amount));
       }
+      // Skip rows without any usable amount — can't insert (DB requires amount).
+      if (absAmount(obj) == null) continue;
       rows.push(obj);
     }
-    // Assign stable per-account synthetic IDs (hash + occurrence index)
+    // Stable per-account synthetic IDs
     const occ = new Map<string, number>();
     for (const r of rows) {
       const h = hashSheetRow(r);
-      const n = (occ.get(h) ?? 0);
+      const n = occ.get(h) ?? 0;
       occ.set(h, n + 1);
       r._id = `${h}#${n}`;
     }
@@ -267,12 +262,28 @@ async function ensureAdmin(context: any) {
   if (!isAdmin && !isEditor) throw new Error("Forbidden");
 }
 
+/**
+ * Sync semantics (redesigned):
+ *  - MATCH KEY = |amount| + reference (check #/asmachta). Dates + descriptions ignored.
+ *  - MATCHED with identical classification (fund/type/category/subcategory) → unchanged.
+ *  - MATCHED with different classification → UPDATE in place (no delete+insert).
+ *  - Sheet-only (no DB match) → INSERT.
+ *  - DB-only (no sheet match) → REVIEW (never auto-deleted; user opts-in per row).
+ *
+ * Exclusions:
+ *   inserts / updates are opt-OUT (included by default, uncheck to skip).
+ *   reviewDeleteIds is opt-IN — only DB rows the user explicitly checks are deleted.
+ */
 export const syncFromGoogleSheet = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: {
     spreadsheetId: string;
     apply: boolean;
-    exclusions?: Record<string, { insertIds?: string[]; deleteIds?: string[] }>;
+    exclusions?: Record<string, {
+      insertIds?: string[];
+      updatePairIds?: string[]; // pair id = sheet._id
+      reviewDeleteIds?: string[]; // opt-IN
+    }>;
   }) => d)
   .handler(async ({ data, context }) => {
     await ensureAdmin(context);
@@ -286,7 +297,7 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
 
     const { sheets, skipped } = await parseAllSheets(data.spreadsheetId, accounts as any);
 
-    // Load lookups upfront
+    // Load lookups
     const [fundsRes, etRes, catRes, subRes] = await Promise.all([
       supabase.from("funds").select("id,name"),
       supabase.from("expense_types").select("id,name"),
@@ -319,7 +330,7 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
       if (!name) return null;
       const hit = map.get(name);
       if (hit) return hit;
-      if (!data.apply) return null; // skip creating during preview
+      if (!data.apply) return null;
       const { data: created, error } = await supabase.from(table).insert({ name }).select("id,name").single();
       if (error) throw error;
       map.set(normName(created.name) ?? "", created.id);
@@ -347,7 +358,7 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
       return created.id;
     }
 
-    // Build id → name maps for enriching DB rows
+    // Reverse lookup for enrichment
     const fundNameById = new Map<string, string>();
     (fundsRes.data ?? []).forEach((r: any) => fundNameById.set(r.id, r.name));
     const etNameById = new Map<string, string>();
@@ -355,9 +366,8 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
     const subNameById = new Map<string, string>();
     (subRes.data ?? []).forEach((r: any) => subNameById.set(r.id, r.name));
 
-    // Per-account diff
     type FullRow = {
-      id: string; // synthetic id (sheet hash#occ) or DB uuid
+      id: string;
       transaction_date: string | null;
       value_date: string | null;
       description: string | null;
@@ -374,20 +384,20 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
       category_name: string | null;
       subcategory_name: string | null;
     };
-    type ModifiedPair = { sheet: FullRow; db: FullRow };
+    type UpdatePair = { sheet: FullRow; db: FullRow; dbId: string };
+
     const perAccount: {
       accountId: string; accountName: string; sheetTitle: string; schemaType: string;
-      toInsert: number; toDelete: number; unchanged: number; toModify: number;
-      insertSamples: FullRow[]; deleteSamples: FullRow[]; modifiedSamples: ModifiedPair[];
+      toInsert: number; toUpdate: number; review: number; unchanged: number;
+      inserts: FullRow[]; updates: UpdatePair[]; reviewRows: FullRow[];
     }[] = [];
-    let totalInserted = 0, totalDeleted = 0;
+    let totalInserted = 0, totalUpdated = 0, totalDeleted = 0;
 
     for (const s of sheets) {
-      // fetch all existing DB rows for account (all fields needed for the diff view)
+      // Fetch all existing rows for this account
       const dbRows: any[] = [];
       const PAGE = 1000;
       let from = 0;
-      // eslint-disable-next-line no-constant-condition
       while (true) {
         const { data: page, error } = await supabase
           .from("transactions")
@@ -400,39 +410,17 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
         from += PAGE;
       }
 
-      // build multisets (key -> list of ids for db, or count for sheet)
+      // Multiset match by (|amount| + reference)
       const dbByKey = new Map<string, string[]>();
       const dbById = new Map<string, any>();
       for (const r of dbRows) {
-        const k = rowKey(r, s.schemaType);
+        const k = matchKey(r);
         const arr = dbByKey.get(k) ?? [];
         arr.push(r.id);
         dbByKey.set(k, arr);
         dbById.set(r.id, r);
       }
-      const sheetKeys: string[] = s.rows.map((r) => rowKey(r, s.schemaType));
 
-      // determine inserts: sheet rows whose key count > db count (for that key), pick first extras
-      const inserts: SheetRow[] = [];
-      const usedDbIds = new Set<string>();
-      let unchanged = 0;
-      const dbUsedCounts = new Map<string, number>();
-      s.rows.forEach((r, idx) => {
-        const k = sheetKeys[idx];
-        const dbIds = dbByKey.get(k) ?? [];
-        const used = dbUsedCounts.get(k) ?? 0;
-        if (used < dbIds.length) {
-          usedDbIds.add(dbIds[used]);
-          dbUsedCounts.set(k, used + 1);
-          unchanged++;
-        } else {
-          inserts.push(r);
-        }
-      });
-      const deleteIds: string[] = [];
-      for (const r of dbRows) if (!usedDbIds.has(r.id)) deleteIds.push(r.id);
-
-      // Enrichers
       const sheetToFull = (r: SheetRow): FullRow => ({
         id: String(r._id ?? ""),
         transaction_date: r.transaction_date ?? null,
@@ -470,111 +458,135 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
         subcategory_name: r.subcategory_id ? (subNameById.get(r.subcategory_id) ?? null) : null,
       });
 
-      // Try to pair leftover inserts↔deletes as "modifications" by looser key: (date, |amount|)
-      const looseKey = (r: any, source: "sheet" | "db"): string => {
-        const isChecks = s.schemaType === "checks";
-        const date = isChecks
-          ? (r.value_date ?? "")
-          : (r.transaction_date ?? r.value_date ?? "");
-        let amt: number | null = null;
-        if (source === "sheet") amt = r.amount ?? ((Number(r.credit) || 0) - (Number(r.debit) || 0));
-        else amt = r.amount != null ? Number(r.amount) : ((Number(r.credit) || 0) - (Number(r.debit) || 0));
-        return `${date}|${amt == null ? "" : Math.abs(amt).toFixed(2)}`;
-      };
-      const dbLeftoverByLoose = new Map<string, string[]>();
-      for (const id of deleteIds) {
-        const k = looseKey(dbById.get(id), "db");
-        const arr = dbLeftoverByLoose.get(k) ?? [];
-        arr.push(id);
-        dbLeftoverByLoose.set(k, arr);
-      }
-      const modified: ModifiedPair[] = [];
-      const pairedInsertIdx = new Set<number>();
-      const pairedDeleteIds = new Set<string>();
-      inserts.forEach((r, i) => {
-        const k = looseKey(r, "sheet");
-        const bucket = dbLeftoverByLoose.get(k);
-        if (bucket && bucket.length > 0) {
-          const dbId = bucket.shift()!;
-          pairedInsertIdx.add(i);
-          pairedDeleteIds.add(dbId);
-          modified.push({ sheet: sheetToFull(r), db: dbToFull(dbById.get(dbId)) });
-        }
-      });
-      const pureInserts = inserts.filter((_, i) => !pairedInsertIdx.has(i));
-      const pureDeleteIds = deleteIds.filter((id) => !pairedDeleteIds.has(id));
+      const inserts: SheetRow[] = [];
+      const updates: UpdatePair[] = [];
+      const usedDbIds = new Set<string>();
+      let unchanged = 0;
+      const dbUsedCounts = new Map<string, number>();
 
-      // Apply per-account exclusions from the client (unchecked rows in the preview UI)
+      const normS = (v: any) => (v == null ? "" : String(v).trim());
+      for (const r of s.rows) {
+        const k = matchKey(r);
+        const dbIds = dbByKey.get(k) ?? [];
+        const used = dbUsedCounts.get(k) ?? 0;
+        if (used < dbIds.length) {
+          const dbId = dbIds[used];
+          usedDbIds.add(dbId);
+          dbUsedCounts.set(k, used + 1);
+          const dbRow = dbById.get(dbId);
+          const dbFull = dbToFull(dbRow);
+          const shFull = sheetToFull(r);
+          const classChanged =
+            normS(shFull.fund_name) !== normS(dbFull.fund_name) ||
+            normS(shFull.expense_type_name) !== normS(dbFull.expense_type_name) ||
+            normS(shFull.category_name) !== normS(dbFull.category_name) ||
+            normS(shFull.subcategory_name) !== normS(dbFull.subcategory_name);
+          // Only update if the sheet actually specifies classification (avoid wiping DB values with empty sheet cells)
+          const sheetHasClass =
+            shFull.fund_name || shFull.expense_type_name ||
+            shFull.category_name || shFull.subcategory_name;
+          if (classChanged && sheetHasClass) {
+            updates.push({ sheet: shFull, db: dbFull, dbId });
+          } else {
+            unchanged++;
+          }
+        } else {
+          inserts.push(r);
+        }
+      }
+      const reviewRows: FullRow[] = [];
+      for (const r of dbRows) if (!usedDbIds.has(r.id)) reviewRows.push(dbToFull(r));
+
+      // Apply exclusions
       const excl = data.exclusions?.[s.accountId];
       const excludeInsertIds = new Set(excl?.insertIds ?? []);
-      const excludeDeleteIds = new Set(excl?.deleteIds ?? []);
-      // A "modification" is a paired insert+delete. If either side is excluded,
-      // treat the other side as excluded too so we don't half-apply the change.
-      for (const m of modified) {
-        const insExcluded = excludeInsertIds.has(m.sheet.id);
-        const delExcluded = excludeDeleteIds.has(m.db.id);
-        if (insExcluded && !delExcluded) excludeDeleteIds.add(m.db.id);
-        if (delExcluded && !insExcluded) excludeInsertIds.add(m.sheet.id);
-      }
-      const effectiveInserts = inserts.filter((r) => !excludeInsertIds.has(String(r._id ?? "")));
-      const effectiveDeleteIds = deleteIds.filter((id) => !excludeDeleteIds.has(id));
+      const excludeUpdatePairIds = new Set(excl?.updatePairIds ?? []);
+      const reviewDeleteIds = new Set(excl?.reviewDeleteIds ?? []); // opt-IN
 
-      // Report totals reflecting the user's selection
-      const excludedModCount = modified.filter((m) => excludeInsertIds.has(m.sheet.id) || excludeDeleteIds.has(m.db.id)).length;
+      const effectiveInserts = inserts.filter((r) => !excludeInsertIds.has(String(r._id ?? "")));
+      const effectiveUpdates = updates.filter((u) => !excludeUpdatePairIds.has(u.sheet.id));
+      const effectiveDeleteIds = reviewRows
+        .filter((r) => reviewDeleteIds.has(r.id))
+        .map((r) => r.id);
+
       perAccount.push({
         accountId: s.accountId,
         accountName: s.accountName,
         sheetTitle: s.sheetTitle,
         schemaType: s.schemaType,
-        toInsert: pureInserts.filter((r) => !excludeInsertIds.has(String(r._id ?? ""))).length,
-        toDelete: pureDeleteIds.filter((id) => !excludeDeleteIds.has(id)).length,
-        toModify: modified.length - excludedModCount,
+        toInsert: effectiveInserts.length,
+        toUpdate: effectiveUpdates.length,
+        review: reviewRows.length,
         unchanged,
-        insertSamples: pureInserts.map(sheetToFull),
-        deleteSamples: pureDeleteIds.map((id) => dbToFull(dbById.get(id) ?? {})),
-        modifiedSamples: modified,
+        inserts: inserts.map(sheetToFull),
+        updates,
+        reviewRows,
       });
 
       if (!data.apply) continue;
 
-      // create batch record
-      const { data: batch, error: be } = await supabase
-        .from("import_batches")
-        .insert({
-          account_id: s.accountId,
-          file_name: `Google Sheets sync (${s.sheetTitle})`,
-          row_count: effectiveInserts.length,
-          created_by: context.userId,
-        })
-        .select()
-        .single();
-      if (be) throw be;
+      // Batch record for inserts
+      if (effectiveInserts.length > 0) {
+        const { data: batch, error: be } = await supabase
+          .from("import_batches")
+          .insert({
+            account_id: s.accountId,
+            file_name: `Google Sheets sync (${s.sheetTitle})`,
+            row_count: effectiveInserts.length,
+            created_by: context.userId,
+          })
+          .select()
+          .single();
+        if (be) throw be;
 
-      // Resolve lookups + build insert payloads
-      const payloads: any[] = [];
-      for (const r of effectiveInserts) {
-        const fundId = r._fund_name ? await ensureLookup("funds", r._fund_name, fundMap) : null;
-        const etId = r._expense_type_name ? await ensureLookup("expense_types", r._expense_type_name, etMap) : null;
-        const catId = r._category_name ? await ensureLookup("categories", r._category_name, catMap) : null;
-        const subId = r._subcategory_name ? await ensureSubcat(r._category_name ?? null, r._subcategory_name as string) : null;
-        const out: any = { account_id: s.accountId, import_batch_id: batch.id };
-        for (const [k, v] of Object.entries(r)) if (!NAME_FIELDS.has(k) && k !== "_id") out[k] = v;
-        out.fund_id = fundId;
-        out.expense_type_id = etId;
-        out.category_id = catId;
-        out.subcategory_id = subId;
-        if (!out.transaction_date) out.transaction_date = out.value_date ?? null;
-        payloads.push(out);
+        const payloads: any[] = [];
+        for (const r of effectiveInserts) {
+          const fundId = r._fund_name ? await ensureLookup("funds", r._fund_name, fundMap) : null;
+          const etId = r._expense_type_name ? await ensureLookup("expense_types", r._expense_type_name, etMap) : null;
+          const catId = r._category_name ? await ensureLookup("categories", r._category_name, catMap) : null;
+          const subId = r._subcategory_name ? await ensureSubcat(r._category_name ?? null, r._subcategory_name as string) : null;
+          const out: any = { account_id: s.accountId, import_batch_id: batch.id };
+          for (const [k, v] of Object.entries(r)) if (!NAME_FIELDS.has(k) && k !== "_id") out[k] = v;
+          out.fund_id = fundId;
+          out.expense_type_id = etId;
+          out.category_id = catId;
+          out.subcategory_id = subId;
+          if (!out.transaction_date) out.transaction_date = out.value_date ?? null;
+          // Safety: never insert with null/undefined amount (DB NOT NULL)
+          if (out.amount == null) {
+            const c = Number(out.credit) || 0;
+            const d = Number(out.debit) || 0;
+            if (c || d) out.amount = c - d;
+            else continue;
+          }
+          payloads.push(out);
+        }
+        for (let i = 0; i < payloads.length; i += 500) {
+          const chunk = payloads.slice(i, i + 500);
+          const { error } = await supabase.from("transactions").insert(chunk as any);
+          if (error) throw error;
+        }
+        totalInserted += payloads.length;
       }
-      for (let i = 0; i < payloads.length; i += 500) {
-        const chunk = payloads.slice(i, i + 500);
-        const { error } = await supabase.from("transactions").insert(chunk as any);
+
+      // In-place UPDATES (classification only)
+      for (const u of effectiveUpdates) {
+        const fundId = u.sheet.fund_name ? await ensureLookup("funds", u.sheet.fund_name, fundMap) : null;
+        const etId = u.sheet.expense_type_name ? await ensureLookup("expense_types", u.sheet.expense_type_name, etMap) : null;
+        const catId = u.sheet.category_name ? await ensureLookup("categories", u.sheet.category_name, catMap) : null;
+        const subId = u.sheet.subcategory_name ? await ensureSubcat(u.sheet.category_name ?? null, u.sheet.subcategory_name) : null;
+        const patch: any = { updated_by: context.userId };
+        // Only apply fields the sheet actually specifies (don't wipe existing DB values with blanks)
+        if (u.sheet.fund_name) patch.fund_id = fundId;
+        if (u.sheet.expense_type_name) patch.expense_type_id = etId;
+        if (u.sheet.category_name) patch.category_id = catId;
+        if (u.sheet.subcategory_name) patch.subcategory_id = subId;
+        const { error } = await supabase.from("transactions").update(patch).eq("id", u.dbId);
         if (error) throw error;
+        totalUpdated++;
       }
-      totalInserted += payloads.length;
 
-
-      // Delete in chunks
+      // Opt-in DELETES from review
       for (let i = 0; i < effectiveDeleteIds.length; i += 200) {
         const chunk = effectiveDeleteIds.slice(i, i + 200);
         const { error } = await supabase.from("transactions").delete().in("id", chunk);
@@ -588,8 +600,10 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
       perAccount,
       skippedSheets: skipped,
       totalInsert: perAccount.reduce((a, x) => a + x.toInsert, 0),
-      totalDelete: perAccount.reduce((a, x) => a + x.toDelete, 0),
+      totalUpdate: perAccount.reduce((a, x) => a + x.toUpdate, 0),
+      totalReview: perAccount.reduce((a, x) => a + x.review, 0),
       totalInserted,
+      totalUpdated,
       totalDeleted,
     };
   });

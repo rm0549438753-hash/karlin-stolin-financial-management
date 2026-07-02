@@ -18,7 +18,7 @@ export function AlertsBanner() {
       const weekAhead = wk.toISOString().slice(0, 10);
       const { data, error } = await supabase
         .from("transactions")
-        .select("id, value_date, amount, description")
+        .select("id, value_date, amount, description, payee")
         .eq("account_id", checksAccount!.id)
         .gte("value_date", today)
         .lte("value_date", weekAhead);
@@ -83,7 +83,7 @@ export function AlertsBanner() {
               {upcomingChecks.length} צ׳קים יוצאים השבוע · {formatCurrency(totalChecks)}
             </div>
             <div className="text-xs text-muted-foreground truncate">
-              הקרוב: {formatDate((upcomingChecks[0] as any).value_date)} — {(upcomingChecks[0] as any).description ?? ""}
+              הקרוב: {formatDate((upcomingChecks[0] as any).value_date)} — {(upcomingChecks[0] as any).description ?? (upcomingChecks[0] as any).payee ?? ""}
             </div>
           </div>
           <Link to="/reports" className="text-xs font-semibold underline">לדוח</Link>
