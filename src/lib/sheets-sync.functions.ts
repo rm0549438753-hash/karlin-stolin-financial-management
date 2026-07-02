@@ -452,6 +452,7 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
         subcategory_name: r._subcategory_name ?? null,
       });
       const dbToFull = (r: any): FullRow => ({
+        id: String(r.id ?? ""),
         transaction_date: r.transaction_date ?? null,
         value_date: r.value_date ?? null,
         description: r.description ?? null,
