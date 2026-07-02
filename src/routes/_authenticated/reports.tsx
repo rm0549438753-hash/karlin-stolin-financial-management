@@ -188,8 +188,8 @@ function ReportShell({ title, subtitle, onExport, onExportPdf, onPrint, children
           {subtitle && <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>}
         </div>
         <div className="flex gap-2 no-print">
-          {onExport && onExportPdf && (
-            <ExportMenu onExcel={onExport} onPdf={onExportPdf} />
+          {onExport && (
+            <ExportMenu onExcel={onExport} onPdf={onPrint ?? onExportPdf ?? (() => window.print())} />
           )}
           <Button variant="outline" size="sm" onClick={onPrint ?? (() => window.print())}>
             <Printer className="w-4 h-4 ml-1" />הדפסה

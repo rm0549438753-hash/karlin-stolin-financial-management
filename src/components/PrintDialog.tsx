@@ -169,6 +169,41 @@ ${footerHtml}
     onOpenChange(false);
   }
 
+  const [downloading, setDownloading] = useState(false);
+  async function downloadPdf() {
+    setDownloading(true);
+    const html = buildHtml(false);
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText = "position:fixed;left:-10000px;top:0;width:1200px;height:800px;border:0;visibility:hidden;";
+    document.body.appendChild(iframe);
+    try {
+      const doc = iframe.contentDocument!;
+      doc.open(); doc.write(html); doc.close();
+      await new Promise((r) => setTimeout(r, 500));
+      try { await (doc as any).fonts?.ready; } catch { /* noop */ }
+      const html2pdf = (await import("html2pdf.js")).default as any;
+      const filename = `${title.replace(/[\\/:*?"<>|]+/g, "_")}.pdf`;
+      await html2pdf()
+        .from(doc.body)
+        .set({
+          margin: [10, 8, 12, 8],
+          filename,
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
+          jsPDF: { unit: "mm", format: "a4", orientation },
+          pagebreak: { mode: ["css", "legacy"] },
+        })
+        .save();
+      onOpenChange(false);
+    } catch (e) {
+      console.error("PDF download failed", e);
+      alert("הורדת ה-PDF נכשלה. נסה שוב או השתמש בתצוגה מקדימה.");
+    } finally {
+      document.body.removeChild(iframe);
+      setDownloading(false);
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent dir="rtl" className="max-w-3xl">
@@ -253,10 +288,13 @@ ${footerHtml}
 
         <DialogFooter className="gap-2 sm:gap-2">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>ביטול</Button>
-          <Button variant="outline" onClick={() => openPrintWindow(false)} disabled={!activeCols.length}>
-            <FileDown className="w-4 h-4 ml-1" /> פתיחת תצוגה מקדימה (PDF)
+          <Button variant="outline" onClick={() => openPrintWindow(false)} disabled={!activeCols.length || downloading}>
+            <FileDown className="w-4 h-4 ml-1" /> תצוגה מקדימה
           </Button>
-          <Button onClick={() => openPrintWindow(true)} disabled={!activeCols.length}>
+          <Button onClick={downloadPdf} disabled={!activeCols.length || downloading}>
+            <FileDown className="w-4 h-4 ml-1" /> {downloading ? "מייצא..." : "הורדת PDF"}
+          </Button>
+          <Button variant="secondary" onClick={() => openPrintWindow(true)} disabled={!activeCols.length || downloading}>
             <Printer className="w-4 h-4 ml-1" /> הדפסה
           </Button>
         </DialogFooter>

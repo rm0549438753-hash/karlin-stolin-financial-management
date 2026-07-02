@@ -389,7 +389,7 @@ function TransactionsPage() {
       title={title}
       actions={
         <>
-          <ExportMenu disabled={!selectedAccount} onExcel={exportAllExcel} onPdf={exportAllPdf} />
+          <ExportMenu disabled={!selectedAccount} onExcel={exportAllExcel} onPdf={() => setPrintOpen(true)} />
           <Button variant="outline" size="sm" onClick={() => setPrintOpen(true)} disabled={!selectedAccount || filtered.length === 0}>
             <Printer className="w-4 h-4 ml-1" />הדפסה
           </Button>
@@ -524,7 +524,7 @@ function TransactionsPage() {
                       <Pencil className="w-3.5 h-3.5 ml-1" />שינוי נבחרות
                     </Button>
                   )}
-                  <ExportMenu label="ייצוא נבחרות" onExcel={exportSelectedExcel} onPdf={exportSelectedPdf} />
+                  <ExportMenu label="ייצוא נבחרות" onExcel={exportSelectedExcel} onPdf={() => setPrintOpen(true)} />
                   {role?.isAdmin && (
                     <Button size="sm" variant="outline" className="text-destructive border-destructive/40" onClick={() => setBulkDeleteOpen(true)}>
                       <Trash2 className="w-3.5 h-3.5 ml-1" />מחיקה
