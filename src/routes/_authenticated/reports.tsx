@@ -39,7 +39,7 @@ export const Route = createFileRoute("/_authenticated/reports")({
 });
 
 const PAGE_SIZE = 1000;
-const TX_SELECT = "id, transaction_date, value_date, amount, account_id, fund_id, expense_type_id, category_id, subcategory_id, description, note, credit, debit, payee, balance, reference, fee, channel";
+const TX_SELECT = "id, transaction_date, value_date, amount, account_id, fund_id, expense_type_id, category_id, subcategory_id, description, note, credit, debit, payee, balance, reference, fee, channel, association";
 
 type Tx = {
   id: string;
@@ -60,6 +60,7 @@ type Tx = {
   reference: string | null;
   fee: number | null;
   channel: string | null;
+  association: string | null;
 };
 
 async function fetchAllTransactions(): Promise<Tx[]> {
@@ -156,6 +157,7 @@ function buildTxRows(rows: Tx[], lookups: any) {
       "חשבון": acct.get(t.account_id) ?? "",
       "פרטים": (t.description ?? t.payee ?? ""),
       "מוטב": t.payee ?? "",
+      "עמותה": t.association ?? "",
       "סוג": t.expense_type_id ? et.get(t.expense_type_id) ?? "" : "",
       "קטגוריה": t.category_id ? cat.get(t.category_id) ?? "" : "",
       "תת-קטגוריה": t.subcategory_id ? sub.get(t.subcategory_id) ?? "" : "",
@@ -337,39 +339,64 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="p-0 border-t bg-background">
-                  <Table className="border-collapse">
-                    <TableHeader>
-                      <TableRow className="bg-muted/30 hover:bg-muted/30">
-                        <TableHead className="text-right text-xs font-bold text-muted-foreground border-l border-border last:border-l-0 px-3 py-2">פרטים</TableHead>
-                        <TableHead className="text-right text-xs font-bold text-muted-foreground border-l border-border last:border-l-0 px-3 py-2">מוטב</TableHead>
-                        <TableHead className="text-right text-xs font-bold text-muted-foreground border-l border-border last:border-l-0 px-3 py-2">סוג</TableHead>
-                        <TableHead className="text-right text-xs font-bold text-muted-foreground border-l border-border last:border-l-0 px-3 py-2">קופה</TableHead>
-                        <TableHead className="text-left text-xs font-bold text-muted-foreground border-l border-border last:border-l-0 px-3 py-2">סכום</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {d.rows.map((t, idx) => {
-                        const fund = nameMap(lookups.funds);
-                        const et = nameMap(lookups.expenseTypes);
-                        return (
-                          <TableRow
-                            key={t.id}
-                            className={"cursor-pointer hover:bg-primary/5 border-b border-border " + (idx % 2 ? "bg-muted/20" : "")}
-                            onClick={() => {
-                              setOpenMonth(null);
-                              navigate({ to: "/transactions", search: { account: t.account_id, highlight: t.id } });
-                            }}
-                          >
-                            <TableCell className="border-l border-border/60 last:border-l-0 px-3 py-2 text-sm">{(t.description ?? t.payee ?? "—")}</TableCell>
-                            <TableCell className="border-l border-border/60 last:border-l-0 px-3 py-2 text-sm">{t.payee ?? "—"}</TableCell>
-                            <TableCell className="border-l border-border/60 last:border-l-0 px-3 py-2 text-sm">{t.expense_type_id ? et.get(t.expense_type_id) : "—"}</TableCell>
-                            <TableCell className="border-l border-border/60 last:border-l-0 px-3 py-2 text-sm">{t.fund_id ? fund.get(t.fund_id) : "—"}</TableCell>
-                            <TableCell className="text-left font-mono text-expense tabular-nums border-l border-border/60 last:border-l-0 px-3 py-2 text-sm font-semibold">{formatCurrency(Math.abs(Number(t.amount)))}</TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
+                  {(() => {
+                    // Group day's rows by association
+                    const groups = new Map<string, Tx[]>();
+                    d.rows.forEach((t) => {
+                      const key = (t as any).association?.trim() || "ללא עמותה";
+                      if (!groups.has(key)) groups.set(key, []);
+                      groups.get(key)!.push(t);
+                    });
+                    const groupArr = Array.from(groups.entries()).sort((a, b) => a[0].localeCompare(b[0], "he"));
+                    const fund = nameMap(lookups.funds);
+                    const et = nameMap(lookups.expenseTypes);
+                    return (
+                      <div className="divide-y">
+                        {groupArr.map(([assoc, rows]) => {
+                          const groupSum = rows.reduce((s, r) => s + Math.abs(Number(r.amount)), 0);
+                          return (
+                            <div key={assoc}>
+                              <div className="flex items-center justify-between bg-primary/5 px-4 py-2 text-sm">
+                                <span className="font-semibold text-primary">{assoc}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {rows.length} צ׳קים · <b className="text-expense">{formatCurrency(groupSum)}</b>
+                                </span>
+                              </div>
+                              <Table className="border-collapse">
+                                <TableHeader>
+                                  <TableRow className="bg-muted/30 hover:bg-muted/30">
+                                    <TableHead className="text-right text-xs font-bold text-muted-foreground border-l border-border last:border-l-0 px-3 py-2">פרטים</TableHead>
+                                    <TableHead className="text-right text-xs font-bold text-muted-foreground border-l border-border last:border-l-0 px-3 py-2">מוטב</TableHead>
+                                    <TableHead className="text-right text-xs font-bold text-muted-foreground border-l border-border last:border-l-0 px-3 py-2">סוג</TableHead>
+                                    <TableHead className="text-right text-xs font-bold text-muted-foreground border-l border-border last:border-l-0 px-3 py-2">קופה</TableHead>
+                                    <TableHead className="text-left text-xs font-bold text-muted-foreground border-l border-border last:border-l-0 px-3 py-2">סכום</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {rows.map((t, idx) => (
+                                    <TableRow
+                                      key={t.id}
+                                      className={"cursor-pointer hover:bg-primary/5 border-b border-border " + (idx % 2 ? "bg-muted/20" : "")}
+                                      onClick={() => {
+                                        setOpenMonth(null);
+                                        navigate({ to: "/transactions", search: { account: t.account_id, highlight: t.id } });
+                                      }}
+                                    >
+                                      <TableCell className="border-l border-border/60 last:border-l-0 px-3 py-2 text-sm">{(t.description ?? t.payee ?? "—")}</TableCell>
+                                      <TableCell className="border-l border-border/60 last:border-l-0 px-3 py-2 text-sm">{t.payee ?? "—"}</TableCell>
+                                      <TableCell className="border-l border-border/60 last:border-l-0 px-3 py-2 text-sm">{t.expense_type_id ? et.get(t.expense_type_id) : "—"}</TableCell>
+                                      <TableCell className="border-l border-border/60 last:border-l-0 px-3 py-2 text-sm">{t.fund_id ? fund.get(t.fund_id) : "—"}</TableCell>
+                                      <TableCell className="text-left font-mono text-expense tabular-nums border-l border-border/60 last:border-l-0 px-3 py-2 text-sm font-semibold">{formatCurrency(Math.abs(Number(t.amount)))}</TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </AccordionContent>
               </AccordionItem>
             ))}
@@ -390,6 +417,7 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           { id: "vdate", header: "תאריך ערך", format: (t) => formatDate(t.value_date ?? t.transaction_date) },
           { id: "tdate", header: "תאריך תנועה", format: (t) => formatDate(t.transaction_date) },
           { id: "payee", header: "שם", format: (t) => t.payee ?? "" },
+          { id: "assoc", header: "עמותה", format: (t) => t.association ?? "" },
           { id: "desc", header: "פרטים", format: (t) => (t.description ?? t.payee ?? "") },
           { id: "ref", header: "אסמכתה", format: (t) => t.reference ?? "" },
           { id: "note", header: "הערה", format: (t) => t.note ?? "" },

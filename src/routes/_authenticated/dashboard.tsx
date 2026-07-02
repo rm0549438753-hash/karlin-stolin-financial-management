@@ -33,7 +33,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 const CHART_COLORS = ["hsl(220 70% 55%)", "hsl(155 60% 45%)", "hsl(75 80% 55%)", "hsl(25 80% 55%)", "hsl(295 60% 55%)", "hsl(200 70% 50%)", "hsl(340 70% 55%)"];
 const PROJECT_EXPENSE_TYPE = "בית הכנסת - בניה";
 const IRRELEVANT_FUND = "לא רלוונטי";
-const TRANSACTION_SELECT = "id, transaction_date, value_date, amount, account_id, fund_id, expense_type_id, category_id, subcategory_id, description, note, credit, debit, payee, reference";
+const TRANSACTION_SELECT = "id, transaction_date, value_date, amount, account_id, fund_id, expense_type_id, category_id, subcategory_id, description, note, credit, debit, payee, reference, association";
 const PAGE_SIZE = 1000;
 
 type Tx = {
@@ -52,6 +52,7 @@ type Tx = {
   debit: number | null;
   payee: string | null;
   reference: string | null;
+  association: string | null;
 };
 
 type RawTx = Omit<Tx, "transaction_date"> & { transaction_date: string | null };
@@ -232,6 +233,7 @@ function buildExportRows(rows: Tx[], lookups: any) {
       "תאריך": format(new Date(t.transaction_date), "dd/MM/yyyy"),
       "חשבון": acctMap.get(t.account_id) ?? "",
       "פרטים": (t.description ?? t.payee ?? ""),
+      "עמותה": (t as any).association ?? "",
       "סוג": t.expense_type_id ? etMap.get(t.expense_type_id) ?? "" : "",
       "קטגוריה": t.category_id ? catMap.get(t.category_id) ?? "" : "",
       "תת-קטגוריה": t.subcategory_id ? subMap.get(t.subcategory_id) ?? "" : "",
@@ -506,6 +508,8 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
   const catMap = new Map<string, string>(lookups.categories.map((c: any) => [c.id, c.name]));
   const etMap = new Map<string, string>(lookups.expenseTypes.map((e: any) => [e.id, e.name]));
   const acctMap = new Map<string, string>((lookups.accounts ?? []).map((a: any) => [a.id, a.name]));
+  const checksAccountIds = new Set<string>((lookups.accounts ?? []).filter((a: any) => a.schema_type === "checks").map((a: any) => a.id));
+  const showAssoc = (drill?.rows ?? []).some((t: any) => checksAccountIds.has(t.account_id));
   const [search, setSearch] = useState("");
   const [printOpen, setPrintOpen] = useState(false);
 
@@ -525,6 +529,7 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
       t.note,
       t.payee,
       t.reference,
+      (t as any).association,
       t.expense_type_id ? etMap.get(t.expense_type_id) : "",
       t.category_id ? catMap.get(t.category_id) : "",
       String(t.amount),
@@ -604,6 +609,7 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
                 <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border px-2 py-2 whitespace-nowrap">תאריך</TableHead>
                 <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border px-2 py-2 whitespace-nowrap">חשבון</TableHead>
                 <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border px-2 py-2 whitespace-nowrap">תיאור</TableHead>
+                {showAssoc && <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border px-2 py-2 whitespace-nowrap">עמותה</TableHead>}
                 <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border px-2 py-2 whitespace-nowrap">סוג</TableHead>
                 <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border px-2 py-2 whitespace-nowrap">קטגוריה</TableHead>
                 <TableHead className="text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2 py-2 whitespace-nowrap">סכום</TableHead>
@@ -611,7 +617,7 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
             </TableHeader>
             <TableBody>
               {filteredRows.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-12">לא נמצאו תנועות</TableCell></TableRow>
+                <TableRow><TableCell colSpan={showAssoc ? 7 : 6} className="text-center text-muted-foreground py-12">לא נמצאו תנועות</TableCell></TableRow>
               )}
               {filteredRows.map((t, idx) => (
                 <TableRow
@@ -623,6 +629,7 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
                   <TableCell className="whitespace-nowrap tabular-nums border-l border-border/60 px-2 py-1.5 text-xs align-middle">{format(new Date(t.transaction_date), "dd/MM/yy")}</TableCell>
                   <TableCell className="text-right whitespace-nowrap border-l border-border/60 px-2 py-1.5 text-xs align-middle">{(t as any).account_id ? (acctMap.get((t as any).account_id) ?? "—") : "—"}</TableCell>
                   <TableCell className="text-right border-l border-border/60 px-2 py-1.5 text-xs align-middle max-w-[280px] truncate">{(t.description ?? t.payee ?? "—")}</TableCell>
+                  {showAssoc && <TableCell className="text-right border-l border-border/60 px-2 py-1.5 text-xs align-middle max-w-[160px] truncate">{(t as any).association ?? "—"}</TableCell>}
                   <TableCell className="text-right border-l border-border/60 px-2 py-1.5 text-xs align-middle">{t.expense_type_id ? (etMap.get(t.expense_type_id) as string) : "—"}</TableCell>
                   <TableCell className="text-right border-l border-border/60 px-2 py-1.5 text-xs align-middle">{t.category_id ? (catMap.get(t.category_id) as string) : "—"}</TableCell>
                   <TableCell className={`text-left whitespace-nowrap px-2 py-1.5 text-xs font-semibold tabular-nums align-middle ${Number(t.amount) >= 0 ? "text-income" : "text-expense"}`}>

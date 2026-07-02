@@ -144,6 +144,7 @@ async function gatewayFetch(path: string, params?: Record<string, string | strin
 type SheetRow = Record<string, any>;
 type ParsedSheet = {
   sheetTitle: string;
+  sheetGid: number | null;
   accountId: string;
   accountName: string;
   schemaType: string;
@@ -155,10 +156,11 @@ async function parseAllSheets(
   accounts: { id: string; name: string; schema_type: string }[],
 ): Promise<{ sheets: ParsedSheet[]; skipped: string[] }> {
   const meta = await gatewayFetch(`/google_sheets/v4/spreadsheets/${spreadsheetId}`, {
-    fields: "sheets.properties(title,gridProperties)",
+    fields: "sheets.properties(title,sheetId,gridProperties)",
   });
-  const titles: { title: string; rowCount: number }[] = (meta.sheets ?? []).map((s: any) => ({
+  const titles: { title: string; sheetGid: number | null; rowCount: number }[] = (meta.sheets ?? []).map((s: any) => ({
     title: s.properties.title,
+    sheetGid: s.properties.sheetId ?? null,
     rowCount: s.properties.gridProperties?.rowCount ?? 1000,
   }));
 
@@ -199,6 +201,7 @@ async function parseAllSheets(
     for (let i = hIdx + 1; i < aoa.length; i++) {
       const r = aoa[i] ?? [];
       if (!r.some((c) => c != null && String(c).trim() !== "")) continue;
+      const _sheetRowIndex = i + 1; // 1-based row in the sheet
       const obj: SheetRow = {};
       headers.forEach((h, j) => {
         const field = getMappedField(h);
@@ -228,6 +231,7 @@ async function parseAllSheets(
       }
       // Skip rows without any usable amount — can't insert (DB requires amount).
       if (absAmount(obj) == null) continue;
+      obj._sheetRowIndex = _sheetRowIndex;
       rows.push(obj);
     }
     // Stable per-account synthetic IDs
@@ -238,7 +242,7 @@ async function parseAllSheets(
       occ.set(h, n + 1);
       r._id = `${h}#${n}`;
     }
-    out.push({ sheetTitle: t.title, accountId: t.account.id, accountName: t.account.name, schemaType: t.account.schema_type, rows });
+    out.push({ sheetTitle: t.title, sheetGid: t.sheetGid, accountId: t.account.id, accountName: t.account.name, schemaType: t.account.schema_type, rows });
   });
   return { sheets: out, skipped };
 }
@@ -383,11 +387,12 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
       expense_type_name: string | null;
       category_name: string | null;
       subcategory_name: string | null;
+      sheetRowIndex?: number | null;
     };
     type UpdatePair = { sheet: FullRow; db: FullRow; dbId: string };
 
     const perAccount: {
-      accountId: string; accountName: string; sheetTitle: string; schemaType: string;
+      accountId: string; accountName: string; sheetTitle: string; sheetGid: number | null; schemaType: string;
       toInsert: number; toUpdate: number; review: number; unchanged: number;
       inserts: FullRow[]; updates: UpdatePair[]; reviewRows: FullRow[];
     }[] = [];
@@ -438,6 +443,7 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
         expense_type_name: r._expense_type_name ?? null,
         category_name: r._category_name ?? null,
         subcategory_name: r._subcategory_name ?? null,
+        sheetRowIndex: r._sheetRowIndex ?? null,
       });
       const dbToFull = (r: any): FullRow => ({
         id: String(r.id ?? ""),
@@ -513,6 +519,7 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
         accountId: s.accountId,
         accountName: s.accountName,
         sheetTitle: s.sheetTitle,
+        sheetGid: s.sheetGid,
         schemaType: s.schemaType,
         toInsert: effectiveInserts.length,
         toUpdate: effectiveUpdates.length,
@@ -597,6 +604,7 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
 
     return {
       applied: data.apply,
+      spreadsheetId: data.spreadsheetId,
       perAccount,
       skippedSheets: skipped,
       totalInsert: perAccount.reduce((a, x) => a + x.toInsert, 0),
