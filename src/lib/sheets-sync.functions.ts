@@ -235,9 +235,30 @@ async function parseAllSheets(
       }
       rows.push(obj);
     }
+    // Assign stable per-account synthetic IDs (hash + occurrence index)
+    const occ = new Map<string, number>();
+    for (const r of rows) {
+      const h = hashSheetRow(r);
+      const n = (occ.get(h) ?? 0);
+      occ.set(h, n + 1);
+      r._id = `${h}#${n}`;
+    }
     out.push({ sheetTitle: t.title, accountId: t.account.id, accountName: t.account.name, schemaType: t.account.schema_type, rows });
   });
   return { sheets: out, skipped };
+}
+
+function hashSheetRow(r: any): string {
+  const s = JSON.stringify([
+    r.transaction_date ?? "", r.value_date ?? "",
+    r.description ?? "", r.reference ?? "", r.payee ?? "",
+    r.credit ?? "", r.debit ?? "", r.amount ?? "", r.balance ?? "", r.fee ?? "",
+    r._fund_name ?? "", r._expense_type_name ?? "", r._category_name ?? "", r._subcategory_name ?? "",
+    r.note ?? "",
+  ]);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return h.toString(16);
 }
 
 async function ensureAdmin(context: any) {
@@ -248,7 +269,11 @@ async function ensureAdmin(context: any) {
 
 export const syncFromGoogleSheet = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { spreadsheetId: string; apply: boolean }) => d)
+  .inputValidator((d: {
+    spreadsheetId: string;
+    apply: boolean;
+    exclusions?: Record<string, { insertIds?: string[]; deleteIds?: string[] }>;
+  }) => d)
   .handler(async ({ data, context }) => {
     await ensureAdmin(context);
     const supabase = context.supabase;
@@ -332,6 +357,7 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
 
     // Per-account diff
     type FullRow = {
+      id: string; // synthetic id (sheet hash#occ) or DB uuid
       transaction_date: string | null;
       value_date: string | null;
       description: string | null;
@@ -408,6 +434,7 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
 
       // Enrichers
       const sheetToFull = (r: SheetRow): FullRow => ({
+        id: String(r._id ?? ""),
         transaction_date: r.transaction_date ?? null,
         value_date: r.value_date ?? null,
         description: r.description ?? null,
@@ -425,6 +452,7 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
         subcategory_name: r._subcategory_name ?? null,
       });
       const dbToFull = (r: any): FullRow => ({
+        id: String(r.id ?? ""),
         transaction_date: r.transaction_date ?? null,
         value_date: r.value_date ?? null,
         description: r.description ?? null,
@@ -476,21 +504,36 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
       const pureInserts = inserts.filter((_, i) => !pairedInsertIdx.has(i));
       const pureDeleteIds = deleteIds.filter((id) => !pairedDeleteIds.has(id));
 
+      // Apply per-account exclusions from the client (unchecked rows in the preview UI)
+      const excl = data.exclusions?.[s.accountId];
+      const excludeInsertIds = new Set(excl?.insertIds ?? []);
+      const excludeDeleteIds = new Set(excl?.deleteIds ?? []);
+      // A "modification" is a paired insert+delete. If either side is excluded,
+      // treat the other side as excluded too so we don't half-apply the change.
+      for (const m of modified) {
+        const insExcluded = excludeInsertIds.has(m.sheet.id);
+        const delExcluded = excludeDeleteIds.has(m.db.id);
+        if (insExcluded && !delExcluded) excludeDeleteIds.add(m.db.id);
+        if (delExcluded && !insExcluded) excludeInsertIds.add(m.sheet.id);
+      }
+      const effectiveInserts = inserts.filter((r) => !excludeInsertIds.has(String(r._id ?? "")));
+      const effectiveDeleteIds = deleteIds.filter((id) => !excludeDeleteIds.has(id));
+
+      // Report totals reflecting the user's selection
+      const excludedModCount = modified.filter((m) => excludeInsertIds.has(m.sheet.id) || excludeDeleteIds.has(m.db.id)).length;
       perAccount.push({
         accountId: s.accountId,
         accountName: s.accountName,
         sheetTitle: s.sheetTitle,
         schemaType: s.schemaType,
-        toInsert: pureInserts.length,
-        toDelete: pureDeleteIds.length,
-        toModify: modified.length,
+        toInsert: pureInserts.filter((r) => !excludeInsertIds.has(String(r._id ?? ""))).length,
+        toDelete: pureDeleteIds.filter((id) => !excludeDeleteIds.has(id)).length,
+        toModify: modified.length - excludedModCount,
         unchanged,
-        insertSamples: pureInserts.slice(0, 200).map(sheetToFull),
-        deleteSamples: pureDeleteIds.slice(0, 200).map((id) => dbToFull(dbById.get(id) ?? {})),
-        modifiedSamples: modified.slice(0, 200),
+        insertSamples: pureInserts.map(sheetToFull),
+        deleteSamples: pureDeleteIds.map((id) => dbToFull(dbById.get(id) ?? {})),
+        modifiedSamples: modified,
       });
-
-
 
       if (!data.apply) continue;
 
@@ -500,7 +543,7 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
         .insert({
           account_id: s.accountId,
           file_name: `Google Sheets sync (${s.sheetTitle})`,
-          row_count: inserts.length,
+          row_count: effectiveInserts.length,
           created_by: context.userId,
         })
         .select()
@@ -509,13 +552,13 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
 
       // Resolve lookups + build insert payloads
       const payloads: any[] = [];
-      for (const r of inserts) {
+      for (const r of effectiveInserts) {
         const fundId = r._fund_name ? await ensureLookup("funds", r._fund_name, fundMap) : null;
         const etId = r._expense_type_name ? await ensureLookup("expense_types", r._expense_type_name, etMap) : null;
         const catId = r._category_name ? await ensureLookup("categories", r._category_name, catMap) : null;
         const subId = r._subcategory_name ? await ensureSubcat(r._category_name ?? null, r._subcategory_name as string) : null;
         const out: any = { account_id: s.accountId, import_batch_id: batch.id };
-        for (const [k, v] of Object.entries(r)) if (!NAME_FIELDS.has(k)) out[k] = v;
+        for (const [k, v] of Object.entries(r)) if (!NAME_FIELDS.has(k) && k !== "_id") out[k] = v;
         out.fund_id = fundId;
         out.expense_type_id = etId;
         out.category_id = catId;
@@ -530,13 +573,14 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
       }
       totalInserted += payloads.length;
 
+
       // Delete in chunks
-      for (let i = 0; i < deleteIds.length; i += 200) {
-        const chunk = deleteIds.slice(i, i + 200);
+      for (let i = 0; i < effectiveDeleteIds.length; i += 200) {
+        const chunk = effectiveDeleteIds.slice(i, i + 200);
         const { error } = await supabase.from("transactions").delete().in("id", chunk);
         if (error) throw error;
       }
-      totalDeleted += deleteIds.length;
+      totalDeleted += effectiveDeleteIds.length;
     }
 
     return {
