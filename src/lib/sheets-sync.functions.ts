@@ -235,7 +235,7 @@ async function parseAllSheets(
       }
       rows.push(obj);
     }
-    out.push({ sheetTitle: t.title, accountId: t.account.id, accountName: t.account.name, rows });
+    out.push({ sheetTitle: t.title, accountId: t.account.id, accountName: t.account.name, schemaType: t.account.schema_type, rows });
   });
   return { sheets: out, skipped };
 }
