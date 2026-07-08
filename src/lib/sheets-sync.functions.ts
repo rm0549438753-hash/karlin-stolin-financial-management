@@ -111,12 +111,13 @@ function absAmount(r: any): number | null {
   return null;
 }
 
-// Match key: absolute amount + reference (check number / asmachta).
-// Dates and free-text descriptions are ignored — user does not care about those diffs.
+// Match key: transaction_date + absolute amount + reference (check number / asmachta).
+// A sheet row is considered "already in the app" only when all three match an existing DB row.
 function matchKey(r: any): string {
   const amt = absAmount(r);
   const ref = normRef(r.reference);
-  return `${amt == null ? "" : amt.toFixed(2)}|${ref}`;
+  const date = r.transaction_date ?? r.value_date ?? "";
+  return `${date}|${amt == null ? "" : amt.toFixed(2)}|${ref}`;
 }
 
 async function gatewayFetch(path: string, params?: Record<string, string | string[]>): Promise<any> {
