@@ -16,17 +16,29 @@ export type PrintColumn = {
 export type PrintScope = { id: string; label: string; rows: any[] };
 export type PrintTotals = { label: string; value: string; tone?: "income" | "expense" | "neutral" }[];
 
+export type MonthPivotConfig = {
+  monthField: string;   // e.g. "month" (YYYY-MM)
+  labelField: string;   // e.g. "type"
+  labelHeader?: string; // e.g. "סוג"
+  valueFields: { key: string; label: string; tone?: "income" | "expense" | "neutral" }[];
+  formatValue?: (n: number) => string;
+  defaultMonth?: string; // YYYY-MM
+  showTotalsColumn?: boolean;
+};
+
 export type PrintDialogProps = {
   open: boolean;
   onOpenChange: (o: boolean) => void;
-  title: string;             // e.g. "תנועות - בנק מרכנתיל"
-  brand?: string;            // e.g. "מרכז קארלין סטאלין"
-  subtitle?: string;         // e.g. "מתאריך X עד תאריך Y"
-  scopes: PrintScope[];      // 1 or more scopes (current view / selection / etc)
+  title: string;
+  brand?: string;
+  subtitle?: string;
+  scopes: PrintScope[];
   columns: PrintColumn[];
-  defaultColumns?: string[]; // ids to preselect (default: all)
+  defaultColumns?: string[];
   totals?: PrintTotals;
+  monthPivot?: MonthPivotConfig;
 };
+
 
 export function PrintDialog({
   open, onOpenChange, title, brand = "מרכז קארלין סטאלין",
