@@ -354,10 +354,22 @@ function SheetsSyncPanel() {
   const qc = useQueryClient();
   const [sheetUrl, setSheetUrl] = useState("https://docs.google.com/spreadsheets/d/1dJUbkiRRwVbEozEwpD_KCgh8ur9BclFoxmYjRP2q8fs/edit");
   const [preview, setPreview] = useState<any>(null);
-  // For insert/update: presence means EXCLUDED (unchecked)
-  // For review:        presence means SELECTED FOR DELETION
   const [marked, setMarked] = useState<Set<ExclKey>>(new Set());
   const syncFn = useServerFn(syncFromGoogleSheet);
+  const listIgnoresFn = useServerFn(listSyncIgnores);
+  const addIgnoresFn = useServerFn(addSyncIgnores);
+  const removeIgnoreFn = useServerFn(removeSyncIgnore);
+
+  const { data: ignores = [] } = useQuery({
+    queryKey: ["sync-ignores"],
+    queryFn: async () => await listIgnoresFn(),
+  });
+
+  const { data: accountsList = [] } = useQuery({
+    queryKey: ["accounts", "for-ignores"],
+    queryFn: async () => (await supabase.from("accounts").select("id,name").order("name")).data ?? [],
+  });
+  const accountName = (id: string) => (accountsList as any[]).find((a) => a.id === id)?.name ?? id;
 
   function extractId(u: string): string | null {
     const m = u.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
@@ -394,12 +406,14 @@ function SheetsSyncPanel() {
     return out;
   }
 
+  async function runPreview() {
+    const id = extractId(sheetUrl);
+    if (!id) throw new Error("קישור לא תקין");
+    return await syncFn({ data: { spreadsheetId: id, apply: false } });
+  }
+
   const previewMut = useMutation({
-    mutationFn: async () => {
-      const id = extractId(sheetUrl);
-      if (!id) throw new Error("קישור לא תקין");
-      return await syncFn({ data: { spreadsheetId: id, apply: false } });
-    },
+    mutationFn: runPreview,
     onSuccess: (r) => { setPreview(r); setMarked(new Set()); toast.success("הצצה מוכנה"); },
     onError: (e: any) => toast.error(e.message ?? "שגיאה"),
   });
@@ -410,14 +424,54 @@ function SheetsSyncPanel() {
       if (!id) throw new Error("קישור לא תקין");
       return await syncFn({ data: { spreadsheetId: id, apply: true, exclusions: buildExclusionsPayload() } });
     },
-    onSuccess: (r) => {
+    onSuccess: async (r) => {
       toast.success(`סונכרן: ${r.totalInserted} נוספו · ${r.totalUpdated} עודכנו · ${r.totalDeleted} נמחקו`);
-      setPreview(r);
       setMarked(new Set());
       qc.invalidateQueries();
+      // Auto-refresh the preview so the user sees the updated state
+      try {
+        const fresh = await runPreview();
+        setPreview(fresh);
+      } catch (e: any) {
+        setPreview(r);
+      }
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאת סנכרון"),
   });
+
+  const addIgnoresMut = useMutation({
+    mutationFn: async (items: { kind: "account" | "insert" | "review"; accountId: string; refKey?: string; note?: string }[]) => {
+      await addIgnoresFn({ data: { items } });
+    },
+    onSuccess: async (_d, items) => {
+      toast.success(items.length === 1 ? "נוסף לרשימת מוסתרים" : `${items.length} פריטים הוסתרו`);
+      await qc.invalidateQueries({ queryKey: ["sync-ignores"] });
+      // Refresh preview so hidden items disappear immediately
+      if (preview) {
+        try {
+          const fresh = await runPreview();
+          setPreview(fresh);
+        } catch {}
+      }
+    },
+    onError: (e: any) => toast.error(e.message ?? "שגיאה"),
+  });
+
+  const removeIgnoreMut = useMutation({
+    mutationFn: async (id: string) => { await removeIgnoreFn({ data: { id } }); },
+    onSuccess: async () => {
+      toast.success("הוסר מרשימת מוסתרים");
+      await qc.invalidateQueries({ queryKey: ["sync-ignores"] });
+      if (preview) {
+        try {
+          const fresh = await runPreview();
+          setPreview(fresh);
+        } catch {}
+      }
+    },
+    onError: (e: any) => toast.error(e.message ?? "שגיאה"),
+  });
+
 
   // Counters (accounting for user selections)
   const counts = useMemo(() => {
