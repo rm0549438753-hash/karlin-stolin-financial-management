@@ -162,6 +162,7 @@ function DashboardPage() {
   const lookups = { accounts, categories, subcategories, expenseTypes, funds };
 
   const [newTxOpen, setNewTxOpen] = useState(false);
+  const [printOpen, setPrintOpen] = useState(false);
   const { data: role } = useUserRole();
 
   useEffect(() => {
@@ -170,16 +171,32 @@ function DashboardPage() {
     return () => window.removeEventListener("lovable:new-tx", open);
   }, []);
 
+  const etMap = useMemo(() => new Map<string, string>(expenseTypes.map((e: any) => [e.id, e.name])), [expenseTypes]);
+  const monthlyBreakdown = useMemo(
+    () => ({
+      institution: buildMonthlyBreakdown(institutionTxs, etMap),
+      project: buildMonthlyBreakdown(projectTxs, etMap),
+      vaults: buildMonthlyBreakdown(vaultTxs, etMap),
+    }),
+    [institutionTxs, projectTxs, vaultTxs, etMap],
+  );
+
   return (
     <AppShell
       title="לוח בקרה"
       actions={
-        <Button asChild variant="secondary" size="sm" className="font-bold">
-          <Link to="/action-history" className="flex items-center gap-1.5">
-            <History className="w-4 h-4" />
-            היסטוריית פעולות
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="font-bold" onClick={() => setPrintOpen(true)}>
+            <Printer className="w-4 h-4 ml-1" />
+            הדפסת דוח
+          </Button>
+          <Button asChild variant="secondary" size="sm" className="font-bold">
+            <Link to="/action-history" className="flex items-center gap-1.5">
+              <History className="w-4 h-4" />
+              היסטוריית פעולות
+            </Link>
+          </Button>
+        </div>
       }
     >
       <AlertsBanner />
