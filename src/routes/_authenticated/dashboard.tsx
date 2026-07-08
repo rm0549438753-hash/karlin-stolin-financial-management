@@ -229,7 +229,51 @@ function DashboardPage() {
       </Tabs>
       {isLoading && <p className="text-center text-sm text-muted-foreground mt-6">טוען נתונים…</p>}
       <TransactionDialog open={newTxOpen} onOpenChange={setNewTxOpen} />
+      <PrintDialog
+        open={printOpen}
+        onOpenChange={setPrintOpen}
+        title="דוח לוח בקרה — פילוח חודשי לפי סוג"
+        subtitle={`הופק ב־${new Date().toLocaleDateString("he-IL")}`}
+        scopes={[
+          { id: "institution", label: "מרכז קרלין סטולין", rows: monthlyBreakdown.institution },
+          { id: "project", label: "בית הכנסת - גבעת זאב", rows: monthlyBreakdown.project },
+          { id: "vaults", label: "דו\"ח קופות (הלוואות)", rows: monthlyBreakdown.vaults },
+        ]}
+        columns={[
+          { id: "month", header: "חודש", align: "right", format: (r: any) => r.month },
+          { id: "type", header: "סוג", align: "right", format: (r: any) => r.type },
+          { id: "income", header: "הכנסות", align: "left", format: (r: any) => r.income ? formatCurrency(r.income) : "—" },
+          { id: "expense", header: "הוצאות", align: "left", format: (r: any) => r.expense ? formatCurrency(r.expense) : "—" },
+          { id: "net", header: "נטו", align: "left", format: (r: any) => formatCurrency(r.net) },
+          { id: "count", header: "מס' תנועות", align: "center", format: (r: any) => String(r.count) },
+        ]}
+      />
     </AppShell>
+
+  );
+}
+
+/* ===================== Monthly breakdown for print ===================== */
+type MonthlyRow = { month: string; type: string; income: number; expense: number; net: number; count: number };
+function buildMonthlyBreakdown(txs: Tx[], etMap: Map<string, string>): MonthlyRow[] {
+  const bucket = new Map<string, MonthlyRow>();
+  for (const t of txs) {
+    const month = t.transaction_date.slice(0, 7); // YYYY-MM
+    const typeName = t.expense_type_id ? (etMap.get(t.expense_type_id) ?? "ללא סוג") : "ללא סוג";
+    const key = `${month}|${typeName}`;
+    if (!bucket.has(key)) bucket.set(key, { month, type: typeName, income: 0, expense: 0, net: 0, count: 0 });
+    const row = bucket.get(key)!;
+    const a = Number(t.amount);
+    if (a > 0) row.income += a;
+    else row.expense += -a;
+    row.net += a;
+    row.count += 1;
+  }
+  return Array.from(bucket.values()).sort((a, b) => {
+    if (a.month !== b.month) return b.month.localeCompare(a.month);
+    return a.type.localeCompare(b.type, "he");
+  });
+}
 
   );
 }
