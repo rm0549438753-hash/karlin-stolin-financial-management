@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2, Plus, UserPlus, Ban, ShieldCheck, Pencil } from "lucide-react";
+import { Trash2, Plus, UserPlus, Ban, ShieldCheck, Pencil, EyeOff, X } from "lucide-react";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -17,7 +18,9 @@ import { toast } from "sonner";
 import { useUserRole, useAuthUser } from "@/hooks/use-auth";
 import { useServerFn } from "@tanstack/react-start";
 import { adminCreateUser, adminDeleteUser, adminSetUserBlocked, adminListUsers } from "@/lib/admin-users.functions";
-import { syncFromGoogleSheet } from "@/lib/sheets-sync.functions";
+import { syncFromGoogleSheet, listSyncIgnores, addSyncIgnores, removeSyncIgnore } from "@/lib/sheets-sync.functions";
+
+
 
 export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
@@ -338,29 +341,123 @@ function UsersPanel() {
 type ExclKey = string; // `${accountId}::${kind}::${id}`
 type Kind = "insert" | "update" | "review";
 type ExclusionCtx = {
-  // For insert/update: excluded === user unchecked ("do not apply")
-  // For review:        excluded === false is default; excluded === true means "please DELETE this"
   isMarked: (accountId: string, kind: Kind, id: string) => boolean;
   toggle: (accountId: string, kind: Kind, id: string) => void;
   setBulk: (accountId: string, kind: Kind, ids: string[], marked: boolean) => void;
+  ignoreForever: (items: { kind: "account" | "insert" | "review"; accountId: string; refKey?: string }[]) => void;
 };
 const ExclusionContext = createContext<ExclusionCtx | null>(null);
 const useExcl = () => useContext(ExclusionContext)!;
 const eKey = (a: string, k: Kind, id: string): ExclKey => `${a}::${k}::${id}`;
 
+
 function SheetsSyncPanel() {
   const qc = useQueryClient();
   const [sheetUrl, setSheetUrl] = useState("https://docs.google.com/spreadsheets/d/1dJUbkiRRwVbEozEwpD_KCgh8ur9BclFoxmYjRP2q8fs/edit");
   const [preview, setPreview] = useState<any>(null);
-  // For insert/update: presence means EXCLUDED (unchecked)
-  // For review:        presence means SELECTED FOR DELETION
   const [marked, setMarked] = useState<Set<ExclKey>>(new Set());
   const syncFn = useServerFn(syncFromGoogleSheet);
+  const listIgnoresFn = useServerFn(listSyncIgnores);
+  const addIgnoresFn = useServerFn(addSyncIgnores);
+  const removeIgnoreFn = useServerFn(removeSyncIgnore);
+
+  const { data: ignores = [] } = useQuery({
+    queryKey: ["sync-ignores"],
+    queryFn: async () => await listIgnoresFn(),
+  });
+
+  const { data: accountsList = [] } = useQuery({
+    queryKey: ["accounts", "for-ignores"],
+    queryFn: async () => (await supabase.from("accounts").select("id,name").order("name")).data ?? [],
+  });
+  const accountName = (id: string) => (accountsList as any[]).find((a) => a.id === id)?.name ?? id;
 
   function extractId(u: string): string | null {
     const m = u.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
     return m ? m[1] : u.trim() || null;
   }
+
+
+
+
+
+  function buildExclusionsPayload(): Record<string, { insertIds: string[]; updatePairIds: string[]; reviewDeleteIds: string[] }> {
+    const out: Record<string, { insertIds: string[]; updatePairIds: string[]; reviewDeleteIds: string[] }> = {};
+    for (const key of marked) {
+      const [a, k, id] = key.split("::");
+      if (!out[a]) out[a] = { insertIds: [], updatePairIds: [], reviewDeleteIds: [] };
+      if (k === "insert") out[a].insertIds.push(id);
+      else if (k === "update") out[a].updatePairIds.push(id);
+      else if (k === "review") out[a].reviewDeleteIds.push(id);
+    }
+    return out;
+  }
+
+  async function runPreview() {
+    const id = extractId(sheetUrl);
+    if (!id) throw new Error("קישור לא תקין");
+    return await syncFn({ data: { spreadsheetId: id, apply: false } });
+  }
+
+  const previewMut = useMutation({
+    mutationFn: runPreview,
+    onSuccess: (r) => { setPreview(r); setMarked(new Set()); toast.success("הצצה מוכנה"); },
+    onError: (e: any) => toast.error(e.message ?? "שגיאה"),
+  });
+
+  const applyMut = useMutation({
+    mutationFn: async () => {
+      const id = extractId(sheetUrl);
+      if (!id) throw new Error("קישור לא תקין");
+      return await syncFn({ data: { spreadsheetId: id, apply: true, exclusions: buildExclusionsPayload() } });
+    },
+    onSuccess: async (r) => {
+      toast.success(`סונכרן: ${r.totalInserted} נוספו · ${r.totalUpdated} עודכנו · ${r.totalDeleted} נמחקו`);
+      setMarked(new Set());
+      qc.invalidateQueries();
+      // Auto-refresh the preview so the user sees the updated state
+      try {
+        const fresh = await runPreview();
+        setPreview(fresh);
+      } catch (e: any) {
+        setPreview(r);
+      }
+    },
+    onError: (e: any) => toast.error(e.message ?? "שגיאת סנכרון"),
+  });
+
+  const addIgnoresMut = useMutation({
+    mutationFn: async (items: { kind: "account" | "insert" | "review"; accountId: string; refKey?: string; note?: string }[]) => {
+      await addIgnoresFn({ data: { items } });
+    },
+    onSuccess: async (_d, items) => {
+      toast.success(items.length === 1 ? "נוסף לרשימת מוסתרים" : `${items.length} פריטים הוסתרו`);
+      await qc.invalidateQueries({ queryKey: ["sync-ignores"] });
+      // Refresh preview so hidden items disappear immediately
+      if (preview) {
+        try {
+          const fresh = await runPreview();
+          setPreview(fresh);
+        } catch {}
+      }
+    },
+    onError: (e: any) => toast.error(e.message ?? "שגיאה"),
+  });
+
+  const removeIgnoreMut = useMutation({
+    mutationFn: async (id: string) => { await removeIgnoreFn({ data: { id } }); },
+    onSuccess: async () => {
+      toast.success("הוסר מרשימת מוסתרים");
+      await qc.invalidateQueries({ queryKey: ["sync-ignores"] });
+      if (preview) {
+        try {
+          const fresh = await runPreview();
+          setPreview(fresh);
+        } catch {}
+      }
+    },
+    onError: (e: any) => toast.error(e.message ?? "שגיאה"),
+  });
 
   const exclCtx: ExclusionCtx = useMemo(() => ({
     isMarked: (a, k, id) => marked.has(eKey(a, k, id)),
@@ -378,44 +475,9 @@ function SheetsSyncPanel() {
       }
       return next;
     }),
-  }), [marked]);
+    ignoreForever: (items) => addIgnoresMut.mutate(items),
+  }), [marked, addIgnoresMut]);
 
-  function buildExclusionsPayload(): Record<string, { insertIds: string[]; updatePairIds: string[]; reviewDeleteIds: string[] }> {
-    const out: Record<string, { insertIds: string[]; updatePairIds: string[]; reviewDeleteIds: string[] }> = {};
-    for (const key of marked) {
-      const [a, k, id] = key.split("::");
-      if (!out[a]) out[a] = { insertIds: [], updatePairIds: [], reviewDeleteIds: [] };
-      if (k === "insert") out[a].insertIds.push(id);
-      else if (k === "update") out[a].updatePairIds.push(id);
-      else if (k === "review") out[a].reviewDeleteIds.push(id);
-    }
-    return out;
-  }
-
-  const previewMut = useMutation({
-    mutationFn: async () => {
-      const id = extractId(sheetUrl);
-      if (!id) throw new Error("קישור לא תקין");
-      return await syncFn({ data: { spreadsheetId: id, apply: false } });
-    },
-    onSuccess: (r) => { setPreview(r); setMarked(new Set()); toast.success("הצצה מוכנה"); },
-    onError: (e: any) => toast.error(e.message ?? "שגיאה"),
-  });
-
-  const applyMut = useMutation({
-    mutationFn: async () => {
-      const id = extractId(sheetUrl);
-      if (!id) throw new Error("קישור לא תקין");
-      return await syncFn({ data: { spreadsheetId: id, apply: true, exclusions: buildExclusionsPayload() } });
-    },
-    onSuccess: (r) => {
-      toast.success(`סונכרן: ${r.totalInserted} נוספו · ${r.totalUpdated} עודכנו · ${r.totalDeleted} נמחקו`);
-      setPreview(r);
-      setMarked(new Set());
-      qc.invalidateQueries();
-    },
-    onError: (e: any) => toast.error(e.message ?? "שגיאת סנכרון"),
-  });
 
   // Counters (accounting for user selections)
   const counts = useMemo(() => {
@@ -482,11 +544,38 @@ function SheetsSyncPanel() {
               )}
             </div>
           )}
+
+          {(ignores as any[]).length > 0 && (
+            <details className="border rounded-lg bg-muted/20">
+              <summary className="cursor-pointer select-none p-3 text-sm font-medium">
+                פריטים מוסתרים מהסנכרון ({(ignores as any[]).length}) — לחץ להצגה
+              </summary>
+              <div className="divide-y">
+                {(ignores as any[]).map((ig) => (
+                  <div key={ig.id} className="flex items-center justify-between p-2 text-xs">
+                    <div className="min-w-0 truncate">
+                      <span className="font-medium">
+                        {ig.kind === "account" ? "חשבון מלא" : ig.kind === "insert" ? "תנועה בגיליון" : "תנועה בממשק"}
+                      </span>
+                      <span className="text-muted-foreground"> · {accountName(ig.account_id)}</span>
+                      {ig.ref_key && ig.kind !== "account" && (
+                        <span className="text-muted-foreground truncate mr-2" dir="ltr"> · {ig.ref_key}</span>
+                      )}
+                    </div>
+                    <Button size="sm" variant="ghost" onClick={() => removeIgnoreMut.mutate(ig.id)} disabled={removeIgnoreMut.isPending}>
+                      <X className="w-3 h-3 ml-1" />הסר
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </details>
+          )}
         </CardContent>
       </Card>
     </ExclusionContext.Provider>
   );
 }
+
 
 const FIELD_LABELS: Record<string, string> = {
   transaction_date: "תאריך",
@@ -548,6 +637,7 @@ function txUrl(accountId: string, txId: string) {
 
 function AccountDiffRow({ p, spreadsheetId }: { p: any; spreadsheetId?: string }) {
   const [open, setOpen] = useState(false);
+  const { ignoreForever } = useExcl();
   const hasChanges = p.toInsert > 0 || p.toUpdate > 0 || p.review > 0;
   return (
     <>
@@ -558,12 +648,26 @@ function AccountDiffRow({ p, spreadsheetId }: { p: any; spreadsheetId?: string }
         <div className="truncate flex items-center gap-2">
           {hasChanges && <span className="text-xs">{open ? "▾" : "▸"}</span>}
           <span>{p.accountName}</span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (confirm(`להסתיר את החשבון "${p.accountName}" מכל סנכרון עתידי?`)) {
+                ignoreForever([{ kind: "account", accountId: p.accountId }]);
+              }
+            }}
+            title="הסתר חשבון זה מכל סנכרון עתידי"
+            className="text-[11px] text-muted-foreground hover:text-destructive underline"
+          >
+            <EyeOff className="w-3 h-3 inline ml-1" />הסתר תמיד
+          </button>
         </div>
         <div className="text-center text-green-700 font-semibold">{p.toInsert}</div>
         <div className="text-center text-amber-700 font-semibold">{p.toUpdate}</div>
         <div className="text-center text-slate-700 font-semibold">{p.review}</div>
         <div className="text-center text-muted-foreground">{p.unchanged}</div>
       </div>
+
       {open && hasChanges && (
         <div className="border-t bg-muted/20 p-3 space-y-4">
           {p.updates?.length > 0 && (
@@ -651,13 +755,14 @@ function UpdatePairCard({ pair, accountId, spreadsheetId, sheetGid }: { pair: { 
 }
 
 function FullRowsTable({ rows, accountId, kind, defaultChecked, source, spreadsheetId, sheetGid }: { rows: any[]; accountId: string; kind: Kind; defaultChecked: boolean; source?: "sheet" | "db"; spreadsheetId?: string; sheetGid?: number | null }) {
-  const { isMarked, toggle } = useExcl();
+  const { isMarked, toggle, ignoreForever } = useExcl();
   return (
     <div className="rounded border bg-background max-h-80 overflow-auto text-xs">
       <div
         className="grid gap-2 px-2 py-1 bg-muted/40 font-medium sticky top-0"
-        style={{ gridTemplateColumns: `28px 40px repeat(${FIELD_ORDER.length}, minmax(80px, 1fr))` }}
+        style={{ gridTemplateColumns: `28px 40px 50px repeat(${FIELD_ORDER.length}, minmax(80px, 1fr))` }}
       >
+        <div></div>
         <div></div>
         <div></div>
         {FIELD_ORDER.map((f) => <div key={f} className="truncate">{FIELD_LABELS[f]}</div>)}
@@ -675,7 +780,7 @@ function FullRowsTable({ rows, accountId, kind, defaultChecked, source, spreadsh
           <div
             key={r.id}
             className={`grid gap-2 px-2 py-1 border-t items-center ${rowClass}`}
-            style={{ gridTemplateColumns: `28px 40px repeat(${FIELD_ORDER.length}, minmax(80px, 1fr))` }}
+            style={{ gridTemplateColumns: `28px 40px 50px repeat(${FIELD_ORDER.length}, minmax(80px, 1fr))` }}
           >
             <div>
               <Checkbox checked={checked} onCheckedChange={() => toggle(accountId, kind, r.id)} />
@@ -684,6 +789,16 @@ function FullRowsTable({ rows, accountId, kind, defaultChecked, source, spreadsh
               {href ? (
                 <a href={href} target="_blank" rel="noreferrer" className="text-primary underline text-[10px]" title={source === "db" ? "פתח בממשק" : "פתח בגיליון"}>פתח</a>
               ) : null}
+            </div>
+            <div>
+              <button
+                type="button"
+                onClick={() => ignoreForever([{ kind: kind === "update" ? "insert" : kind, accountId, refKey: r.id }])}
+                title="הסתר תנועה זו מכל סנכרון עתידי"
+                className="text-[10px] text-muted-foreground hover:text-destructive underline"
+              >
+                <EyeOff className="w-3 h-3 inline" />
+              </button>
             </div>
             {FIELD_ORDER.map((f) => (
               <div key={f} className={`truncate ${NUMERIC_FIELDS.has(f) ? "tabular-nums text-left" : ""}`} title={fmtVal(f, r[f])}>
@@ -696,6 +811,7 @@ function FullRowsTable({ rows, accountId, kind, defaultChecked, source, spreadsh
     </div>
   );
 }
+
 
 
 

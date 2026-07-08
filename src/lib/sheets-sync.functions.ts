@@ -300,7 +300,29 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
       .eq("is_active", true);
     if (aerr) throw aerr;
 
-    const { sheets, skipped } = await parseAllSheets(data.spreadsheetId, accounts as any);
+    // Load persistent ignores
+    const { data: ignores } = await supabase
+      .from("sync_ignores")
+      .select("kind,account_id,ref_key");
+    const ignoredAccounts = new Set<string>();
+    const ignoredInsertsByAccount = new Map<string, Set<string>>();
+    const ignoredReviewByAccount = new Map<string, Set<string>>();
+    for (const ig of (ignores ?? []) as any[]) {
+      if (ig.kind === "account") ignoredAccounts.add(ig.account_id);
+      else if (ig.kind === "insert") {
+        const s = ignoredInsertsByAccount.get(ig.account_id) ?? new Set<string>();
+        s.add(ig.ref_key);
+        ignoredInsertsByAccount.set(ig.account_id, s);
+      } else if (ig.kind === "review") {
+        const s = ignoredReviewByAccount.get(ig.account_id) ?? new Set<string>();
+        s.add(ig.ref_key);
+        ignoredReviewByAccount.set(ig.account_id, s);
+      }
+    }
+    const filteredAccounts = (accounts as any[]).filter((a) => !ignoredAccounts.has(a.id));
+
+    const { sheets, skipped } = await parseAllSheets(data.spreadsheetId, filteredAccounts as any);
+
 
     // Load lookups
     const [fundsRes, etRes, catRes, subRes] = await Promise.all([
@@ -504,15 +526,21 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
       const reviewRows: FullRow[] = [];
       for (const r of dbRows) if (!usedDbIds.has(r.id)) reviewRows.push(dbToFull(r));
 
-      // Apply exclusions
+      // Apply persistent ignores (permanently hidden by user)
+      const persistInsertIgnores = ignoredInsertsByAccount.get(s.accountId) ?? new Set<string>();
+      const persistReviewIgnores = ignoredReviewByAccount.get(s.accountId) ?? new Set<string>();
+      const visibleInserts = inserts.filter((r) => !persistInsertIgnores.has(String(r._id ?? "")));
+      const visibleReview = reviewRows.filter((r) => !persistReviewIgnores.has(r.id));
+
+      // Apply per-run exclusions (opt-out this run)
       const excl = data.exclusions?.[s.accountId];
       const excludeInsertIds = new Set(excl?.insertIds ?? []);
       const excludeUpdatePairIds = new Set(excl?.updatePairIds ?? []);
       const reviewDeleteIds = new Set(excl?.reviewDeleteIds ?? []); // opt-IN
 
-      const effectiveInserts = inserts.filter((r) => !excludeInsertIds.has(String(r._id ?? "")));
+      const effectiveInserts = visibleInserts.filter((r) => !excludeInsertIds.has(String(r._id ?? "")));
       const effectiveUpdates = updates.filter((u) => !excludeUpdatePairIds.has(u.sheet.id));
-      const effectiveDeleteIds = reviewRows
+      const effectiveDeleteIds = visibleReview
         .filter((r) => reviewDeleteIds.has(r.id))
         .map((r) => r.id);
 
@@ -524,12 +552,13 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
         schemaType: s.schemaType,
         toInsert: effectiveInserts.length,
         toUpdate: effectiveUpdates.length,
-        review: reviewRows.length,
+        review: visibleReview.length,
         unchanged,
-        inserts: inserts.map(sheetToFull),
+        inserts: visibleInserts.map(sheetToFull),
         updates,
-        reviewRows,
+        reviewRows: visibleReview,
       });
+
 
       if (!data.apply) continue;
 
@@ -616,3 +645,51 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
       totalDeleted,
     };
   });
+
+// ─────────────────────────────────────────────────────────────────
+// Persistent sync-ignore management
+// ─────────────────────────────────────────────────────────────────
+type IgnoreItem = { kind: "account" | "insert" | "review"; accountId: string; refKey?: string; note?: string };
+
+export const listSyncIgnores = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await ensureAdmin(context);
+    const { data, error } = await context.supabase
+      .from("sync_ignores")
+      .select("id,kind,account_id,ref_key,note,created_at")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return data ?? [];
+  });
+
+export const addSyncIgnores = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { items: IgnoreItem[] }) => d)
+  .handler(async ({ data, context }) => {
+    await ensureAdmin(context);
+    if (!data.items?.length) return { inserted: 0 };
+    const rows = data.items.map((i) => ({
+      kind: i.kind,
+      account_id: i.accountId,
+      ref_key: i.refKey ?? "",
+      note: i.note ?? null,
+      created_by: context.userId,
+    }));
+    const { error } = await context.supabase
+      .from("sync_ignores")
+      .upsert(rows, { onConflict: "kind,account_id,ref_key", ignoreDuplicates: true });
+    if (error) throw error;
+    return { inserted: rows.length };
+  });
+
+export const removeSyncIgnore = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) => d)
+  .handler(async ({ data, context }) => {
+    await ensureAdmin(context);
+    const { error } = await context.supabase.from("sync_ignores").delete().eq("id", data.id);
+    if (error) throw error;
+    return { ok: true };
+  });
+
