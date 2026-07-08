@@ -645,3 +645,51 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
       totalDeleted,
     };
   });
+
+// ─────────────────────────────────────────────────────────────────
+// Persistent sync-ignore management
+// ─────────────────────────────────────────────────────────────────
+type IgnoreItem = { kind: "account" | "insert" | "review"; accountId: string; refKey?: string; note?: string };
+
+export const listSyncIgnores = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await ensureAdmin(context);
+    const { data, error } = await context.supabase
+      .from("sync_ignores")
+      .select("id,kind,account_id,ref_key,note,created_at")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return data ?? [];
+  });
+
+export const addSyncIgnores = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { items: IgnoreItem[] }) => d)
+  .handler(async ({ data, context }) => {
+    await ensureAdmin(context);
+    if (!data.items?.length) return { inserted: 0 };
+    const rows = data.items.map((i) => ({
+      kind: i.kind,
+      account_id: i.accountId,
+      ref_key: i.refKey ?? "",
+      note: i.note ?? null,
+      created_by: context.userId,
+    }));
+    const { error } = await context.supabase
+      .from("sync_ignores")
+      .upsert(rows, { onConflict: "kind,account_id,ref_key", ignoreDuplicates: true });
+    if (error) throw error;
+    return { inserted: rows.length };
+  });
+
+export const removeSyncIgnore = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) => d)
+  .handler(async ({ data, context }) => {
+    await ensureAdmin(context);
+    const { error } = await context.supabase.from("sync_ignores").delete().eq("id", data.id);
+    if (error) throw error;
+    return { ok: true };
+  });
+
