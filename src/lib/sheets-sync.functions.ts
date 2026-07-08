@@ -554,7 +554,7 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
           const catId = r._category_name ? await ensureLookup("categories", r._category_name, catMap) : null;
           const subId = r._subcategory_name ? await ensureSubcat(r._category_name ?? null, r._subcategory_name as string) : null;
           const out: any = { account_id: s.accountId, import_batch_id: batch.id };
-          for (const [k, v] of Object.entries(r)) if (!NAME_FIELDS.has(k) && k !== "_id") out[k] = v;
+          for (const [k, v] of Object.entries(r)) if (!NAME_FIELDS.has(k) && k !== "_id" && k !== "_sheetRowIndex") out[k] = v;
           out.fund_id = fundId;
           out.expense_type_id = etId;
           out.category_id = catId;
