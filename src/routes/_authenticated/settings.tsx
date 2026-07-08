@@ -458,6 +458,25 @@ function SheetsSyncPanel() {
     onError: (e: any) => toast.error(e.message ?? "שגיאה"),
   });
 
+  const exclCtx: ExclusionCtx = useMemo(() => ({
+    isMarked: (a, k, id) => marked.has(eKey(a, k, id)),
+    toggle: (a, k, id) => setMarked((prev) => {
+      const next = new Set(prev);
+      const key = eKey(a, k, id);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    }),
+    setBulk: (a, k, ids, mark) => setMarked((prev) => {
+      const next = new Set(prev);
+      for (const id of ids) {
+        const key = eKey(a, k, id);
+        if (mark) next.add(key); else next.delete(key);
+      }
+      return next;
+    }),
+    ignoreForever: (items) => addIgnoresMut.mutate(items),
+  }), [marked, addIgnoresMut]);
+
 
   // Counters (accounting for user selections)
   const counts = useMemo(() => {
