@@ -637,6 +637,7 @@ function txUrl(accountId: string, txId: string) {
 
 function AccountDiffRow({ p, spreadsheetId }: { p: any; spreadsheetId?: string }) {
   const [open, setOpen] = useState(false);
+  const { ignoreForever } = useExcl();
   const hasChanges = p.toInsert > 0 || p.toUpdate > 0 || p.review > 0;
   return (
     <>
@@ -647,12 +648,26 @@ function AccountDiffRow({ p, spreadsheetId }: { p: any; spreadsheetId?: string }
         <div className="truncate flex items-center gap-2">
           {hasChanges && <span className="text-xs">{open ? "▾" : "▸"}</span>}
           <span>{p.accountName}</span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (confirm(`להסתיר את החשבון "${p.accountName}" מכל סנכרון עתידי?`)) {
+                ignoreForever([{ kind: "account", accountId: p.accountId }]);
+              }
+            }}
+            title="הסתר חשבון זה מכל סנכרון עתידי"
+            className="text-[11px] text-muted-foreground hover:text-destructive underline"
+          >
+            <EyeOff className="w-3 h-3 inline ml-1" />הסתר תמיד
+          </button>
         </div>
         <div className="text-center text-green-700 font-semibold">{p.toInsert}</div>
         <div className="text-center text-amber-700 font-semibold">{p.toUpdate}</div>
         <div className="text-center text-slate-700 font-semibold">{p.review}</div>
         <div className="text-center text-muted-foreground">{p.unchanged}</div>
       </div>
+
       {open && hasChanges && (
         <div className="border-t bg-muted/20 p-3 space-y-4">
           {p.updates?.length > 0 && (
