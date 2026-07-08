@@ -239,15 +239,21 @@ function DashboardPage() {
           { id: "project", label: "בית הכנסת - גבעת זאב", rows: monthlyBreakdown.project },
           { id: "vaults", label: "דו\"ח קופות (הלוואות)", rows: monthlyBreakdown.vaults },
         ]}
-        columns={[
-          { id: "month", header: "חודש", align: "right", format: (r: any) => r.month },
-          { id: "type", header: "סוג", align: "right", format: (r: any) => r.type },
-          { id: "income", header: "הכנסות", align: "left", format: (r: any) => r.income ? formatCurrency(r.income) : "—" },
-          { id: "expense", header: "הוצאות", align: "left", format: (r: any) => r.expense ? formatCurrency(r.expense) : "—" },
-          { id: "net", header: "נטו", align: "left", format: (r: any) => formatCurrency(r.net) },
-          { id: "count", header: "מס' תנועות", align: "center", format: (r: any) => String(r.count) },
-        ]}
+        columns={[]}
+        monthPivot={{
+          monthField: "month",
+          labelField: "type",
+          labelHeader: "סוג",
+          valueFields: [
+            { key: "income", label: "הכנסות", tone: "income" },
+            { key: "expense", label: "הוצאות", tone: "expense" },
+            { key: "net", label: "נטו" },
+          ],
+          formatValue: (n: number) => (n ? formatCurrency(n) : "—"),
+          showTotalsColumn: true,
+        }}
       />
+
     </AppShell>
 
   );
