@@ -908,20 +908,25 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
 }
 
 /* ===================== KPI Card ===================== */
-function KPI({ title, value, icon: Icon, tone }: { title: string; value: string; icon: any; tone: "income" | "expense" | "primary" }) {
-  const toneClass =
+function KPI({ title, value, icon: Icon, tone, prominent }: { title: string; value: string; icon: any; tone: "income" | "expense" | "primary"; prominent?: boolean }) {
+  const accent =
+    tone === "income" ? "bg-income"
+    : tone === "expense" ? "bg-expense"
+    : "bg-primary";
+  const iconClass =
     tone === "income" ? "text-income bg-income/10"
     : tone === "expense" ? "text-expense bg-expense/10"
     : "text-primary bg-primary/10";
   return (
-    <Card>
-      <CardContent className="p-5 flex items-center gap-4">
-        <div className={`w-12 h-12 rounded-xl grid place-items-center ${toneClass}`}>
-          <Icon className="w-6 h-6" />
+    <Card className="relative overflow-hidden rounded-2xl border border-slate-100 dark:border-white/10 shadow-sm">
+      <span className={`absolute right-0 top-0 h-full w-1 ${accent}`} />
+      <CardContent className={prominent ? "p-5 flex items-center gap-4" : "p-4 flex items-center gap-3"}>
+        <div className={`${prominent ? "w-12 h-12" : "w-10 h-10"} rounded-xl grid place-items-center ${iconClass}`}>
+          <Icon className={prominent ? "w-6 h-6" : "w-5 h-5"} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-xs text-muted-foreground">{title}</div>
-          <div className="text-xl font-bold truncate">{value}</div>
+          <div className="text-[11px] text-muted-foreground font-medium">{title}</div>
+          <div className={`${prominent ? "text-2xl" : "text-lg"} font-bold truncate`}>{value}</div>
         </div>
       </CardContent>
     </Card>
