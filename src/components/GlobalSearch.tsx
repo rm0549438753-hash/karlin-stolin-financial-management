@@ -50,15 +50,19 @@ export function GlobalSearch() {
     queryFn: async () => {
       const term = q.trim();
       const asNum = Number(term.replace(/[,\s]/g, ""));
+      // PostgREST uses commas/parens as delimiters in .or() and treats * as wildcard.
+      // Wrap the value in double quotes and escape embedded quotes/backslashes so
+      // punctuation (commas, parens, dots) inside the term doesn't break the filter.
+      const safe = `"${term.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
       let query = supabase
         .from("transactions")
         .select("id, transaction_date, amount, account_id, description, note, payee")
         .order("transaction_date", { ascending: false })
         .limit(50);
       if (!isNaN(asNum) && asNum !== 0) {
-        query = query.or(`description.ilike.%${term}%,note.ilike.%${term}%,payee.ilike.%${term}%,amount.eq.${asNum},amount.eq.${-asNum}`);
+        query = query.or(`description.ilike.%${safe}%,note.ilike.%${safe}%,payee.ilike.%${safe}%,amount.eq.${asNum},amount.eq.${-asNum}`);
       } else {
-        query = query.or(`description.ilike.%${term}%,note.ilike.%${term}%,payee.ilike.%${term}%`);
+        query = query.or(`description.ilike.%${safe}%,note.ilike.%${safe}%,payee.ilike.%${safe}%`);
       }
       const { data, error } = await query;
       if (error) throw error;

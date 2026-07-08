@@ -50,7 +50,7 @@ export function BulkEditDialog({
       toast.success(`${ids.length} תנועות עודכנו`);
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
-      qc.invalidateQueries({ queryKey: ["tx-dashboard"] });
+      qc.invalidateQueries({ queryKey: ["tx-dashboard-full"] });
       onOpenChange(false);
       setFund(KEEP); setExp(KEEP); setCat(KEEP); setSub(KEEP);
       onDone?.();

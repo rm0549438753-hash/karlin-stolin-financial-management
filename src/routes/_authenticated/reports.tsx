@@ -493,8 +493,8 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       toast.success(`${selectedIds.size} תנועות נמחקו`);
       setSelectedIds(new Set());
       qc.invalidateQueries({ queryKey: ["transactions"] });
-      qc.invalidateQueries({ queryKey: ["reports-tx"] });
-      qc.invalidateQueries({ queryKey: ["tx-dashboard"] });
+      qc.invalidateQueries({ queryKey: ["reports-all-tx"] });
+      qc.invalidateQueries({ queryKey: ["tx-dashboard-full"] });
       qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאה"),
@@ -723,7 +723,7 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
         open={bulkEditOpen}
         onOpenChange={setBulkEditOpen}
         ids={Array.from(selectedIds)}
-        onDone={() => { setSelectedIds(new Set()); qc.invalidateQueries({ queryKey: ["reports-tx"] }); qc.invalidateQueries({ queryKey: ["transactions"] }); }}
+        onDone={() => { setSelectedIds(new Set()); qc.invalidateQueries({ queryKey: ["reports-all-tx"] }); qc.invalidateQueries({ queryKey: ["transactions"] }); }}
       />
 
       <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>

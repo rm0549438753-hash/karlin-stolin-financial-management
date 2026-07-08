@@ -288,7 +288,7 @@ function TransactionsPage() {
     onSuccess: () => {
       toast.success("התנועה נמחקה");
       qc.invalidateQueries({ queryKey: ["transactions"] });
-      qc.invalidateQueries({ queryKey: ["tx-dashboard"] });
+      qc.invalidateQueries({ queryKey: ["tx-dashboard-full"] });
       qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאה"),
@@ -308,7 +308,7 @@ function TransactionsPage() {
       toast.success(`${selectedIds.size} תנועות נמחקו`);
       setSelectedIds(new Set());
       qc.invalidateQueries({ queryKey: ["transactions"] });
-      qc.invalidateQueries({ queryKey: ["tx-dashboard"] });
+      qc.invalidateQueries({ queryKey: ["tx-dashboard-full"] });
       qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאה"),
