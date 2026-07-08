@@ -543,11 +543,38 @@ function SheetsSyncPanel() {
               )}
             </div>
           )}
+
+          {(ignores as any[]).length > 0 && (
+            <details className="border rounded-lg bg-muted/20">
+              <summary className="cursor-pointer select-none p-3 text-sm font-medium">
+                פריטים מוסתרים מהסנכרון ({(ignores as any[]).length}) — לחץ להצגה
+              </summary>
+              <div className="divide-y">
+                {(ignores as any[]).map((ig) => (
+                  <div key={ig.id} className="flex items-center justify-between p-2 text-xs">
+                    <div className="min-w-0 truncate">
+                      <span className="font-medium">
+                        {ig.kind === "account" ? "חשבון מלא" : ig.kind === "insert" ? "תנועה בגיליון" : "תנועה בממשק"}
+                      </span>
+                      <span className="text-muted-foreground"> · {accountName(ig.account_id)}</span>
+                      {ig.ref_key && ig.kind !== "account" && (
+                        <span className="text-muted-foreground truncate mr-2" dir="ltr"> · {ig.ref_key}</span>
+                      )}
+                    </div>
+                    <Button size="sm" variant="ghost" onClick={() => removeIgnoreMut.mutate(ig.id)} disabled={removeIgnoreMut.isPending}>
+                      <X className="w-3 h-3 ml-1" />הסר
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </details>
+          )}
         </CardContent>
       </Card>
     </ExclusionContext.Provider>
   );
 }
+
 
 const FIELD_LABELS: Record<string, string> = {
   transaction_date: "תאריך",
