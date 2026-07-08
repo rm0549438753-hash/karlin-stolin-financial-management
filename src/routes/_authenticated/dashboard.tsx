@@ -504,10 +504,12 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <KPI title="הכנסות" value={formatCurrency(income)} icon={TrendingUp} tone="income" />
-        <KPI title="הוצאות" value={formatCurrency(Math.abs(expense))} icon={TrendingDown} tone="expense" />
-        <KPI title="מאזן" value={formatCurrency(net)} icon={Scale} tone={net >= 0 ? "income" : "expense"} />
+      <div className="grid grid-cols-1 gap-3">
+        <KPI title="סך הכנסות" value={formatCurrency(income)} icon={TrendingUp} tone="income" prominent />
+        <div className="grid grid-cols-2 gap-3">
+          <KPI title="הוצאות" value={formatCurrency(Math.abs(expense))} icon={TrendingDown} tone="expense" />
+          <KPI title="מאזן" value={formatCurrency(net)} icon={Scale} tone={net >= 0 ? "primary" : "expense"} />
+        </div>
       </div>
 
       <Card>
