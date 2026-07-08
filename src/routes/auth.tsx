@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, redirect, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -56,9 +56,6 @@ function AuthPage() {
               {loading ? "מתחבר..." : "התחבר"}
             </Button>
           </form>
-          <p className="text-xs text-muted-foreground text-center mt-4">
-            <Link to="/dashboard" className="hover:underline">חזרה</Link>
-          </p>
         </CardContent>
       </Card>
     </div>

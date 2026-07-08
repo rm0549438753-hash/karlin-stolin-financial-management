@@ -98,6 +98,23 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
   useEffect(() => {
+    // Auto-logout on browser close: sessionStorage is cleared when the browser
+    // (not just the tab) fully closes. Reloads / in-tab navigation keep it.
+    try {
+      const SESSION_FLAG = "lovable-app-session-active";
+      if (!sessionStorage.getItem(SESSION_FLAG)) {
+        // Fresh browser session — purge any persisted supabase auth tokens.
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith("sb-") && k.endsWith("-auth-token")) {
+            localStorage.removeItem(k);
+          }
+        }
+        void supabase.auth.signOut({ scope: "local" }).catch(() => {});
+      }
+      sessionStorage.setItem(SESSION_FLAG, "1");
+    } catch { /* storage unavailable */ }
+
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       router.invalidate();
