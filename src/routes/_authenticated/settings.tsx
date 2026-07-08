@@ -340,15 +340,15 @@ function UsersPanel() {
 type ExclKey = string; // `${accountId}::${kind}::${id}`
 type Kind = "insert" | "update" | "review";
 type ExclusionCtx = {
-  // For insert/update: excluded === user unchecked ("do not apply")
-  // For review:        excluded === false is default; excluded === true means "please DELETE this"
   isMarked: (accountId: string, kind: Kind, id: string) => boolean;
   toggle: (accountId: string, kind: Kind, id: string) => void;
   setBulk: (accountId: string, kind: Kind, ids: string[], marked: boolean) => void;
+  ignoreForever: (items: { kind: "account" | "insert" | "review"; accountId: string; refKey?: string }[]) => void;
 };
 const ExclusionContext = createContext<ExclusionCtx | null>(null);
 const useExcl = () => useContext(ExclusionContext)!;
 const eKey = (a: string, k: Kind, id: string): ExclKey => `${a}::${k}::${id}`;
+
 
 function SheetsSyncPanel() {
   const qc = useQueryClient();
