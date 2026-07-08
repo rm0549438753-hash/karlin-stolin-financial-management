@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, RotateCcw, Search } from "lucide-react";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, RotateCcw, Search, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -48,13 +48,17 @@ const ACTION_LABELS: Record<HistoryAction, string> = {
 
 const ALLOWED_UNDO_TABLES = new Set(Object.keys(TABLE_LABELS));
 const HIDDEN_DETAIL_FIELDS = new Set(["id", "created_at", "updated_at", "created_by", "updated_by", "import_batch_id"]);
+const PAGE_SIZE = 50;
 
-async function fetchActionHistory(): Promise<ActionHistoryRow[]> {
-  const { data, error } = await (supabase as any)
+async function fetchActionHistoryPage(pageParam: number, fromDate: string, toDate: string): Promise<ActionHistoryRow[]> {
+  let q = (supabase as any)
     .from("action_history")
     .select("id, table_name, record_id, action, old_data, new_data, actor_id, undone_at, undone_by, created_at")
     .order("created_at", { ascending: false })
-    .limit(50);
+    .range(pageParam * PAGE_SIZE, pageParam * PAGE_SIZE + PAGE_SIZE - 1);
+  if (fromDate) q = q.gte("created_at", `${fromDate}T00:00:00`);
+  if (toDate) q = q.lte("created_at", `${toDate}T23:59:59.999`);
+  const { data, error } = await q;
   if (error) throw error;
   return (data ?? []) as ActionHistoryRow[];
 }
@@ -62,8 +66,24 @@ async function fetchActionHistory(): Promise<ActionHistoryRow[]> {
 function ActionHistoryPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [pendingUndo, setPendingUndo] = useState<ActionHistoryRow | null>(null);
-  const { data: rows = [], isLoading } = useQuery({ queryKey: ["action-history"], queryFn: fetchActionHistory });
+
+  const {
+    data,
+    isLoading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["action-history", fromDate, toDate],
+    queryFn: ({ pageParam = 0 }) => fetchActionHistoryPage(pageParam as number, fromDate, toDate),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => (lastPage.length < PAGE_SIZE ? undefined : allPages.length),
+  });
+
+  const rows = useMemo(() => (data?.pages ?? []).flat(), [data]);
 
   const { data: accounts = [] } = useAccounts();
   const { data: funds = [] } = useFunds();
@@ -110,19 +130,35 @@ function ActionHistoryPage() {
     onError: (e: any) => toast.error(e.message ?? "לא ניתן לבטל את השינוי"),
   });
 
+  const clearDates = () => { setFromDate(""); setToDate(""); };
+
   return (
     <AppShell title="היסטוריית פעולות">
       <div className="space-y-4">
         <div className="rounded-2xl border bg-card overflow-hidden">
-          <div className="px-4 py-3 bg-muted/40 flex flex-wrap gap-2 items-center border-b">
-            <div>
-              <h2 className="text-lg font-extrabold">50 שינויים אחרונים</h2>
+          <div className="px-4 py-3 bg-muted/40 flex flex-wrap gap-3 items-end border-b">
+            <div className="flex-1 min-w-[200px]">
+              <h2 className="text-lg font-extrabold">היסטוריית שינויים</h2>
               <p className="text-xs text-muted-foreground">תנועות והגדרות פיננסיות שניתן לשחזר ככל שהנתונים עדיין תקינים.</p>
             </div>
-            <div className="flex-1" />
-            <div className="relative min-w-[260px]">
-              <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="חיפוש בפעולות" className="pr-9 bg-card" />
+            <div className="flex flex-wrap gap-2 items-end">
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">מתאריך</label>
+                <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="bg-card w-[150px]" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">עד תאריך</label>
+                <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="bg-card w-[150px]" />
+              </div>
+              {(fromDate || toDate) && (
+                <Button variant="ghost" size="sm" onClick={clearDates} className="mb-0.5">
+                  <X className="w-3.5 h-3.5 ml-1" />נקה
+                </Button>
+              )}
+              <div className="relative min-w-[220px]">
+                <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="חיפוש בפעולות" className="pr-9 bg-card" />
+              </div>
             </div>
           </div>
 
@@ -159,6 +195,16 @@ function ActionHistoryPage() {
                 ))}
               </TableBody>
             </Table>
+          </div>
+
+          <div className="p-3 border-t bg-muted/20 flex items-center justify-center gap-3">
+            <span className="text-xs text-muted-foreground">מוצגות {filtered.length.toLocaleString("he-IL")} פעולות</span>
+            {hasNextPage && (
+              <Button variant="outline" size="sm" onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
+                {isFetchingNextPage ? "טוען…" : "טען עוד"}
+              </Button>
+            )}
+            {!hasNextPage && rows.length > 0 && <span className="text-xs text-muted-foreground">— סוף הרשימה —</span>}
           </div>
         </div>
       </div>
