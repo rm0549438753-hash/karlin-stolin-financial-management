@@ -259,7 +259,7 @@ ${footerHtml}
   ${headerHtml}
   <table>
     <thead><tr>${ths}</tr></thead>
-    <tbody>${trs || `<tr><td colspan="${activeCols.length}" style="text-align:center;padding:20px;color:#999">אין נתונים להצגה</td></tr>`}</tbody>
+    <tbody>${trs || `<tr><td colspan="${effCols.length}" style="text-align:center;padding:20px;color:#999">אין נתונים להצגה</td></tr>`}</tbody>
   </table>
   ${totalsHtml}
   ${autoPrint ? `<script>window.addEventListener('load', () => setTimeout(() => window.print(), 350));</script>` : ""}
