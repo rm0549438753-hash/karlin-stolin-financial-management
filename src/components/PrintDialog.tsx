@@ -412,23 +412,60 @@ ${footerHtml}
 
         <Separator />
 
-        {/* Columns */}
-        <section className="space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-bold">עמודות להדפסה ({colIds.length}/{columns.length})</div>
-            <Button variant="ghost" size="sm" type="button" onClick={toggleAllCols}>
-              {allColsSelected ? "נקה הכל" : "בחר הכל"}
-            </Button>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1.5 max-h-44 overflow-auto pr-1">
-            {columns.map((c) => (
-              <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer py-1">
-                <Checkbox checked={colIds.includes(c.id)} onCheckedChange={() => toggleCol(c.id)} />
-                <span className="truncate">{c.header}</span>
-              </label>
-            ))}
-          </div>
-        </section>
+        {/* Columns / Pivot */}
+        {monthPivot ? (
+          <>
+            <section className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-bold">בחירת חודשים ({selectedMonths.length}/{availableMonths.length})</div>
+                <Button variant="ghost" size="sm" type="button" onClick={toggleAllMonths}>
+                  {selectedMonths.length === availableMonths.length ? "נקה הכל" : "בחר הכל"}
+                </Button>
+              </div>
+              {availableMonths.length === 0 ? (
+                <p className="text-xs text-muted-foreground">אין חודשים זמינים בהיקף שנבחר.</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1.5 max-h-44 overflow-auto pr-1">
+                  {availableMonths.map((m) => (
+                    <label key={m} className="flex items-center gap-2 text-sm cursor-pointer py-1">
+                      <Checkbox checked={selectedMonths.includes(m)} onCheckedChange={() => toggleMonth(m)} />
+                      <span className="truncate">{monthLabel(m)}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </section>
+            <section className="space-y-2">
+              <div className="text-sm font-bold">ערכים להצגה</div>
+              <div className="flex flex-wrap gap-3">
+                {monthPivot.valueFields.map((v) => (
+                  <label key={v.key} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Checkbox checked={pivotValueKeys.includes(v.key)} onCheckedChange={() => toggleValueKey(v.key)} />
+                    <span>{v.label}</span>
+                  </label>
+                ))}
+              </div>
+            </section>
+          </>
+        ) : (
+          <section className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-bold">עמודות להדפסה ({colIds.length}/{columns.length})</div>
+              <Button variant="ghost" size="sm" type="button" onClick={toggleAllCols}>
+                {allColsSelected ? "נקה הכל" : "בחר הכל"}
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1.5 max-h-44 overflow-auto pr-1">
+              {columns.map((c) => (
+                <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer py-1">
+                  <Checkbox checked={colIds.includes(c.id)} onCheckedChange={() => toggleCol(c.id)} />
+                  <span className="truncate">{c.header}</span>
+                </label>
+              ))}
+            </div>
+          </section>
+        )}
+
 
         <Separator />
 
