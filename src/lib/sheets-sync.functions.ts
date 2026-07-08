@@ -526,15 +526,21 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
       const reviewRows: FullRow[] = [];
       for (const r of dbRows) if (!usedDbIds.has(r.id)) reviewRows.push(dbToFull(r));
 
-      // Apply exclusions
+      // Apply persistent ignores (permanently hidden by user)
+      const persistInsertIgnores = ignoredInsertsByAccount.get(s.accountId) ?? new Set<string>();
+      const persistReviewIgnores = ignoredReviewByAccount.get(s.accountId) ?? new Set<string>();
+      const visibleInserts = inserts.filter((r) => !persistInsertIgnores.has(String(r._id ?? "")));
+      const visibleReview = reviewRows.filter((r) => !persistReviewIgnores.has(r.id));
+
+      // Apply per-run exclusions (opt-out this run)
       const excl = data.exclusions?.[s.accountId];
       const excludeInsertIds = new Set(excl?.insertIds ?? []);
       const excludeUpdatePairIds = new Set(excl?.updatePairIds ?? []);
       const reviewDeleteIds = new Set(excl?.reviewDeleteIds ?? []); // opt-IN
 
-      const effectiveInserts = inserts.filter((r) => !excludeInsertIds.has(String(r._id ?? "")));
+      const effectiveInserts = visibleInserts.filter((r) => !excludeInsertIds.has(String(r._id ?? "")));
       const effectiveUpdates = updates.filter((u) => !excludeUpdatePairIds.has(u.sheet.id));
-      const effectiveDeleteIds = reviewRows
+      const effectiveDeleteIds = visibleReview
         .filter((r) => reviewDeleteIds.has(r.id))
         .map((r) => r.id);
 
@@ -546,12 +552,13 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
         schemaType: s.schemaType,
         toInsert: effectiveInserts.length,
         toUpdate: effectiveUpdates.length,
-        review: reviewRows.length,
+        review: visibleReview.length,
         unchanged,
-        inserts: inserts.map(sheetToFull),
+        inserts: visibleInserts.map(sheetToFull),
         updates,
-        reviewRows,
+        reviewRows: visibleReview,
       });
+
 
       if (!data.apply) continue;
 
