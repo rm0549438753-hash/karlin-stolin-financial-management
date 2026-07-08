@@ -82,12 +82,12 @@ export function GlobalSearch() {
         variant="ghost"
         size="sm"
         onClick={() => setOpen(true)}
-        className="text-slate-600 hover:bg-slate-100 dark:text-foreground/70 dark:hover:bg-white/10 gap-2 h-9"
+        className="text-white hover:bg-white/10 gap-2 h-9"
         title="חיפוש גלובלי (Ctrl+K)"
       >
         <Search className="h-4 w-4" />
         <span className="hidden md:inline text-xs">חיפוש</span>
-        <kbd className="hidden md:inline-flex text-[10px] bg-slate-100 dark:bg-white/10 px-1.5 py-0.5 rounded">⌘K</kbd>
+        <kbd className="hidden md:inline-flex text-[10px] bg-white/10 px-1.5 py-0.5 rounded">⌘K</kbd>
       </Button>
       <CommandDialog open={open} onOpenChange={setOpen} shouldFilter={false}>
         <CommandInput

@@ -24,7 +24,7 @@ export function ThemeToggle() {
       variant="ghost"
       size="icon"
       onClick={toggle}
-      className="text-slate-600 hover:bg-slate-100 dark:text-foreground/70 dark:hover:bg-white/10 h-9 w-9"
+      className="text-white hover:bg-white/10 h-9 w-9"
       title={dark ? "מצב בהיר" : "מצב כהה"}
     >
       {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}

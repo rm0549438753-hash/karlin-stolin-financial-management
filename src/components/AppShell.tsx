@@ -16,7 +16,6 @@ import logoAsset from "@/assets/karlin-logo.png.asset.json";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { GlobalSearch } from "@/components/GlobalSearch";
 
-const NAVY = "#001529";
 const GOLD = "#D4AF37";
 
 function AppSidebar() {
@@ -25,81 +24,54 @@ function AppSidebar() {
 
   const onTransactions = path === "/transactions" || path.startsWith("/transactions/");
 
+
   return (
-    <Sidebar
-      side="right"
-      collapsible="icon"
-      className="border-l border-l-white/10"
-    >
-      <SidebarHeader className="p-0" style={{ background: NAVY }}>
-        <Link
-          to="/dashboard"
-          className="flex flex-col items-center text-center px-4 py-5 border-b border-white/10 group-data-[collapsible=icon]:py-3 group-data-[collapsible=icon]:px-2"
-        >
+    <Sidebar side="right" collapsible="icon" className="border-l-4 border-l-[color:var(--brand-gold,theme(colors.amber.400))]" style={{ ["--brand-gold" as any]: GOLD }}>
+      <SidebarHeader className="p-0 bg-gradient-to-b from-[#144a7a] to-[#0d3b66]">
+        <Link to="/dashboard" className="flex flex-col items-center text-center px-6 py-7 border-b border-white/10 group-data-[collapsible=icon]:py-3 group-data-[collapsible=icon]:px-2">
           <div
-            className="h-14 w-14 rounded-xl flex items-center justify-center p-0 overflow-hidden shadow-lg group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9"
-            style={{
-              background: `linear-gradient(135deg, ${GOLD}, #F3E5AB)`,
-            }}
+            className="h-32 w-32 bg-white rounded-2xl flex items-center justify-center p-0 overflow-hidden shadow-xl mb-4 group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:mb-0"
+            style={{ border: `3px solid ${GOLD}` }}
           >
-            <img
-              src={logoAsset.url}
-              alt="מרכז קארלין סטאלין"
-              className="h-[115%] w-[115%] object-contain scale-110"
-            />
+            <img src={logoAsset.url} alt="מרכז קארלין סטאלין" className="h-[115%] w-[115%] object-contain scale-110" />
           </div>
-          <div className="mt-3 group-data-[collapsible=icon]:hidden">
-            <h2 className="text-sm font-extrabold leading-tight tracking-tight text-white">
+          <div className="group-data-[collapsible=icon]:hidden">
+            <h2 className="text-xl font-extrabold leading-tight tracking-tight" style={{ color: GOLD }}>
               מרכז קארלין סטאלין
             </h2>
-            <p className="text-white/60 text-[10px] font-medium mt-0.5">ניהול פיננסי</p>
+            <div className="h-1 w-10 mx-auto rounded-full my-2" style={{ background: GOLD }} />
+            <p className="text-white/70 text-xs font-semibold">ממשק ניהול פיננסי</p>
           </div>
         </Link>
       </SidebarHeader>
-      <SidebarContent className="text-white" style={{ background: NAVY }}>
+      <SidebarContent className="bg-[#0d3b66] text-white">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-white/40 text-[10px] tracking-widest font-bold uppercase">
-            תפריט
-          </SidebarGroupLabel>
+          <SidebarGroupLabel className="text-white/50 text-[11px] tracking-widest font-bold">תפריט</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={path === "/dashboard"}
-                  tooltip="לוח בקרה"
-                  className="text-white/70 hover:bg-white/10 hover:text-white data-[active=true]:bg-white/15 data-[active=true]:text-white data-[active=true]:font-bold py-4"
-                >
+                <SidebarMenuButton asChild isActive={path === "/dashboard"} tooltip="לוח בקרה" className="text-white hover:bg-white/10 data-[active=true]:bg-white/15 data-[active=true]:text-white data-[active=true]:font-bold py-5 text-base">
                   <Link to="/dashboard" className="flex items-center gap-3">
-                    <LayoutDashboard className="!w-[18px] !h-[18px]" />
+                    <LayoutDashboard className="!w-5 !h-5" />
                     <span>לוח בקרה</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
               <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={onTransactions}
-                  tooltip="תנועות"
-                  className="text-white/70 hover:bg-white/10 hover:text-white data-[active=true]:bg-white/15 data-[active=true]:text-white data-[active=true]:font-bold py-4"
-                >
+                <SidebarMenuButton asChild isActive={onTransactions} tooltip="תנועות" className="text-white hover:bg-white/10 data-[active=true]:bg-white/15 data-[active=true]:text-white data-[active=true]:font-bold py-5 text-base">
                   <Link to="/transactions" className="flex items-center gap-3">
-                    <Receipt className="!w-[18px] !h-[18px]" />
+                    <Receipt className="!w-5 !h-5" />
                     <span>תנועות</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
+
               <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={path === "/reports"}
-                  tooltip="דוחות"
-                  className="text-white/70 hover:bg-white/10 hover:text-white data-[active=true]:bg-white/15 data-[active=true]:text-white data-[active=true]:font-bold py-4"
-                >
+                <SidebarMenuButton asChild isActive={path === "/reports"} tooltip="דוחות" className="text-white hover:bg-white/10 data-[active=true]:bg-white/15 data-[active=true]:text-white data-[active=true]:font-bold py-5 text-base">
                   <Link to="/reports" className="flex items-center gap-3">
-                    <BarChart3 className="!w-[18px] !h-[18px]" />
+                    <BarChart3 className="!w-5 !h-5" />
                     <span>דוחות</span>
                   </Link>
                 </SidebarMenuButton>
@@ -107,24 +79,20 @@ function AppSidebar() {
 
               {(role?.isAdmin || role?.isEditor) && (
                 <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={path === "/settings"}
-                    tooltip="הגדרות"
-                    className="text-white/70 hover:bg-white/10 hover:text-white data-[active=true]:bg-white/15 data-[active=true]:text-white data-[active=true]:font-bold py-4"
-                  >
+                  <SidebarMenuButton asChild isActive={path === "/settings"} tooltip="הגדרות" className="text-white hover:bg-white/10 data-[active=true]:bg-white/15 data-[active=true]:text-white data-[active=true]:font-bold py-5 text-base">
                     <Link to="/settings" className="flex items-center gap-3">
-                      <SettingsIcon className="!w-[18px] !h-[18px]" />
+                      <SettingsIcon className="!w-5 !h-5" />
                       <span>הגדרות</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
+
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-2 pb-8 border-t border-white/10" style={{ background: NAVY }}>
+      <SidebarFooter className="p-2 pb-12 bg-[#0d3b66] border-t border-white/10">
         <UserMenu />
       </SidebarFooter>
     </Sidebar>
@@ -146,16 +114,9 @@ function UserMenu() {
     <div className="flex flex-col gap-2 text-white">
       <div className="px-2 py-1 group-data-[collapsible=icon]:hidden">
         <div className="text-xs font-bold truncate">{user?.email}</div>
-        <div className="text-[10px] text-white/60">
-          {role?.isAdmin ? "מנהל" : role?.roles?.includes("editor") ? "עורך" : "צופה"}
-        </div>
+        <div className="text-[10px] text-white/60">{role?.isAdmin ? "מנהל" : role?.roles?.includes("editor") ? "עורך" : "צופה"}</div>
       </div>
-      <Button
-        onClick={signOut}
-        variant="ghost"
-        size="sm"
-        className="justify-start gap-2 text-white/80 hover:bg-white/10 hover:text-white"
-      >
+      <Button onClick={signOut} variant="ghost" size="sm" className="justify-start gap-2 text-white hover:bg-white/10 hover:text-white">
         <LogOut className="w-4 h-4" />
         <span className="group-data-[collapsible=icon]:hidden">התנתקות</span>
       </Button>
@@ -165,21 +126,26 @@ function UserMenu() {
 
 export function AppShell({ children, title, actions }: { children: ReactNode; title: string; actions?: ReactNode }) {
   return (
-    <SidebarProvider defaultOpen={false}>
+    <SidebarProvider defaultOpen>
       <div className="min-h-screen flex w-full bg-background" dir="rtl">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-16 bg-white/80 dark:bg-card/80 backdrop-blur-md border-b border-border flex items-center px-4 md:px-6 gap-3 md:gap-4 sticky top-0 z-10">
-            <SidebarTrigger className="text-slate-600 hover:bg-slate-100 dark:text-foreground/70 dark:hover:bg-white/10 h-9 w-9" />
-            <div className="flex flex-col min-w-0 flex-1">
-              <h1 className="text-base md:text-lg font-extrabold leading-none tracking-tight truncate text-slate-800 dark:text-foreground">
-                {title}
-              </h1>
-              <p className="text-slate-500 dark:text-muted-foreground text-[11px] font-medium mt-1 hidden sm:block">
-                מרכז קארלין סטאלין · ניהול פיננסי
-              </p>
+          <header
+            className="min-h-24 bg-[#0d3b66] shadow-2xl flex items-center px-4 md:px-8 gap-4 md:gap-6 sticky top-0 z-10"
+            style={{ borderBottom: `4px solid ${GOLD}` }}
+          >
+            <SidebarTrigger className="text-white hover:bg-white/10 h-10 w-10" />
+            <div
+              className="h-16 w-16 bg-white rounded-full flex items-center justify-center p-0 overflow-hidden shadow-inner shrink-0"
+              style={{ border: `2px solid ${GOLD}` }}
+            >
+              <img src={logoAsset.url} alt="" className="h-[120%] w-[120%] object-contain scale-110" />
             </div>
-            <div className="mr-auto flex items-center gap-1.5 flex-wrap justify-end">
+            <div className="flex flex-col min-w-0 flex-1">
+              <h1 className="text-xl md:text-2xl font-extrabold leading-none tracking-tight truncate" style={{ color: GOLD }}>{title}</h1>
+              <p className="text-white/60 text-xs md:text-sm font-medium mt-1 hidden sm:block">מרכז קארלין סטאלין · ניהול פיננסי</p>
+            </div>
+            <div className="mr-auto flex items-center gap-2 flex-wrap justify-end">
               <GlobalSearch />
               <ThemeToggle />
               {actions}

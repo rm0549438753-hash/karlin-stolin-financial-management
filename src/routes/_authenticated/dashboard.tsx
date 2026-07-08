@@ -202,23 +202,14 @@ function DashboardPage() {
       <AlertsBanner />
       <Tabs defaultValue="institution" className="space-y-4 mt-4" dir="rtl">
         <div className="flex items-center justify-between gap-3 flex-wrap">
-        <TabsList className="flex flex-wrap h-auto max-w-3xl flex-1 gap-2 bg-transparent p-0">
-          <TabsTrigger
-            value="institution"
-            className="rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-card px-4 py-2 text-sm font-semibold text-slate-600 dark:text-muted-foreground shadow-none data-[state=active]:bg-[#001529] data-[state=active]:text-white data-[state=active]:border-[#001529] data-[state=active]:shadow-sm"
-          >
+        <TabsList className="flex flex-wrap h-auto max-w-3xl flex-1 gap-1">
+          <TabsTrigger value="institution" className="text-base font-semibold px-4 py-2">
             מרכז קרלין סטולין
           </TabsTrigger>
-          <TabsTrigger
-            value="project"
-            className="rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-card px-4 py-2 text-sm font-semibold text-slate-600 dark:text-muted-foreground shadow-none data-[state=active]:bg-[#001529] data-[state=active]:text-white data-[state=active]:border-[#001529] data-[state=active]:shadow-sm"
-          >
+          <TabsTrigger value="project" className="text-base font-semibold px-4 py-2">
             בית הכנסת - גבעת זאב
           </TabsTrigger>
-          <TabsTrigger
-            value="vaults"
-            className="rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-card px-4 py-2 text-sm font-semibold text-slate-600 dark:text-muted-foreground shadow-none data-[state=active]:bg-[#001529] data-[state=active]:text-white data-[state=active]:border-[#001529] data-[state=active]:shadow-sm"
-          >
+          <TabsTrigger value="vaults" className="text-base font-semibold px-4 py-2">
             דו"ח קופות (הלוואות)
           </TabsTrigger>
         </TabsList>
@@ -504,12 +495,10 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-3">
-        <KPI title="סך הכנסות" value={formatCurrency(income)} icon={TrendingUp} tone="income" prominent />
-        <div className="grid grid-cols-2 gap-3">
-          <KPI title="הוצאות" value={formatCurrency(Math.abs(expense))} icon={TrendingDown} tone="expense" />
-          <KPI title="מאזן" value={formatCurrency(net)} icon={Scale} tone={net >= 0 ? "primary" : "expense"} />
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <KPI title="הכנסות" value={formatCurrency(income)} icon={TrendingUp} tone="income" />
+        <KPI title="הוצאות" value={formatCurrency(Math.abs(expense))} icon={TrendingDown} tone="expense" />
+        <KPI title="מאזן" value={formatCurrency(net)} icon={Scale} tone={net >= 0 ? "income" : "expense"} />
       </div>
 
       <Card>
@@ -908,25 +897,20 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
 }
 
 /* ===================== KPI Card ===================== */
-function KPI({ title, value, icon: Icon, tone, prominent }: { title: string; value: string; icon: any; tone: "income" | "expense" | "primary"; prominent?: boolean }) {
-  const accent =
-    tone === "income" ? "bg-income"
-    : tone === "expense" ? "bg-expense"
-    : "bg-primary";
-  const iconClass =
+function KPI({ title, value, icon: Icon, tone }: { title: string; value: string; icon: any; tone: "income" | "expense" | "primary" }) {
+  const toneClass =
     tone === "income" ? "text-income bg-income/10"
     : tone === "expense" ? "text-expense bg-expense/10"
     : "text-primary bg-primary/10";
   return (
-    <Card className="relative overflow-hidden rounded-2xl border border-slate-100 dark:border-white/10 shadow-sm">
-      <span className={`absolute right-0 top-0 h-full w-1 ${accent}`} />
-      <CardContent className={prominent ? "p-5 flex items-center gap-4" : "p-4 flex items-center gap-3"}>
-        <div className={`${prominent ? "w-12 h-12" : "w-10 h-10"} rounded-xl grid place-items-center ${iconClass}`}>
-          <Icon className={prominent ? "w-6 h-6" : "w-5 h-5"} />
+    <Card>
+      <CardContent className="p-5 flex items-center gap-4">
+        <div className={`w-12 h-12 rounded-xl grid place-items-center ${toneClass}`}>
+          <Icon className="w-6 h-6" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[11px] text-muted-foreground font-medium">{title}</div>
-          <div className={`${prominent ? "text-2xl" : "text-lg"} font-bold truncate`}>{value}</div>
+          <div className="text-xs text-muted-foreground">{title}</div>
+          <div className="text-xl font-bold truncate">{value}</div>
         </div>
       </CardContent>
     </Card>
