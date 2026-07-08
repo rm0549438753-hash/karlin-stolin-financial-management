@@ -275,8 +275,7 @@ function buildMonthlyBreakdown(txs: Tx[], etMap: Map<string, string>): MonthlyRo
   });
 }
 
-  );
-}
+
 
 /* ===================== Export helper ===================== */
 function buildExportRows(rows: Tx[], lookups: any) {
