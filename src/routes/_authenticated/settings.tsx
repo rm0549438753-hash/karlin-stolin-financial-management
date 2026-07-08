@@ -392,7 +392,9 @@ function SheetsSyncPanel() {
       }
       return next;
     }),
-  }), [marked]);
+    ignoreForever: (items) => addIgnoresMut.mutate(items),
+  }), [marked, addIgnoresMut]);
+
 
   function buildExclusionsPayload(): Record<string, { insertIds: string[]; updatePairIds: string[]; reviewDeleteIds: string[] }> {
     const out: Record<string, { insertIds: string[]; updatePairIds: string[]; reviewDeleteIds: string[] }> = {};
