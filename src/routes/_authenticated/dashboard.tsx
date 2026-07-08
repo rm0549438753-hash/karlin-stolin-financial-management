@@ -202,14 +202,23 @@ function DashboardPage() {
       <AlertsBanner />
       <Tabs defaultValue="institution" className="space-y-4 mt-4" dir="rtl">
         <div className="flex items-center justify-between gap-3 flex-wrap">
-        <TabsList className="flex flex-wrap h-auto max-w-3xl flex-1 gap-1">
-          <TabsTrigger value="institution" className="text-base font-semibold px-4 py-2">
+        <TabsList className="flex flex-wrap h-auto max-w-3xl flex-1 gap-2 bg-transparent p-0">
+          <TabsTrigger
+            value="institution"
+            className="rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-card px-4 py-2 text-sm font-semibold text-slate-600 dark:text-muted-foreground shadow-none data-[state=active]:bg-[#001529] data-[state=active]:text-white data-[state=active]:border-[#001529] data-[state=active]:shadow-sm"
+          >
             מרכז קרלין סטולין
           </TabsTrigger>
-          <TabsTrigger value="project" className="text-base font-semibold px-4 py-2">
+          <TabsTrigger
+            value="project"
+            className="rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-card px-4 py-2 text-sm font-semibold text-slate-600 dark:text-muted-foreground shadow-none data-[state=active]:bg-[#001529] data-[state=active]:text-white data-[state=active]:border-[#001529] data-[state=active]:shadow-sm"
+          >
             בית הכנסת - גבעת זאב
           </TabsTrigger>
-          <TabsTrigger value="vaults" className="text-base font-semibold px-4 py-2">
+          <TabsTrigger
+            value="vaults"
+            className="rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-card px-4 py-2 text-sm font-semibold text-slate-600 dark:text-muted-foreground shadow-none data-[state=active]:bg-[#001529] data-[state=active]:text-white data-[state=active]:border-[#001529] data-[state=active]:shadow-sm"
+          >
             דו"ח קופות (הלוואות)
           </TabsTrigger>
         </TabsList>
