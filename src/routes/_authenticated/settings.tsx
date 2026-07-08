@@ -498,14 +498,6 @@ function SheetsSyncPanel() {
           <CardTitle>סנכרון תנועות מגוגל שיטס</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="text-sm text-muted-foreground leading-6 space-y-1">
-            <div>סנכרון חכם, חד-כיווני: הגיליון ← הממשק. השוואה לפי <b>סכום + אסמכתא / מספר צ׳ק</b>. הבדלי תאריך או תיאור לא נחשבים לשינוי.</div>
-            <div className="text-xs">
-              <span className="text-green-700 font-medium">להוספה</span> = תנועה בגיליון שאין בממשק ·
-              <span className="text-amber-700 font-medium"> לעדכון</span> = תנועה קיימת שהסיווג שלה (קופה/סוג/קטגוריה) השתנה בגיליון (עדכון במקום, בלי מחיקה) ·
-              <span className="text-slate-700 font-medium"> לבדיקה</span> = תנועות שקיימות רק בממשק — לא ימחקו אלא אם תסמן אותן במפורש.
-            </div>
-          </div>
           <div className="flex gap-2">
             <Input dir="ltr" value={sheetUrl} onChange={(e) => setSheetUrl(e.target.value)} placeholder="Google Sheets URL" />
             <Button variant="outline" disabled={previewMut.isPending} onClick={() => previewMut.mutate()}>
