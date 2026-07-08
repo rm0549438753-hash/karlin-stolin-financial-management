@@ -42,7 +42,7 @@ export type PrintDialogProps = {
 
 export function PrintDialog({
   open, onOpenChange, title, brand = "מרכז קארלין סטאלין",
-  subtitle, scopes, columns, defaultColumns, totals,
+  subtitle, scopes, columns, defaultColumns, totals, monthPivot,
 }: PrintDialogProps) {
   const [scopeId, setScopeId] = useState(scopes[0]?.id ?? "");
   const [colIds, setColIds] = useState<string[]>(defaultColumns ?? columns.map((c) => c.id));
@@ -54,16 +54,49 @@ export function PrintDialog({
   const [fontSize, setFontSize] = useState<"sm" | "md" | "lg">("sm");
   const [zebra, setZebra] = useState(true);
 
+  // Pivot state
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
+  const [pivotValueKeys, setPivotValueKeys] = useState<string[]>(
+    monthPivot?.valueFields.map((v) => v.key) ?? [],
+  );
+
+  const activeScope = useMemo(() => scopes.find((s) => s.id === scopeId) ?? scopes[0], [scopes, scopeId]);
+
+  // Available months from active scope
+  const availableMonths = useMemo(() => {
+    if (!monthPivot) return [];
+    const s = new Set<string>();
+    (activeScope?.rows ?? []).forEach((r: any) => {
+      const m = r?.[monthPivot.monthField];
+      if (typeof m === "string" && m.length >= 7) s.add(m.slice(0, 7));
+    });
+    return Array.from(s).sort().reverse();
+  }, [activeScope, monthPivot]);
+
   // Re-init when reopened with different scopes/columns
   useEffect(() => {
     if (open) {
       setScopeId(scopes[0]?.id ?? "");
       setColIds(defaultColumns ?? columns.map((c) => c.id));
+      if (monthPivot) {
+        setPivotValueKeys(monthPivot.valueFields.map((v) => v.key));
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  const activeScope = useMemo(() => scopes.find((s) => s.id === scopeId) ?? scopes[0], [scopes, scopeId]);
+  // Reset month selection whenever scope changes or dialog opens
+  useEffect(() => {
+    if (!monthPivot || !open) return;
+    const preferred = monthPivot.defaultMonth ?? currentMonth;
+    const initial = availableMonths.includes(preferred)
+      ? [preferred]
+      : availableMonths.slice(0, 1);
+    setSelectedMonths(initial);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, scopeId, monthPivot?.monthField, availableMonths.join(",")]);
+
   const activeCols = useMemo(() => columns.filter((c) => colIds.includes(c.id)), [columns, colIds]);
 
   const allColsSelected = colIds.length === columns.length;
@@ -71,25 +104,91 @@ export function PrintDialog({
   const toggleCol = (id: string) =>
     setColIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
+  const toggleMonth = (m: string) =>
+    setSelectedMonths((prev) => (prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]));
+  const toggleAllMonths = () =>
+    setSelectedMonths((prev) => (prev.length === availableMonths.length ? [] : [...availableMonths]));
+  const toggleValueKey = (k: string) =>
+    setPivotValueKeys((prev) => (prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]));
+
+  const monthLabel = (m: string) => {
+    const [y, mm] = m.split("-");
+    const names = ["ינו׳", "פבר׳", "מרץ", "אפר׳", "מאי", "יוני", "יולי", "אוג׳", "ספט׳", "אוק׳", "נוב׳", "דצמ׳"];
+    return `${names[Number(mm) - 1] ?? mm} ${y}`;
+  };
+
+  // Effective columns/rows for the printed table
+  const { effCols, effRows } = useMemo(() => {
+    if (!monthPivot) {
+      return { effCols: activeCols, effRows: activeScope?.rows ?? [] };
+    }
+    const fmt = monthPivot.formatValue ?? ((n: number) => (n ? n.toLocaleString("he-IL") : "—"));
+    const activeValueFields = monthPivot.valueFields.filter((v) => pivotValueKeys.includes(v.key));
+    const monthsAsc = [...selectedMonths].sort();
+
+    const cols: PrintColumn[] = [
+      { id: "__label", header: monthPivot.labelHeader ?? "", align: "right", format: (r: any) => r.__label },
+    ];
+    monthsAsc.forEach((m) => {
+      activeValueFields.forEach((v) => {
+        cols.push({
+          id: `${m}__${v.key}`,
+          header: `${monthLabel(m)} · ${v.label}`,
+          align: "left",
+          format: (r: any) => fmt(r[`${m}__${v.key}`] ?? 0),
+        });
+      });
+    });
+    if (monthPivot.showTotalsColumn !== false) {
+      activeValueFields.forEach((v) => {
+        cols.push({
+          id: `__total__${v.key}`,
+          header: `סה״כ · ${v.label}`,
+          align: "left",
+          format: (r: any) => fmt(r[`__total__${v.key}`] ?? 0),
+        });
+      });
+    }
+
+    // Group rows by label field across selected months
+    const bucket = new Map<string, any>();
+    (activeScope?.rows ?? []).forEach((r: any) => {
+      const m = String(r?.[monthPivot.monthField] ?? "").slice(0, 7);
+      if (!monthsAsc.includes(m)) return;
+      const label = String(r?.[monthPivot.labelField] ?? "—");
+      if (!bucket.has(label)) bucket.set(label, { __label: label });
+      const row = bucket.get(label);
+      monthPivot.valueFields.forEach((v) => {
+        const key = `${m}__${v.key}`;
+        row[key] = (row[key] ?? 0) + (Number(r?.[v.key]) || 0);
+        const tkey = `__total__${v.key}`;
+        row[tkey] = (row[tkey] ?? 0) + (Number(r?.[v.key]) || 0);
+      });
+    });
+    const rowsArr = Array.from(bucket.values()).sort((a, b) => String(a.__label).localeCompare(String(b.__label), "he"));
+    return { effCols: cols, effRows: rowsArr };
+  }, [monthPivot, activeCols, activeScope, selectedMonths, pivotValueKeys]);
+
   function buildHtml(autoPrint: boolean) {
     const fontPx = fontSize === "lg" ? 13 : fontSize === "md" ? 11 : 10;
     const headPx = fontPx + 1;
-    const rows = activeScope?.rows ?? [];
+    const rows = effRows;
     const now = new Date().toLocaleString("he-IL");
 
-    const ths = activeCols
+    const ths = effCols
       .map((c) => `<th style="text-align:${c.align ?? "right"}">${escapeHtml(c.header)}</th>`)
       .join("");
 
     const trs = rows
       .map((r, i) => {
-        const tds = activeCols
+        const tds = effCols
           .map((c) => `<td style="text-align:${c.align ?? "right"}">${escapeHtml(c.format(r))}</td>`)
           .join("");
         const cls = zebra && i % 2 ? ' class="z"' : "";
         return `<tr${cls}>${tds}</tr>`;
       })
       .join("");
+
 
     const totalsHtml = showTotals && totals && totals.length
       ? `<div class="totals">${totals
