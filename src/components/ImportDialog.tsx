@@ -286,7 +286,7 @@ export function ImportDialog({ open, onOpenChange, account }: { open: boolean; o
       toast.success(`יובאו ${res.count} תנועות`);
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["import-batches"] });
-      qc.invalidateQueries({ queryKey: ["tx-dashboard"] });
+      qc.invalidateQueries({ queryKey: ["tx-dashboard-full"] });
       qc.invalidateQueries({ queryKey: ["funds"] });
       qc.invalidateQueries({ queryKey: ["expense-types"] });
       qc.invalidateQueries({ queryKey: ["categories"] });

@@ -156,8 +156,8 @@ export function TransactionDialog({
     onSuccess: () => {
       toast.success(initial ? "תנועה עודכנה" : "תנועה נוספה");
       qc.invalidateQueries({ queryKey: ["transactions"] });
-      qc.invalidateQueries({ queryKey: ["tx-dashboard"] });
-      qc.invalidateQueries({ queryKey: ["tx-reports"] });
+      qc.invalidateQueries({ queryKey: ["tx-dashboard-full"] });
+      qc.invalidateQueries({ queryKey: ["reports-all-tx"] });
       qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
       onOpenChange(false);
     },
