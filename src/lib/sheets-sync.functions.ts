@@ -300,7 +300,29 @@ export const syncFromGoogleSheet = createServerFn({ method: "POST" })
       .eq("is_active", true);
     if (aerr) throw aerr;
 
-    const { sheets, skipped } = await parseAllSheets(data.spreadsheetId, accounts as any);
+    // Load persistent ignores
+    const { data: ignores } = await supabase
+      .from("sync_ignores")
+      .select("kind,account_id,ref_key");
+    const ignoredAccounts = new Set<string>();
+    const ignoredInsertsByAccount = new Map<string, Set<string>>();
+    const ignoredReviewByAccount = new Map<string, Set<string>>();
+    for (const ig of (ignores ?? []) as any[]) {
+      if (ig.kind === "account") ignoredAccounts.add(ig.account_id);
+      else if (ig.kind === "insert") {
+        const s = ignoredInsertsByAccount.get(ig.account_id) ?? new Set<string>();
+        s.add(ig.ref_key);
+        ignoredInsertsByAccount.set(ig.account_id, s);
+      } else if (ig.kind === "review") {
+        const s = ignoredReviewByAccount.get(ig.account_id) ?? new Set<string>();
+        s.add(ig.ref_key);
+        ignoredReviewByAccount.set(ig.account_id, s);
+      }
+    }
+    const filteredAccounts = (accounts as any[]).filter((a) => !ignoredAccounts.has(a.id));
+
+    const { sheets, skipped } = await parseAllSheets(data.spreadsheetId, filteredAccounts as any);
+
 
     // Load lookups
     const [fundsRes, etRes, catRes, subRes] = await Promise.all([
