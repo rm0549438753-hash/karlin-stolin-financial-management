@@ -755,13 +755,14 @@ function UpdatePairCard({ pair, accountId, spreadsheetId, sheetGid }: { pair: { 
 }
 
 function FullRowsTable({ rows, accountId, kind, defaultChecked, source, spreadsheetId, sheetGid }: { rows: any[]; accountId: string; kind: Kind; defaultChecked: boolean; source?: "sheet" | "db"; spreadsheetId?: string; sheetGid?: number | null }) {
-  const { isMarked, toggle } = useExcl();
+  const { isMarked, toggle, ignoreForever } = useExcl();
   return (
     <div className="rounded border bg-background max-h-80 overflow-auto text-xs">
       <div
         className="grid gap-2 px-2 py-1 bg-muted/40 font-medium sticky top-0"
-        style={{ gridTemplateColumns: `28px 40px repeat(${FIELD_ORDER.length}, minmax(80px, 1fr))` }}
+        style={{ gridTemplateColumns: `28px 40px 50px repeat(${FIELD_ORDER.length}, minmax(80px, 1fr))` }}
       >
+        <div></div>
         <div></div>
         <div></div>
         {FIELD_ORDER.map((f) => <div key={f} className="truncate">{FIELD_LABELS[f]}</div>)}
@@ -779,7 +780,7 @@ function FullRowsTable({ rows, accountId, kind, defaultChecked, source, spreadsh
           <div
             key={r.id}
             className={`grid gap-2 px-2 py-1 border-t items-center ${rowClass}`}
-            style={{ gridTemplateColumns: `28px 40px repeat(${FIELD_ORDER.length}, minmax(80px, 1fr))` }}
+            style={{ gridTemplateColumns: `28px 40px 50px repeat(${FIELD_ORDER.length}, minmax(80px, 1fr))` }}
           >
             <div>
               <Checkbox checked={checked} onCheckedChange={() => toggle(accountId, kind, r.id)} />
@@ -788,6 +789,16 @@ function FullRowsTable({ rows, accountId, kind, defaultChecked, source, spreadsh
               {href ? (
                 <a href={href} target="_blank" rel="noreferrer" className="text-primary underline text-[10px]" title={source === "db" ? "פתח בממשק" : "פתח בגיליון"}>פתח</a>
               ) : null}
+            </div>
+            <div>
+              <button
+                type="button"
+                onClick={() => ignoreForever([{ kind: kind === "update" ? "insert" : kind, accountId, refKey: r.id }])}
+                title="הסתר תנועה זו מכל סנכרון עתידי"
+                className="text-[10px] text-muted-foreground hover:text-destructive underline"
+              >
+                <EyeOff className="w-3 h-3 inline" />
+              </button>
             </div>
             {FIELD_ORDER.map((f) => (
               <div key={f} className={`truncate ${NUMERIC_FIELDS.has(f) ? "tabular-nums text-left" : ""}`} title={fmtVal(f, r[f])}>
@@ -800,6 +811,7 @@ function FullRowsTable({ rows, accountId, kind, defaultChecked, source, spreadsh
     </div>
   );
 }
+
 
 
 
