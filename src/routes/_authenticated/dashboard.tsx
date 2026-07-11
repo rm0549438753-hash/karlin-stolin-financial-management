@@ -145,34 +145,34 @@ function DashboardPage() {
 
   // Note: transactions without a `transaction_date` are excluded at the query level
   // so they don't affect charts, pies, totals or drill-downs.
-  const baseTxs = useMemo(
-    () => txsEffective.filter((t) => !irrelevantFundId || t.fund_id !== irrelevantFundId),
-    [txsEffective, irrelevantFundId],
-  );
+  // "לא רלוונטי" fund is treated as "no fund" — those transactions represent regular
+  // institutional activity that isn't tied to a specific vault/kupa.
+  const baseTxs = txsEffective;
 
-
+  // Helper: treat "לא רלוונטי" fund as no fund at all.
+  const effectiveFundId = (t: Tx) =>
+    t.fund_id && t.fund_id !== irrelevantFundId ? t.fund_id : null;
 
   // Logic rules:
-  // - Fund = "לא רלוונטי" → already excluded from baseTxs (excluded everywhere).
-  // - Any other fund assigned → ONLY in vaults report.
-  // - No fund assigned → goes to institution or project tab based on expense_type.
+  // - Real fund assigned (not "לא רלוונטי") → ONLY in vaults tab.
+  // - No fund OR fund = "לא רלוונטי" → institution or building tab based on expense_type.
   const institutionTxs = useMemo(
     () => baseTxs.filter((t) =>
-      !t.fund_id && t.expense_type_id !== projectExpenseTypeId
+      !effectiveFundId(t) && t.expense_type_id !== projectExpenseTypeId
     ),
-    [baseTxs, projectExpenseTypeId],
+    [baseTxs, projectExpenseTypeId, irrelevantFundId],
   );
 
   const projectTxs = useMemo(
     () => baseTxs.filter((t) =>
-      !t.fund_id && t.expense_type_id === projectExpenseTypeId
+      !effectiveFundId(t) && t.expense_type_id === projectExpenseTypeId
     ),
-    [baseTxs, projectExpenseTypeId],
+    [baseTxs, projectExpenseTypeId, irrelevantFundId],
   );
 
   const vaultTxs = useMemo(
-    () => baseTxs.filter((t) => !!t.fund_id),
-    [baseTxs],
+    () => baseTxs.filter((t) => !!effectiveFundId(t)),
+    [baseTxs, irrelevantFundId],
   );
 
   const lookups = { accounts, categories, subcategories, expenseTypes, funds };
