@@ -355,7 +355,13 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     return Array.from(ys).sort().reverse();
   }, [txs]);
   const currentYear = String(new Date().getFullYear());
-  const [barYear, setBarYear] = useState<string>(currentYear);
+  // Prefer the current year if it has data; otherwise use the most recent year that does.
+  const defaultYear = yearsAvailable.includes(currentYear) ? currentYear : (yearsAvailable[0] ?? currentYear);
+  const [barYear, setBarYear] = useState<string>(defaultYear);
+  // Keep barYear in sync when data arrives after mount (async fetch).
+  useEffect(() => {
+    if (yearsAvailable.length && !yearsAvailable.includes(barYear)) setBarYear(defaultYear);
+  }, [yearsAvailable, defaultYear, barYear]);
 
   const monthly = useMemo(() => {
     const monthNames = ["ינו׳", "פבר׳", "מרץ", "אפר׳", "מאי", "יוני", "יולי", "אוג׳", "ספט׳", "אוק׳", "נוב׳", "דצמ׳"];
@@ -374,8 +380,11 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   }, [txs, barYear]);
 
   // Pie filter (independent: year + month)
-  const [pieYear, setPieYear] = useState<string>(currentYear);
+  const [pieYear, setPieYear] = useState<string>(defaultYear);
   const [pieMonth, setPieMonth] = useState<string>("all"); // "all" | "01".."12"
+  useEffect(() => {
+    if (pieYear !== "all" && yearsAvailable.length && !yearsAvailable.includes(pieYear)) setPieYear(defaultYear);
+  }, [yearsAvailable, defaultYear, pieYear]);
 
   const pieFilteredTxs = useMemo(() => {
     return txs.filter((t) => {
@@ -530,6 +539,27 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           </Select>
         </CardHeader>
         <CardContent>
+          {(() => {
+            const yearTxCount = txs.filter((t) => t.transaction_date.startsWith(barYear)).length;
+            return (
+              <div className="mb-2 text-xs text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1" dir="rtl">
+                <span>מציג <b className="text-foreground">{yearTxCount}</b> תנועות משנת {barYear}</span>
+                <span>·</span>
+                <span>סה״כ בטאב זה: <b className="text-foreground">{txs.length}</b> תנועות</span>
+                {yearsAvailable.length > 0 && (
+                  <>
+                    <span>·</span>
+                    <span>שנים זמינות: {yearsAvailable.join(", ")}</span>
+                  </>
+                )}
+              </div>
+            );
+          })()}
+          {txs.filter((t) => t.transaction_date.startsWith(barYear)).length === 0 ? (
+            <div className="text-center py-16 text-sm text-muted-foreground">
+              אין תנועות בשנת {barYear} בטאב זה. בחר שנה אחרת מהבורר למעלה.
+            </div>
+          ) : (
           <ResponsiveContainer width="100%" height={360}>
             <BarChart data={monthly} margin={{ top: 20, right: 8, left: 8, bottom: 8 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -547,6 +577,7 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+          )}
         </CardContent>
       </Card>
 
