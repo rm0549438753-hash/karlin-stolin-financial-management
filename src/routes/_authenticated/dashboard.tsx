@@ -380,8 +380,11 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   }, [txs, barYear]);
 
   // Pie filter (independent: year + month)
-  const [pieYear, setPieYear] = useState<string>(currentYear);
+  const [pieYear, setPieYear] = useState<string>(defaultYear);
   const [pieMonth, setPieMonth] = useState<string>("all"); // "all" | "01".."12"
+  useEffect(() => {
+    if (pieYear !== "all" && yearsAvailable.length && !yearsAvailable.includes(pieYear)) setPieYear(defaultYear);
+  }, [yearsAvailable, defaultYear, pieYear]);
 
   const pieFilteredTxs = useMemo(() => {
     return txs.filter((t) => {
