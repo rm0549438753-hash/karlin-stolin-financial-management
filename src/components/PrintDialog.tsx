@@ -97,6 +97,7 @@ export function PrintDialog({
     if (open) {
       setScopeId(scopes[0]?.id ?? "");
       setColIds(defaultColumns ?? columns.map((c) => c.id));
+      setFilterValues({});
       if (monthPivot) {
         setPivotValueKeys(monthPivot.valueFields.map((v) => v.key));
       }
