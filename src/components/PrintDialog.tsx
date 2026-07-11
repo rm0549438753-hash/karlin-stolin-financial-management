@@ -26,6 +26,13 @@ export type MonthPivotConfig = {
   showTotalsColumn?: boolean;
 };
 
+export type PrintFilter = {
+  id: string;
+  label: string;
+  options: { value: string; label: string; count?: number }[];
+  apply: (row: any, value: string) => boolean;
+};
+
 export type PrintDialogProps = {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -37,6 +44,7 @@ export type PrintDialogProps = {
   defaultColumns?: string[];
   totals?: PrintTotals;
   monthPivot?: MonthPivotConfig;
+  filters?: PrintFilter[];
 };
 
 
