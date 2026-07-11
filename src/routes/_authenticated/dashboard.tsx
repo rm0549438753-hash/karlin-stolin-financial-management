@@ -539,6 +539,27 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           </Select>
         </CardHeader>
         <CardContent>
+          {(() => {
+            const yearTxCount = txs.filter((t) => t.transaction_date.startsWith(barYear)).length;
+            return (
+              <div className="mb-2 text-xs text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1" dir="rtl">
+                <span>מציג <b className="text-foreground">{yearTxCount}</b> תנועות משנת {barYear}</span>
+                <span>·</span>
+                <span>סה״כ בטאב זה: <b className="text-foreground">{txs.length}</b> תנועות</span>
+                {yearsAvailable.length > 0 && (
+                  <>
+                    <span>·</span>
+                    <span>שנים זמינות: {yearsAvailable.join(", ")}</span>
+                  </>
+                )}
+              </div>
+            );
+          })()}
+          {txs.filter((t) => t.transaction_date.startsWith(barYear)).length === 0 ? (
+            <div className="text-center py-16 text-sm text-muted-foreground">
+              אין תנועות בשנת {barYear} בטאב זה. בחר שנה אחרת מהבורר למעלה.
+            </div>
+          ) : (
           <ResponsiveContainer width="100%" height={360}>
             <BarChart data={monthly} margin={{ top: 20, right: 8, left: 8, bottom: 8 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -556,6 +577,7 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+          )}
         </CardContent>
       </Card>
 
