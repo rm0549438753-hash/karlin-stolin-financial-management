@@ -145,34 +145,34 @@ function DashboardPage() {
 
   // Note: transactions without a `transaction_date` are excluded at the query level
   // so they don't affect charts, pies, totals or drill-downs.
-  // "לא רלוונטי" fund is treated as "no fund" — those transactions represent regular
-  // institutional activity that isn't tied to a specific vault/kupa.
-  const baseTxs = txsEffective;
-
-  // Helper: treat "לא רלוונטי" fund as no fund at all.
-  const effectiveFundId = (t: Tx) =>
-    t.fund_id && t.fund_id !== irrelevantFundId ? t.fund_id : null;
-
-  // Logic rules:
-  // - Real fund assigned (not "לא רלוונטי") → ONLY in vaults tab.
-  // - No fund OR fund = "לא רלוונטי" → institution or building tab based on expense_type.
-  const institutionTxs = useMemo(
-    () => baseTxs.filter((t) =>
-      !effectiveFundId(t) && t.expense_type_id !== projectExpenseTypeId
-    ),
-    [baseTxs, projectExpenseTypeId, irrelevantFundId],
+  // Fund "לא רלוונטי" → excluded from ALL tabs.
+  const baseTxs = useMemo(
+    () => txsEffective.filter((t) => !irrelevantFundId || t.fund_id !== irrelevantFundId),
+    [txsEffective, irrelevantFundId],
   );
 
+  // Rules (agreed with user):
+  // - Fund "לא רלוונטי" → excluded everywhere (handled above).
+  // - Type = "בית הכנסת בניה" → ALWAYS goes to Building tab (even if it has a fund).
+  // - Otherwise, if it has a fund → Vaults tab.
+  // - Otherwise (no fund, not building type — including no type) → Institution tab.
   const projectTxs = useMemo(
-    () => baseTxs.filter((t) =>
-      !effectiveFundId(t) && t.expense_type_id === projectExpenseTypeId
-    ),
-    [baseTxs, projectExpenseTypeId, irrelevantFundId],
+    () => baseTxs.filter((t) => t.expense_type_id === projectExpenseTypeId),
+    [baseTxs, projectExpenseTypeId],
   );
 
   const vaultTxs = useMemo(
-    () => baseTxs.filter((t) => !!effectiveFundId(t)),
-    [baseTxs, irrelevantFundId],
+    () => baseTxs.filter((t) =>
+      t.expense_type_id !== projectExpenseTypeId && !!t.fund_id
+    ),
+    [baseTxs, projectExpenseTypeId],
+  );
+
+  const institutionTxs = useMemo(
+    () => baseTxs.filter((t) =>
+      t.expense_type_id !== projectExpenseTypeId && !t.fund_id
+    ),
+    [baseTxs, projectExpenseTypeId],
   );
 
   const lookups = { accounts, categories, subcategories, expenseTypes, funds };
