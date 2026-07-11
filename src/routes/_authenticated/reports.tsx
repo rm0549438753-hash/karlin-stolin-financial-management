@@ -84,10 +84,23 @@ async function fetchAllTransactions(): Promise<Tx[]> {
 function ReportsPage() {
   const { tab } = Route.useSearch();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { data: txs = [], isLoading } = useQuery({
     queryKey: ["reports-all-tx"],
     queryFn: fetchAllTransactions,
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+    refetchOnWindowFocus: true,
   });
+  useEffect(() => {
+    const channel = supabase
+      .channel("reports-tx")
+      .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, () => {
+        qc.invalidateQueries({ queryKey: ["reports-all-tx"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [qc]);
   const { data: accounts = [] } = useAccounts();
   const { data: funds = [] } = useFunds();
   const { data: expenseTypes = [] } = useExpenseTypes();
