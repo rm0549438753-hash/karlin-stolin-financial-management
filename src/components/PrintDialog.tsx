@@ -432,6 +432,35 @@ ${footerHtml}
           </section>
         </div>
 
+        {filters && filters.length > 0 && (
+          <section className="space-y-2 border rounded-md p-3 bg-muted/20">
+            <div className="text-sm font-bold">סינון נוסף בתוך ההיקף</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {filters.map((f) => (
+                <label key={f.id} className="text-xs space-y-1 block">
+                  <span className="font-semibold text-muted-foreground">{f.label}</span>
+                  <select
+                    className="w-full h-9 rounded-md border bg-background px-2 text-sm"
+                    value={filterValues[f.id] ?? "__all__"}
+                    onChange={(e) => setFilterValues((prev) => ({ ...prev, [f.id]: e.target.value }))}
+                  >
+                    <option value="__all__">— הכל —</option>
+                    {f.options.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}{o.count != null ? ` (${o.count})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ))}
+            </div>
+            <div className="text-xs text-muted-foreground pt-1">
+              שורות אחרי סינון: <b className="tabular-nums">{activeScope?.rows.length.toLocaleString("he-IL") ?? 0}</b>
+            </div>
+          </section>
+        )}
+
+
         <Separator />
 
         {/* Columns / Pivot */}
