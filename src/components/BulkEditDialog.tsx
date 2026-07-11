@@ -51,6 +51,7 @@ export function BulkEditDialog({
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
       qc.invalidateQueries({ queryKey: ["tx-dashboard-full"] });
+      qc.invalidateQueries({ queryKey: ["reports-all-tx"] });
       onOpenChange(false);
       setFund(KEEP); setExp(KEEP); setCat(KEEP); setSub(KEEP);
       onDone?.();
