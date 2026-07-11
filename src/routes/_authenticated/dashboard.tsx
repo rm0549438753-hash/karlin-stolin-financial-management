@@ -82,10 +82,26 @@ async function fetchAllDashboardTransactions() {
 }
 
 function DashboardPage() {
+  const qc = useQueryClient();
   const { data: rawTxs = [], isLoading } = useQuery({
     queryKey: ["tx-dashboard-full"],
     queryFn: fetchAllDashboardTransactions,
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+    refetchOnWindowFocus: true,
   });
+
+  // Realtime: keep dashboard fresh when transactions change anywhere
+  useEffect(() => {
+    const channel = supabase
+      .channel("dashboard-tx")
+      .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, () => {
+        qc.invalidateQueries({ queryKey: ["tx-dashboard-full"] });
+        qc.invalidateQueries({ queryKey: ["reports-all-tx"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [qc]);
 
   const { data: accounts = [] } = useAccounts();
   const { data: categories = [] } = useCategories();
