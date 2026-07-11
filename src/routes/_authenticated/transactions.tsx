@@ -237,6 +237,8 @@ function TransactionsPage() {
       toast.success("הייבוא בוטל");
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["import-batches"] });
+      qc.invalidateQueries({ queryKey: ["tx-dashboard-full"] });
+      qc.invalidateQueries({ queryKey: ["reports-all-tx"] });
       qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאה בביטול"),
@@ -289,6 +291,7 @@ function TransactionsPage() {
       toast.success("התנועה נמחקה");
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["tx-dashboard-full"] });
+      qc.invalidateQueries({ queryKey: ["reports-all-tx"] });
       qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאה"),
@@ -309,6 +312,7 @@ function TransactionsPage() {
       setSelectedIds(new Set());
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["tx-dashboard-full"] });
+      qc.invalidateQueries({ queryKey: ["reports-all-tx"] });
       qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאה"),
@@ -537,17 +541,17 @@ function TransactionsPage() {
               </div>
             )}
 
-            <div className="overflow-x-auto">
-              <Table className="border-collapse">
+            <div className="w-full">
+              <Table className="border-collapse w-full table-auto text-[11px]">
                 <TableHeader className="bg-primary/95">
                   <TableRow className="bg-primary hover:bg-primary border-b-2 border-primary">
-                    <TableHead className="w-8 px-1 border-l border-primary-foreground/20 text-center bg-primary text-primary-foreground">
+                    <TableHead className="w-7 px-0.5 border-l border-primary-foreground/20 text-center bg-primary text-primary-foreground">
                       <Checkbox
                         checked={allSelected ? true : someSelected ? "indeterminate" : false}
                         onCheckedChange={toggleAll}
                         aria-label="בחר הכל"
                         title="בחר הכל"
-                        className="border-primary-foreground/60 data-[state=checked]:bg-primary-foreground data-[state=checked]:text-primary"
+                        className="border-primary-foreground/60 data-[state=checked]:bg-primary-foreground data-[state=checked]:text-primary h-3.5 w-3.5"
                       />
                     </TableHead>
                     {columns.map((c) => {
@@ -557,7 +561,7 @@ function TransactionsPage() {
                           key={c.header}
                           onClick={isDate ? () => setDateSort((s) => (s === "desc" ? "asc" : "desc")) : undefined}
                           className={
-                            "text-[11px] font-bold uppercase tracking-wider text-primary-foreground border-l border-primary-foreground/20 last:border-l-0 px-2 py-2.5 whitespace-nowrap bg-primary " +
+                            "text-[10px] font-bold tracking-tight text-primary-foreground border-l border-primary-foreground/20 last:border-l-0 px-1.5 py-2 whitespace-nowrap bg-primary " +
                             (c.align === "left" ? "text-left" : c.align === "center" ? "text-center" : "text-right") +
                             (isDate ? " cursor-pointer select-none hover:bg-primary/90" : "")
                           }
@@ -568,7 +572,7 @@ function TransactionsPage() {
                         </TableHead>
                       );
                     })}
-                    <TableHead className="text-center w-24 border-l border-primary-foreground/20 last:border-l-0 px-3 text-[11px] font-bold uppercase tracking-wider text-primary-foreground bg-primary">פעולות</TableHead>
+                    <TableHead className="text-center w-16 border-l border-primary-foreground/20 last:border-l-0 px-1 text-[10px] font-bold tracking-tight text-primary-foreground bg-primary">פעולות</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -591,32 +595,32 @@ function TransactionsPage() {
                           (isHighlighted ? "ring-2 ring-primary bg-primary/10 " : isChecked ? "bg-primary/5 " : isUncat ? "bg-amber-50/30 " : idx % 2 ? "bg-muted/20 " : "")
                         }
                       >
-                        <TableCell className="w-8 px-1 text-center border-l border-border/60">
-                          <Checkbox checked={isChecked} onCheckedChange={() => toggleOne(r.id)} aria-label="בחר תנועה" />
+                        <TableCell className="w-7 px-0.5 text-center border-l border-border/60">
+                          <Checkbox checked={isChecked} onCheckedChange={() => toggleOne(r.id)} aria-label="בחר תנועה" className="h-3.5 w-3.5" />
                         </TableCell>
                         {columns.map((col) => (
                           <TableCell
                             key={col.header}
                             className={
-                              "border-l border-border/60 last:border-l-0 px-2 py-1.5 text-xs align-middle " +
+                              "border-l border-border/60 last:border-l-0 px-1.5 py-1 text-[11px] align-middle leading-tight " +
                               (col.align === "left" ? "text-left whitespace-nowrap " : col.align === "center" ? "text-center " : "text-right ") +
-                              "max-w-[160px] truncate"
+                              "max-w-[110px] truncate"
                             }
                             title={typeof col.render(r as any, ctx) === "string" ? String(col.render(r as any, ctx)) : undefined}
                           >
                             {col.render(r as any, ctx)}
                           </TableCell>
                         ))}
-                        <TableCell className="border-l border-border/60 last:border-l-0 px-2 py-2">
-                          <div className="flex items-center justify-center gap-1">
+                        <TableCell className="border-l border-border/60 last:border-l-0 px-0.5 py-1 w-16">
+                          <div className="flex items-center justify-center gap-0.5">
                             {role?.isEditor && (
-                              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setEditing(r); setDialogOpen(true); }}>
-                                <Pencil className="w-3.5 h-3.5" />
+                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setEditing(r); setDialogOpen(true); }}>
+                                <Pencil className="w-3 h-3" />
                               </Button>
                             )}
                             {role?.isAdmin && (
-                              <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => setDeleteId(r.id)}>
-                                <Trash2 className="w-3.5 h-3.5" />
+                              <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => setDeleteId(r.id)}>
+                                <Trash2 className="w-3 h-3" />
                               </Button>
                             )}
                           </div>

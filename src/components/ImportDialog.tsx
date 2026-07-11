@@ -287,6 +287,8 @@ export function ImportDialog({ open, onOpenChange, account }: { open: boolean; o
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["import-batches"] });
       qc.invalidateQueries({ queryKey: ["tx-dashboard-full"] });
+      qc.invalidateQueries({ queryKey: ["reports-all-tx"] });
+      qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
       qc.invalidateQueries({ queryKey: ["funds"] });
       qc.invalidateQueries({ queryKey: ["expense-types"] });
       qc.invalidateQueries({ queryKey: ["categories"] });

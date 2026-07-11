@@ -111,13 +111,17 @@ function absAmount(r: any): number | null {
   return null;
 }
 
-// Match key: transaction_date + absolute amount + reference (check number / asmachta).
-// A sheet row is considered "already in the app" only when all three match an existing DB row.
+// Match key — DATE-INDEPENDENT so that a date correction in the sheet does NOT
+// create a duplicate in the app. Two variants (per-account scope is already applied):
+//   A) When a reference (asmachta / check number) exists → amount + reference.
+//   B) When there is no reference (cash rows) → amount + normalized description.
 function matchKey(r: any): string {
   const amt = absAmount(r);
   const ref = normRef(r.reference);
-  const date = r.transaction_date ?? r.value_date ?? "";
-  return `${date}|${amt == null ? "" : amt.toFixed(2)}|${ref}`;
+  const amtStr = amt == null ? "" : amt.toFixed(2);
+  if (ref) return `A|${amtStr}|${ref}`;
+  const desc = (normName(r.description) ?? normName((r as any).payee) ?? "").toLowerCase().replace(/\s+/g, "");
+  return `B|${amtStr}|${desc}`;
 }
 
 async function gatewayFetch(path: string, params?: Record<string, string | string[]>): Promise<any> {
