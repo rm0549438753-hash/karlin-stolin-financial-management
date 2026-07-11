@@ -539,14 +539,15 @@ function TransactionsPage() {
 
             <div className="overflow-x-auto">
               <Table className="border-collapse">
-                <TableHeader>
-                  <TableRow className="bg-muted/95 hover:bg-muted/95 backdrop-blur">
-                    <TableHead className="w-8 px-1 border-l border-border text-center sticky top-24 z-20 bg-muted/95 backdrop-blur">
+                <TableHeader className="bg-primary/95">
+                  <TableRow className="bg-primary hover:bg-primary border-b-2 border-primary">
+                    <TableHead className="w-8 px-1 border-l border-primary-foreground/20 text-center bg-primary text-primary-foreground">
                       <Checkbox
                         checked={allSelected ? true : someSelected ? "indeterminate" : false}
                         onCheckedChange={toggleAll}
                         aria-label="בחר הכל"
                         title="בחר הכל"
+                        className="border-primary-foreground/60 data-[state=checked]:bg-primary-foreground data-[state=checked]:text-primary"
                       />
                     </TableHead>
                     {columns.map((c) => {
@@ -556,9 +557,9 @@ function TransactionsPage() {
                           key={c.header}
                           onClick={isDate ? () => setDateSort((s) => (s === "desc" ? "asc" : "desc")) : undefined}
                           className={
-                            "text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border last:border-l-0 px-2 py-2 whitespace-nowrap sticky top-24 z-20 bg-muted/95 backdrop-blur " +
+                            "text-[11px] font-bold uppercase tracking-wider text-primary-foreground border-l border-primary-foreground/20 last:border-l-0 px-2 py-2.5 whitespace-nowrap bg-primary " +
                             (c.align === "left" ? "text-left" : c.align === "center" ? "text-center" : "text-right") +
-                            (isDate ? " cursor-pointer select-none hover:text-primary" : "")
+                            (isDate ? " cursor-pointer select-none hover:bg-primary/90" : "")
                           }
                           title={isDate ? "לחץ למיון לפי תאריך" : undefined}
                         >
@@ -567,7 +568,7 @@ function TransactionsPage() {
                         </TableHead>
                       );
                     })}
-                    <TableHead className="text-center w-24 border-l border-border last:border-l-0 px-3 text-xs font-bold uppercase tracking-wider text-muted-foreground sticky top-24 z-20 bg-muted/95 backdrop-blur">פעולות</TableHead>
+                    <TableHead className="text-center w-24 border-l border-primary-foreground/20 last:border-l-0 px-3 text-[11px] font-bold uppercase tracking-wider text-primary-foreground bg-primary">פעולות</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
