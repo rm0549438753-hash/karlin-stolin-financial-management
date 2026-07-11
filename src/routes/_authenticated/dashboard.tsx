@@ -355,7 +355,13 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     return Array.from(ys).sort().reverse();
   }, [txs]);
   const currentYear = String(new Date().getFullYear());
-  const [barYear, setBarYear] = useState<string>(currentYear);
+  // Prefer the current year if it has data; otherwise use the most recent year that does.
+  const defaultYear = yearsAvailable.includes(currentYear) ? currentYear : (yearsAvailable[0] ?? currentYear);
+  const [barYear, setBarYear] = useState<string>(defaultYear);
+  // Keep barYear in sync when data arrives after mount (async fetch).
+  useEffect(() => {
+    if (yearsAvailable.length && !yearsAvailable.includes(barYear)) setBarYear(defaultYear);
+  }, [yearsAvailable, defaultYear, barYear]);
 
   const monthly = useMemo(() => {
     const monthNames = ["ינו׳", "פבר׳", "מרץ", "אפר׳", "מאי", "יוני", "יולי", "אוג׳", "ספט׳", "אוק׳", "נוב׳", "דצמ׳"];
