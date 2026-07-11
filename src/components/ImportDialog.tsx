@@ -271,6 +271,12 @@ export function ImportDialog({ open, onOpenChange, account }: { open: boolean; o
         }
         // DB requires non-null amount — default to 0 for empty rows so we still import them
         if (out.amount == null || Number.isNaN(Number(out.amount))) out.amount = 0;
+        // Checks are outgoing payments — enforce negative amount so income/expense calc is correct
+        if (account.schema_type === "checks" && Number(out.amount) > 0) {
+          out.amount = -Number(out.amount);
+          out.debit = Math.abs(Number(out.amount));
+          out.credit = null;
+        }
         if (!out.transaction_date) out.transaction_date = out.value_date ?? null;
         if (!out.transaction_date) out.transaction_date = new Date().toISOString().slice(0, 10);
         return out;
