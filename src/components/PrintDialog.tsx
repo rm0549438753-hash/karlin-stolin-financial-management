@@ -26,6 +26,13 @@ export type MonthPivotConfig = {
   showTotalsColumn?: boolean;
 };
 
+export type PrintFilter = {
+  id: string;
+  label: string;
+  options: { value: string; label: string; count?: number }[];
+  apply: (row: any, value: string) => boolean;
+};
+
 export type PrintDialogProps = {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -37,13 +44,15 @@ export type PrintDialogProps = {
   defaultColumns?: string[];
   totals?: PrintTotals;
   monthPivot?: MonthPivotConfig;
+  filters?: PrintFilter[];
 };
 
 
 export function PrintDialog({
   open, onOpenChange, title, brand = "מרכז קארלין סטאלין",
-  subtitle, scopes, columns, defaultColumns, totals, monthPivot,
+  subtitle, scopes, columns, defaultColumns, totals, monthPivot, filters,
 }: PrintDialogProps) {
+  const [filterValues, setFilterValues] = useState<Record<string, string>>({});
   const [scopeId, setScopeId] = useState(scopes[0]?.id ?? "");
   const [colIds, setColIds] = useState<string[]>(defaultColumns ?? columns.map((c) => c.id));
   const [orientation, setOrientation] = useState<"portrait" | "landscape">("landscape");
@@ -61,7 +70,16 @@ export function PrintDialog({
     monthPivot?.valueFields.map((v) => v.key) ?? [],
   );
 
-  const activeScope = useMemo(() => scopes.find((s) => s.id === scopeId) ?? scopes[0], [scopes, scopeId]);
+  const activeScopeRaw = useMemo(() => scopes.find((s) => s.id === scopeId) ?? scopes[0], [scopes, scopeId]);
+  const activeScope = useMemo(() => {
+    if (!activeScopeRaw || !filters?.length) return activeScopeRaw;
+    let rows = activeScopeRaw.rows;
+    for (const f of filters) {
+      const v = filterValues[f.id];
+      if (v && v !== "__all__") rows = rows.filter((r) => f.apply(r, v));
+    }
+    return { ...activeScopeRaw, rows };
+  }, [activeScopeRaw, filters, filterValues]);
 
   // Available months from active scope
   const availableMonths = useMemo(() => {
@@ -79,6 +97,7 @@ export function PrintDialog({
     if (open) {
       setScopeId(scopes[0]?.id ?? "");
       setColIds(defaultColumns ?? columns.map((c) => c.id));
+      setFilterValues({});
       if (monthPivot) {
         setPivotValueKeys(monthPivot.valueFields.map((v) => v.key));
       }
@@ -364,11 +383,14 @@ ${footerHtml}
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent dir="rtl" className="max-w-3xl">
-        <DialogHeader>
+      <DialogContent dir="rtl" className="max-w-3xl max-h-[90vh] p-0 flex flex-col gap-0">
+        <DialogHeader className="p-6 pb-3 border-b shrink-0">
           <DialogTitle className="text-xl">ייצוא ל-PDF</DialogTitle>
           <DialogDescription>בחר עמודות והגדרות תצוגה. ניתן לצפות בתצוגה מקדימה או להוריד קובץ PDF.</DialogDescription>
         </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
+
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Scope */}
@@ -409,6 +431,35 @@ ${footerHtml}
             </RadioGroup>
           </section>
         </div>
+
+        {filters && filters.length > 0 && (
+          <section className="space-y-2 border rounded-md p-3 bg-muted/20">
+            <div className="text-sm font-bold">סינון נוסף בתוך ההיקף</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {filters.map((f) => (
+                <label key={f.id} className="text-xs space-y-1 block">
+                  <span className="font-semibold text-muted-foreground">{f.label}</span>
+                  <select
+                    className="w-full h-9 rounded-md border bg-background px-2 text-sm"
+                    value={filterValues[f.id] ?? "__all__"}
+                    onChange={(e) => setFilterValues((prev) => ({ ...prev, [f.id]: e.target.value }))}
+                  >
+                    <option value="__all__">— הכל —</option>
+                    {f.options.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}{o.count != null ? ` (${o.count})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ))}
+            </div>
+            <div className="text-xs text-muted-foreground pt-1">
+              שורות אחרי סינון: <b className="tabular-nums">{activeScope?.rows.length.toLocaleString("he-IL") ?? 0}</b>
+            </div>
+          </section>
+        )}
+
 
         <Separator />
 
@@ -480,8 +531,9 @@ ${footerHtml}
             <ToggleRow checked={zebra} onChange={setZebra} label="צביעת שורות מתחלפת (Zebra)" />
           </div>
         </section>
+        </div>
 
-        <DialogFooter className="gap-2 sm:gap-2">
+        <DialogFooter className="gap-2 sm:gap-2 p-4 border-t bg-background shrink-0 sticky bottom-0">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>ביטול</Button>
           <Button variant="outline" onClick={() => openPrintWindow(false)} disabled={!effCols.length || downloading}>
             <FileDown className="w-4 h-4 ml-1" /> תצוגה מקדימה

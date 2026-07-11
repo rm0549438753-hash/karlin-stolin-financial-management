@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import * as XLSX from "xlsx";
 import { format } from "date-fns";
@@ -84,10 +84,23 @@ async function fetchAllTransactions(): Promise<Tx[]> {
 function ReportsPage() {
   const { tab } = Route.useSearch();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { data: txs = [], isLoading } = useQuery({
     queryKey: ["reports-all-tx"],
     queryFn: fetchAllTransactions,
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+    refetchOnWindowFocus: true,
   });
+  useEffect(() => {
+    const channel = supabase
+      .channel("reports-tx")
+      .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, () => {
+        qc.invalidateQueries({ queryKey: ["reports-all-tx"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [qc]);
   const { data: accounts = [] } = useAccounts();
   const { data: funds = [] } = useFunds();
   const { data: expenseTypes = [] } = useExpenseTypes();
@@ -424,21 +437,58 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
         open={printOpen}
         onOpenChange={setPrintOpen}
         title="דוח צ׳קים עתידיים"
-        subtitle={checksAcc ? `חשבון: ${checksAcc.name}` : undefined}
-        scopes={[
-          ...(openMonth ? [{ id: "month", label: `רק החודש הפתוח (${monthLabel})`, rows: future.filter((t) => (t.value_date ?? t.transaction_date).startsWith(openMonth)) }] : []),
-          { id: "all", label: "כל הצ׳קים העתידיים", rows: future },
-          ...Array.from(new Set(future.map((t) => (t.association ?? "").trim()).filter(Boolean)))
-            .sort((a, b) => a.localeCompare(b, "he"))
-            .map((assoc) => ({
-              id: `assoc-${assoc}`,
-              label: `עמותה: ${assoc}`,
-              rows: future.filter((t) => (t.association ?? "").trim() === assoc),
-            })),
-          ...(future.some((t) => !(t.association ?? "").trim())
-            ? [{ id: "assoc-none", label: "ללא עמותה", rows: future.filter((t) => !(t.association ?? "").trim()) }]
-            : []),
-        ]}
+        subtitle={checksAcc ? `חשבון: ${checksAcc.name}${openMonth ? ` · ${monthLabel}` : ""}` : undefined}
+        scopes={(() => {
+          const monthRows = openMonth ? future.filter((t) => (t.value_date ?? t.transaction_date).startsWith(openMonth)) : [];
+          const scopes: any[] = [];
+          if (openMonth) scopes.push({ id: "month", label: `רק החודש הפתוח (${monthLabel})`, rows: monthRows });
+          scopes.push({ id: "all", label: "כל הצ׳קים העתידיים", rows: future });
+          return scopes;
+        })()}
+        filters={(() => {
+          const monthRows = openMonth ? future.filter((t) => (t.value_date ?? t.transaction_date).startsWith(openMonth)) : future;
+          // Day filter from the currently displayed month (or all future)
+          const dayCounts = new Map<string, number>();
+          monthRows.forEach((t) => {
+            const d = (t.value_date ?? t.transaction_date).slice(0, 10);
+            dayCounts.set(d, (dayCounts.get(d) ?? 0) + 1);
+          });
+          const dayOptions = Array.from(dayCounts.entries()).sort().map(([d, c]) => ({
+            value: d,
+            label: formatDate(d),
+            count: c,
+          }));
+          const assocCounts = new Map<string, number>();
+          monthRows.forEach((t) => {
+            const a = (t.association ?? "").trim() || "__none__";
+            assocCounts.set(a, (assocCounts.get(a) ?? 0) + 1);
+          });
+          const assocOptions = Array.from(assocCounts.entries())
+            .sort((a, b) => a[0].localeCompare(b[0], "he"))
+            .map(([a, c]) => ({
+              value: a,
+              label: a === "__none__" ? "ללא עמותה" : a,
+              count: c,
+            }));
+          return [
+            {
+              id: "day",
+              label: "יום בחודש",
+              options: dayOptions,
+              apply: (row: any, value: string) =>
+                (row.value_date ?? row.transaction_date ?? "").slice(0, 10) === value,
+            },
+            {
+              id: "assoc",
+              label: "עמותה",
+              options: assocOptions,
+              apply: (row: any, value: string) => {
+                const a = (row.association ?? "").trim();
+                return value === "__none__" ? !a : a === value;
+              },
+            },
+          ];
+        })()}
         columns={[
           { id: "vdate", header: "תאריך ערך", format: (t) => formatDate(t.value_date ?? t.transaction_date) },
           { id: "tdate", header: "תאריך תנועה", format: (t) => formatDate(t.transaction_date) },
