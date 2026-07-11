@@ -291,6 +291,7 @@ function TransactionsPage() {
       toast.success("התנועה נמחקה");
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["tx-dashboard-full"] });
+      qc.invalidateQueries({ queryKey: ["reports-all-tx"] });
       qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאה"),
