@@ -73,8 +73,9 @@ async function fetchAllDashboardTransactions() {
 
     const page = (data ?? []) as RawTx[];
     rows.push(...page);
+    if (page.length === 0) break;
+    from += page.length;
     if (page.length < PAGE_SIZE) break;
-    from += PAGE_SIZE;
   }
 
 
