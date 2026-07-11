@@ -383,11 +383,14 @@ ${footerHtml}
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent dir="rtl" className="max-w-3xl">
-        <DialogHeader>
+      <DialogContent dir="rtl" className="max-w-3xl max-h-[90vh] p-0 flex flex-col gap-0">
+        <DialogHeader className="p-6 pb-3 border-b shrink-0">
           <DialogTitle className="text-xl">ייצוא ל-PDF</DialogTitle>
           <DialogDescription>בחר עמודות והגדרות תצוגה. ניתן לצפות בתצוגה מקדימה או להוריד קובץ PDF.</DialogDescription>
         </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
+
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Scope */}
