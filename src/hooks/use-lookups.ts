@@ -7,6 +7,13 @@ export type ExpenseType = { id: string; name: string; is_active: boolean };
 export type Category = { id: string; name: string; is_active: boolean };
 export type Subcategory = { id: string; name: string; category_id: string | null; is_active: boolean };
 
+// Lookups change rarely — cache aggressively across pages
+const LOOKUP_OPTS = {
+  staleTime: 10 * 60_000,
+  gcTime: 30 * 60_000,
+  refetchOnWindowFocus: false,
+} as const;
+
 export function useAccounts() {
   return useQuery({
     queryKey: ["accounts"],
@@ -15,6 +22,7 @@ export function useAccounts() {
       if (error) throw error;
       return data as Account[];
     },
+    ...LOOKUP_OPTS,
   });
 }
 export function useFunds() {
@@ -25,6 +33,7 @@ export function useFunds() {
       if (error) throw error;
       return data as Fund[];
     },
+    ...LOOKUP_OPTS,
   });
 }
 export function useExpenseTypes() {
@@ -35,6 +44,7 @@ export function useExpenseTypes() {
       if (error) throw error;
       return data as ExpenseType[];
     },
+    ...LOOKUP_OPTS,
   });
 }
 export function useCategories() {
@@ -45,6 +55,7 @@ export function useCategories() {
       if (error) throw error;
       return data as Category[];
     },
+    ...LOOKUP_OPTS,
   });
 }
 export function useSubcategories() {
@@ -55,5 +66,6 @@ export function useSubcategories() {
       if (error) throw error;
       return data as Subcategory[];
     },
+    ...LOOKUP_OPTS,
   });
 }
