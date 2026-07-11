@@ -38,7 +38,7 @@ export const Route = createFileRoute("/_authenticated/reports")({
   component: ReportsPage,
 });
 
-const PAGE_SIZE = 5000;
+const PAGE_SIZE = 1000;
 const TX_SELECT = "id, transaction_date, value_date, amount, account_id, fund_id, expense_type_id, category_id, subcategory_id, description, note, credit, debit, payee, balance, reference, fee, channel, association";
 
 type Tx = {
@@ -75,8 +75,9 @@ async function fetchAllTransactions(): Promise<Tx[]> {
     if (error) throw error;
     const page = (data ?? []) as Tx[];
     rows.push(...page);
+    if (page.length === 0) break;
+    from += page.length;
     if (page.length < PAGE_SIZE) break;
-    from += PAGE_SIZE;
   }
   return rows;
 }
