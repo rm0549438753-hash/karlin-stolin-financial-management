@@ -70,7 +70,16 @@ export function PrintDialog({
     monthPivot?.valueFields.map((v) => v.key) ?? [],
   );
 
-  const activeScope = useMemo(() => scopes.find((s) => s.id === scopeId) ?? scopes[0], [scopes, scopeId]);
+  const activeScopeRaw = useMemo(() => scopes.find((s) => s.id === scopeId) ?? scopes[0], [scopes, scopeId]);
+  const activeScope = useMemo(() => {
+    if (!activeScopeRaw || !filters?.length) return activeScopeRaw;
+    let rows = activeScopeRaw.rows;
+    for (const f of filters) {
+      const v = filterValues[f.id];
+      if (v && v !== "__all__") rows = rows.filter((r) => f.apply(r, v));
+    }
+    return { ...activeScopeRaw, rows };
+  }, [activeScopeRaw, filters, filterValues]);
 
   // Available months from active scope
   const availableMonths = useMemo(() => {
