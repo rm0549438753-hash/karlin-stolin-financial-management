@@ -282,11 +282,10 @@ export function ImportDialog({ open, onOpenChange, account }: { open: boolean; o
         const { error } = await supabase.from("transactions").insert(chunk as any);
         if (error) throw error;
       }
-      return { count: txRows.length, skipped: skippedCount };
+      return { count: txRows.length };
     },
     onSuccess: (res) => {
-      const msg = res.skipped > 0 ? `יובאו ${res.count} תנועות (${res.skipped} שורות דולגו — ללא סכום)` : `יובאו ${res.count} תנועות`;
-      toast.success(msg);
+      toast.success(`יובאו ${res.count} תנועות`);
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["import-batches"] });
       qc.invalidateQueries({ queryKey: ["tx-dashboard-full"] });
