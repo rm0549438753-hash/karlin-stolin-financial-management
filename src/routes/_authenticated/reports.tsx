@@ -75,8 +75,9 @@ async function fetchAllTransactions(): Promise<Tx[]> {
     if (error) throw error;
     const page = (data ?? []) as Tx[];
     rows.push(...page);
+    if (page.length === 0) break;
+    from += page.length;
     if (page.length < PAGE_SIZE) break;
-    from += PAGE_SIZE;
   }
   return rows;
 }
