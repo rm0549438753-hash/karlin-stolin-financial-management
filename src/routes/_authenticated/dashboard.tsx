@@ -542,19 +542,7 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
         <CardContent>
           {(() => {
             const yearTxCount = txs.filter((t) => t.transaction_date.startsWith(barYear)).length;
-            return (
-              <div className="mb-2 text-xs text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1" dir="rtl">
-                <span>מציג <b className="text-foreground">{yearTxCount}</b> תנועות משנת {barYear}</span>
-                <span>·</span>
-                <span>סה״כ בטאב זה: <b className="text-foreground">{txs.length}</b> תנועות</span>
-                {yearsAvailable.length > 0 && (
-                  <>
-                    <span>·</span>
-                    <span>שנים זמינות: {yearsAvailable.join(", ")}</span>
-                  </>
-                )}
-              </div>
-            );
+            return null;
           })()}
           {txs.filter((t) => t.transaction_date.startsWith(barYear)).length === 0 ? (
             <div className="text-center py-16 text-sm text-muted-foreground">
