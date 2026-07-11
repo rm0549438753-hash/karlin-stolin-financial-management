@@ -50,8 +50,9 @@ export type PrintDialogProps = {
 
 export function PrintDialog({
   open, onOpenChange, title, brand = "מרכז קארלין סטאלין",
-  subtitle, scopes, columns, defaultColumns, totals, monthPivot,
+  subtitle, scopes, columns, defaultColumns, totals, monthPivot, filters,
 }: PrintDialogProps) {
+  const [filterValues, setFilterValues] = useState<Record<string, string>>({});
   const [scopeId, setScopeId] = useState(scopes[0]?.id ?? "");
   const [colIds, setColIds] = useState<string[]>(defaultColumns ?? columns.map((c) => c.id));
   const [orientation, setOrientation] = useState<"portrait" | "landscape">("landscape");
