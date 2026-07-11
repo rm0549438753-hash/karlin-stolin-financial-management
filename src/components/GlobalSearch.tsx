@@ -57,13 +57,13 @@ export function GlobalSearch() {
       const pat = `"%${escaped}%"`;
       let query = supabase
         .from("transactions")
-        .select("id, transaction_date, amount, account_id, description, note, payee")
-        .order("transaction_date", { ascending: false })
+        .select("id, transaction_date, amount, account_id, description, note, payee, reference")
+        .order("transaction_date", { ascending: false, nullsFirst: false })
         .limit(50);
       if (!isNaN(asNum) && asNum !== 0) {
-        query = query.or(`description.ilike.${pat},note.ilike.${pat},payee.ilike.${pat},amount.eq.${asNum},amount.eq.${-asNum}`);
+        query = query.or(`description.ilike.${pat},note.ilike.${pat},payee.ilike.${pat},reference.ilike.${pat},amount.eq.${asNum},amount.eq.${-asNum}`);
       } else {
-        query = query.or(`description.ilike.${pat},note.ilike.${pat},payee.ilike.${pat}`);
+        query = query.or(`description.ilike.${pat},note.ilike.${pat},payee.ilike.${pat},reference.ilike.${pat}`);
       }
       const { data, error } = await query;
       if (error) throw error;
