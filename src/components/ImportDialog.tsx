@@ -250,8 +250,7 @@ export function ImportDialog({ open, onOpenChange, account }: { open: boolean; o
         }
       }
 
-      // 4) build final rows
-      let skippedCount = 0;
+      // 4) build final rows — import everything; default missing amount to 0
       const txRows = parsed.map((r) => {
         const out: Record<string, any> = { account_id: account.id, import_batch_id: batch.id };
         for (const [k, v] of Object.entries(r)) {
@@ -270,17 +269,11 @@ export function ImportDialog({ open, onOpenChange, account }: { open: boolean; o
           const d = Number(out.debit) || 0;
           if (c || d) out.amount = c - d;
         }
+        // DB requires non-null amount — default to 0 for empty rows so we still import them
+        if (out.amount == null || Number.isNaN(Number(out.amount))) out.amount = 0;
         if (!out.transaction_date) out.transaction_date = out.value_date ?? null;
         if (!out.transaction_date) out.transaction_date = new Date().toISOString().slice(0, 10);
         return out;
-      }).filter((out) => {
-        // Skip rows without a valid amount — the DB requires a non-null amount,
-        // and rows without one are usually notes / empty rows / partial entries.
-        if (out.amount == null || Number.isNaN(Number(out.amount))) {
-          skippedCount++;
-          return false;
-        }
-        return true;
       });
 
       // insert in chunks of 500
@@ -289,11 +282,10 @@ export function ImportDialog({ open, onOpenChange, account }: { open: boolean; o
         const { error } = await supabase.from("transactions").insert(chunk as any);
         if (error) throw error;
       }
-      return { count: txRows.length, skipped: skippedCount };
+      return { count: txRows.length };
     },
     onSuccess: (res) => {
-      const msg = res.skipped > 0 ? `יובאו ${res.count} תנועות (${res.skipped} שורות דולגו — ללא סכום)` : `יובאו ${res.count} תנועות`;
-      toast.success(msg);
+      toast.success(`יובאו ${res.count} תנועות`);
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["import-batches"] });
       qc.invalidateQueries({ queryKey: ["tx-dashboard-full"] });
