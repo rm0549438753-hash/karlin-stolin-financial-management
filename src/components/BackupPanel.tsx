@@ -102,10 +102,10 @@ export function BackupPanel() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            כל יום ב-02:00 (שעון ישראל) המערכת מייצאת את כל הטבלאות כקובצי CSV
-            (מפוצלים לחלקים כדי להישאר בגבולות הזיכרון) ומעלה לתיקייה{" "}
-            <b>"גיבויים - מרכז קארלין סטולין"</b> בגוגל דרייב. שומרים גיבויים של
-            30 הימים האחרונים.
+            כל יום ב-02:00 (שעון ישראל) המערכת מייצאת את כל הטבלאות לקובץ Excel אחד
+            (גיליון נפרד לכל חשבון + גיליונות לקבצי עזר) ומעלה לתיקייה{" "}
+            <b>"גיבויים - מרכז קארלין סטולין"</b> בגוגל דרייב. כל הרצה מוחקת את
+            הקבצים הקודמים בתיקייה ומעלה קובץ אחד חדש.
           </p>
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => runNow.mutate()} disabled={runNow.isPending || running || hasRunning}>
