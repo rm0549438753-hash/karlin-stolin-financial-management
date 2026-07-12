@@ -1,18 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-async function ensureAdmin(context: any) {
-  const { data: isAdmin } = await context.supabase.rpc("has_role", {
-    _user_id: context.userId,
-    _role: "admin",
-  });
-  if (!isAdmin) throw new Error("Forbidden");
-}
-
 export const triggerBackupNow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await ensureAdmin(context);
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (!isAdmin) throw new Error("Forbidden");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Create the run row synchronously so the UI has a row to poll.
@@ -23,21 +19,36 @@ export const triggerBackupNow = createServerFn({ method: "POST" })
       .single();
     if (error || !run) throw new Error(error?.message ?? "Could not create run");
 
-    // Run the actual backup and wait for completion (surface success/failure
-    // in this response). Errors are also persisted in backup_runs.
+    // Process only a bounded batch. Further batches are resumed by the UI and cron.
     const { runBackup } = await import("@/lib/backup.server");
     try {
       const result = await runBackup("manual", run.id);
-      return { ...result, ok: true as const };
+      return { ...result, ok: result.status !== "failed" };
     } catch (err: any) {
       return { ok: false, runId: run.id, error: err?.message ?? String(err) };
     }
   });
 
+export const continueBackupNow = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (!isAdmin) throw new Error("Forbidden");
+    const { resumePendingBackup } = await import("@/lib/backup.server");
+    return await resumePendingBackup();
+  });
+
 export const listBackupRuns = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await ensureAdmin(context);
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (!isAdmin) throw new Error("Forbidden");
     const { data, error } = await context.supabase
       .from("backup_runs")
       .select("*")

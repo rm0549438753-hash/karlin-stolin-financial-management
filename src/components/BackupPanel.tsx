@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, PlayCircle, ExternalLink, CheckCircle2, XCircle } from "lucide-react";
-import { triggerBackupNow, listBackupRuns } from "@/lib/backup.functions";
+import { triggerBackupNow, continueBackupNow, listBackupRuns } from "@/lib/backup.functions";
 
 function fmtDate(v: string | null) {
   if (!v) return "—";
@@ -19,16 +19,34 @@ function fmtSize(n: number | null) {
   return `${(n / 1024 / 1024).toFixed(2)} MB`;
 }
 
+const TABLE_LABELS: Record<string, string> = {
+  transactions: "תנועות",
+  accounts: "חשבונות",
+  funds: "קופות",
+  expense_types: "סוגי הוצאה",
+  categories: "קטגוריות",
+  subcategories: "תת־קטגוריות",
+  action_history: "היסטוריית פעילות",
+  sync_ignores: "חריגות סנכרון",
+  profiles: "משתמשים",
+  user_roles: "הרשאות",
+  import_batches: "ייבואים",
+};
+
 export function BackupPanel() {
   const qc = useQueryClient();
   const list = useServerFn(listBackupRuns);
   const trigger = useServerFn(triggerBackupNow);
+  const continueRun = useServerFn(continueBackupNow);
   const [running, setRunning] = useState(false);
 
   const { data: runs, isLoading } = useQuery({
     queryKey: ["backup_runs"],
     queryFn: () => list(),
-    refetchInterval: running ? 3000 : false,
+    refetchInterval: (query) => {
+      const data = query.state.data as any[] | undefined;
+      return running || data?.some((r) => r.status === "running") ? 3000 : false;
+    },
   });
 
   const hasRunning = runs?.some((r: any) => r.status === "running");
@@ -40,7 +58,8 @@ export function BackupPanel() {
     },
     onSuccess: (res: any) => {
       if (res?.ok) {
-        toast.success(`גיבוי הושלם: ${res.fileName}`);
+        if (res.status === "success") toast.success(`גיבוי הושלם: ${res.fileName}`);
+        else toast.success("הגיבוי התחיל וימשיך אוטומטית ברקע");
       } else {
         toast.error(`שגיאה בגיבוי: ${res?.error ?? "לא ידוע"}`);
       }
@@ -50,8 +69,19 @@ export function BackupPanel() {
     onSettled: () => setRunning(false),
   });
 
+  const advance = useMutation({
+    mutationFn: () => continueRun(),
+    onSettled: () => qc.invalidateQueries({ queryKey: ["backup_runs"] }),
+  });
+
+  useEffect(() => {
+    if (!hasRunning || advance.isPending || runNow.isPending) return;
+    const timer = window.setTimeout(() => advance.mutate(), 2500);
+    return () => window.clearTimeout(timer);
+  }, [hasRunning, advance.isPending, runNow.isPending]);
+
   const lastSuccess = runs?.find((r: any) => r.status === "success");
-  const rootFolderId = lastSuccess?.folder_id ?? runs?.find((r: any) => r.folder_id)?.folder_id;
+  const rootFolderId = runs?.find((r: any) => r.folder_id)?.folder_id ?? lastSuccess?.folder_id;
 
   return (
     <div className="space-y-4">
@@ -107,6 +137,7 @@ export function BackupPanel() {
                     <TableHead>התחלה</TableHead>
                     <TableHead>סיום</TableHead>
                     <TableHead>מקור</TableHead>
+                    <TableHead>התקדמות</TableHead>
                     <TableHead>גודל</TableHead>
                     <TableHead>תיקייה</TableHead>
                     <TableHead>פרטי שגיאה</TableHead>
@@ -133,6 +164,13 @@ export function BackupPanel() {
                       <TableCell className="whitespace-nowrap">{fmtDate(r.started_at)}</TableCell>
                       <TableCell className="whitespace-nowrap">{fmtDate(r.finished_at)}</TableCell>
                       <TableCell>{r.triggered_by === "cron" ? "אוטומטי" : "ידני"}</TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {r.status === "running"
+                          ? `${TABLE_LABELS[r.current_table] ?? r.current_table ?? "מתחיל"} · ${Number(r.processed_rows ?? 0).toLocaleString("he-IL")} רשומות`
+                          : r.status === "success"
+                            ? `${Number(r.processed_rows ?? 0).toLocaleString("he-IL")} רשומות`
+                            : "—"}
+                      </TableCell>
                       <TableCell>{fmtSize(r.size_bytes)}</TableCell>
                       <TableCell className="whitespace-nowrap">
                         {r.file_id ? (
