@@ -541,11 +541,11 @@ function TransactionsPage() {
               </div>
             )}
 
-            <div className="w-full">
+            <div className="w-full overflow-x-auto">
               <Table className="border-collapse w-full table-auto text-[11px]">
                 <TableHeader className="bg-primary/95">
                   <TableRow className="bg-primary hover:bg-primary border-b-2 border-primary">
-                    <TableHead className="w-7 px-0.5 border-l border-primary-foreground/20 text-center bg-primary text-primary-foreground">
+                    <TableHead className="sticky top-24 z-20 w-7 px-0.5 border-l border-primary-foreground/20 text-center bg-primary text-primary-foreground">
                       <Checkbox
                         checked={allSelected ? true : someSelected ? "indeterminate" : false}
                         onCheckedChange={toggleAll}
@@ -561,7 +561,7 @@ function TransactionsPage() {
                           key={c.header}
                           onClick={isDate ? () => setDateSort((s) => (s === "desc" ? "asc" : "desc")) : undefined}
                           className={
-                            "text-[10px] font-bold tracking-tight text-primary-foreground border-l border-primary-foreground/20 last:border-l-0 px-1.5 py-2 whitespace-nowrap bg-primary " +
+                            "sticky top-24 z-20 text-[10px] font-bold tracking-tight text-primary-foreground border-l border-primary-foreground/20 last:border-l-0 px-1.5 py-2 whitespace-nowrap bg-primary " +
                             (c.align === "left" ? "text-left" : c.align === "center" ? "text-center" : "text-right") +
                             (isDate ? " cursor-pointer select-none hover:bg-primary/90" : "")
                           }
@@ -572,7 +572,8 @@ function TransactionsPage() {
                         </TableHead>
                       );
                     })}
-                    <TableHead className="text-center w-16 border-l border-primary-foreground/20 last:border-l-0 px-1 text-[10px] font-bold tracking-tight text-primary-foreground bg-primary">פעולות</TableHead>
+                    <TableHead className="sticky top-24 z-20 text-center w-16 border-l border-primary-foreground/20 last:border-l-0 px-1 text-[10px] font-bold tracking-tight text-primary-foreground bg-primary">פעולות</TableHead>
+
                   </TableRow>
                 </TableHeader>
                 <TableBody>
