@@ -15,7 +15,7 @@ export const Route = createFileRoute("/api/public/hooks/daily-backup")({
         try {
           const { runBackup } = await import("@/lib/backup.server");
           const result = await runBackup("cron");
-          return Response.json({ ok: true, ...result });
+          return Response.json({ ...result });
         } catch (err: any) {
           console.error("[daily-backup] failed:", err);
           return new Response(
