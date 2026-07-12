@@ -19,6 +19,7 @@ import { useUserRole, useAuthUser } from "@/hooks/use-auth";
 import { useServerFn } from "@tanstack/react-start";
 import { adminCreateUser, adminDeleteUser, adminSetUserBlocked, adminListUsers } from "@/lib/admin-users.functions";
 import { syncFromGoogleSheet, listSyncIgnores, addSyncIgnores, removeSyncIgnore } from "@/lib/sheets-sync.functions";
+import { BackupPanel } from "@/components/BackupPanel";
 
 
 
@@ -42,6 +43,7 @@ function SettingsPage() {
           <TabsTrigger value="categories">קטגוריות</TabsTrigger>
           <TabsTrigger value="subcategories">תת-קטגוריות</TabsTrigger>
           {role?.isAdmin && <TabsTrigger value="sheets">סנכרון גוגל שיטס</TabsTrigger>}
+          {role?.isAdmin && <TabsTrigger value="backup">גיבוי יומי</TabsTrigger>}
           {role?.isAdmin && <TabsTrigger value="users">משתמשים והרשאות</TabsTrigger>}
         </TabsList>
         <TabsContent value="accounts"><LookupCRUD table="accounts" label="חשבונות" hasKind /></TabsContent>
@@ -50,6 +52,7 @@ function SettingsPage() {
         <TabsContent value="categories"><LookupCRUD table="categories" label="קטגוריות" /></TabsContent>
         <TabsContent value="subcategories"><LookupCRUD table="subcategories" label="תת-קטגוריות" hasCategory /></TabsContent>
         {role?.isAdmin && <TabsContent value="sheets"><SheetsSyncPanel /></TabsContent>}
+        {role?.isAdmin && <TabsContent value="backup"><BackupPanel /></TabsContent>}
         {role?.isAdmin && <TabsContent value="users"><UsersPanel /></TabsContent>}
       </Tabs>
     </AppShell>
