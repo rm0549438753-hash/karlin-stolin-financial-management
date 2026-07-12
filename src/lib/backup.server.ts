@@ -1,5 +1,5 @@
-// Server-only helper: build a single XLSX workbook with every table in a
-// separate sheet, wipe the backup folder on Drive, and upload the file.
+// Server-only helper: build one financial XLSX workbook, wipe the backup
+// folder on Drive, and upload the file.
 import * as XLSX from "xlsx";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
@@ -8,7 +8,6 @@ const ROOT_FOLDER_NAME = "גיבויים - מרכז קארלין סטולין";
 const FOLDER_MIME = "application/vnd.google-apps.folder";
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 const PAGE_SIZE = 1000;
-const HISTORY_JSON_LIMIT = 500;
 
 function driveHeaders(extra: Record<string, string> = {}) {
   const lovableKey = process.env.LOVABLE_API_KEY;
@@ -47,17 +46,22 @@ async function ensureFolder(name: string, parentId?: string): Promise<string> {
   return (await findFolder(name, parentId)) ?? (await createFolder(name, parentId));
 }
 
-async function wipeFolder(folderId: string) {
+async function wipeFolder(folderId: string, keepFileId?: string) {
   const q = encodeURIComponent(`'${folderId}' in parents and trashed=false`);
   const listed = await driveJson(
     `/drive/v3/files?q=${q}&fields=files(id,name)&pageSize=1000`,
     { headers: driveHeaders() }
   );
   for (const f of listed.files || []) {
-    await fetch(`${GATEWAY_URL}/drive/v3/files/${f.id}?supportsAllDrives=true`, {
+    if (f.id === keepFileId) continue;
+    const res = await fetch(`${GATEWAY_URL}/drive/v3/files/${f.id}?supportsAllDrives=true`, {
       method: "DELETE",
       headers: driveHeaders(),
-    }).catch(() => {});
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Delete old backup failed ${res.status}: ${text.slice(0, 500)}`);
+    }
   }
 }
 
@@ -112,14 +116,6 @@ function fmtNum(v: any): number | string {
   if (v === null || v === undefined || v === "") return "";
   const n = Number(v);
   return Number.isFinite(n) ? n : "";
-}
-
-function truncateJson(v: any): string {
-  if (v === null || v === undefined) return "";
-  try {
-    const s = typeof v === "string" ? v : JSON.stringify(v);
-    return s.length > HISTORY_JSON_LIMIT ? s.slice(0, HISTORY_JSON_LIMIT) + "…" : s;
-  } catch { return String(v); }
 }
 
 type Col = { header: string; get: (r: any, m: Maps) => any };
@@ -207,19 +203,18 @@ function addSheet(wb: XLSX.WorkBook, name: string, used: Set<string>, header: st
 }
 
 async function buildWorkbook(): Promise<{ bytes: Uint8Array; counts: Record<string, number> }> {
-  const [accounts, funds, expTypes, categories, subcats, syncIgnores, importBatches, actionHistory, profiles, userRoles] =
-    await Promise.all([
-      fetchAll("accounts"),
-      fetchAll("funds"),
-      fetchAll("expense_types"),
-      fetchAll("categories"),
-      fetchAll("subcategories"),
-      fetchAll("sync_ignores"),
-      fetchAll("import_batches"),
-      fetchAll("action_history", { col: "created_at", asc: false }),
-      fetchAll("profiles"),
-      fetchAll("user_roles"),
-    ]);
+  // A financial backup contains all transactions and the lookup data needed
+  // to understand them. Operational logs (especially action_history with tens
+  // of thousands of JSON snapshots) are deliberately excluded: loading them
+  // into SheetJS duplicates the data several times and exceeds the Worker
+  // memory limit before the file can be uploaded.
+  const [accounts, funds, expTypes, categories, subcats] = await Promise.all([
+    fetchAll("accounts"),
+    fetchAll("funds"),
+    fetchAll("expense_types"),
+    fetchAll("categories"),
+    fetchAll("subcategories"),
+  ]);
 
   const transactions = await fetchAll("transactions", { col: "transaction_date", asc: false });
 
@@ -276,46 +271,13 @@ async function buildWorkbook(): Promise<{ bytes: Uint8Array; counts: Record<stri
     subcats.map((s: any) => [s.name, maps.cat.get(s.category_id) ?? ""]));
   counts["תת קטגוריות"] = subcats.length;
 
-  addSheet(wb, "היסטוריית פעילות", used,
-    ["מתי", "טבלה", "פעולה", "מבצע", "מזהה רשומה", "נתונים ישנים", "נתונים חדשים", "בוטל?", "מבטל"],
-    actionHistory.map((h: any) => [
-      new Date(h.created_at).toLocaleString("he-IL"),
-      h.table_name, h.action, h.actor_id ?? "", h.record_id ?? "",
-      truncateJson(h.old_data), truncateJson(h.new_data),
-      h.undone_at ? "כן" : "", h.undone_by ?? "",
-    ]));
-  counts["היסטוריית פעילות"] = actionHistory.length;
-
-  addSheet(wb, "חריגות סנכרון", used,
-    ["חשבון", "מפתח", "הערה", "נוצר"],
-    syncIgnores.map((s: any) => [maps.account.get(s.account_id) ?? "", s.ignore_key ?? "", s.note ?? "", s.created_at ? new Date(s.created_at).toLocaleString("he-IL") : ""]));
-  counts["חריגות סנכרון"] = syncIgnores.length;
-
-  addSheet(wb, "ייבואים", used,
-    ["מתי", "חשבון", "מקור", "שורות"],
-    importBatches.map((b: any) => [
-      b.created_at ? new Date(b.created_at).toLocaleString("he-IL") : "",
-      maps.account.get(b.account_id) ?? "",
-      b.source ?? "", b.rows_count ?? "",
-    ]));
-  counts["ייבואים"] = importBatches.length;
-
-  const roleByUser = new Map<string, string[]>();
-  for (const r of userRoles) {
-    const arr = roleByUser.get(r.user_id) ?? [];
-    arr.push(r.role);
-    roleByUser.set(r.user_id, arr);
-  }
-  addSheet(wb, "משתמשים", used,
-    ["מייל", "שם", "תפקידים", "נוצר"],
-    profiles.map((p: any) => [
-      p.email ?? "", p.full_name ?? "",
-      (roleByUser.get(p.id) ?? []).join(", "),
-      p.created_at ? new Date(p.created_at).toLocaleString("he-IL") : "",
-    ]));
-  counts["משתמשים"] = profiles.length;
-
-  const bytes = XLSX.write(wb, { type: "array", bookType: "xlsx" }) as Uint8Array;
+  const output = XLSX.write(wb, {
+    type: "array",
+    bookType: "xlsx",
+    compression: true,
+    bookSST: false,
+  }) as ArrayBuffer;
+  const bytes = new Uint8Array(output);
   return { bytes, counts };
 }
 
@@ -352,15 +314,21 @@ export async function runBackup(triggeredBy: "cron" | "manual", existingRunId?: 
       size_bytes: bytes.length,
     }).eq("id", runId);
 
-    // User wants a clean slate — wipe old backups before uploading.
-    await wipeFolder(rootFolderId);
-
     await supabaseAdmin.from("backup_runs").update({
       heartbeat_at: new Date().toISOString(),
       current_table: "uploading",
     }).eq("id", runId);
 
     const uploaded = await uploadXlsx(rootFolderId, fileName, bytes);
+
+    // Keep the previous backup until the new file is safely uploaded, then
+    // remove every older file while preserving the newly-created workbook.
+    await supabaseAdmin.from("backup_runs").update({
+      heartbeat_at: new Date().toISOString(),
+      current_table: "cleanup",
+      file_id: uploaded.id,
+    }).eq("id", runId);
+    await wipeFolder(rootFolderId, uploaded.id);
 
     const totalRows = Object.values(counts).reduce((s, n) => s + Number(n || 0), 0);
     await supabaseAdmin.from("backup_runs").update({
@@ -394,11 +362,12 @@ export async function runBackup(triggeredBy: "cron" | "manual", existingRunId?: 
 // Kept for API compatibility — no more chunked resume with single-file backups.
 // Any stale "running" row that never finished is marked failed so the UI stops polling.
 export async function resumePendingBackup() {
-  const staleCutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+  const staleCutoff = new Date(Date.now() - 2 * 60 * 1000).toISOString();
   await supabaseAdmin.from("backup_runs").update({
     status: "failed",
     finished_at: new Date().toISOString(),
-    error_message: "הריצה הופסקה ללא התקדמות במשך יותר מ־15 דקות.",
+    current_table: null,
+    error_message: "הריצה הופסקה ללא התקדמות במשך יותר מ־2 דקות.",
   }).eq("status", "running").lt("heartbeat_at", staleCutoff);
   return { ok: true, status: "idle" as const };
 }
