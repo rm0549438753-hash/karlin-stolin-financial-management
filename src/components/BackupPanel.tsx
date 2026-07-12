@@ -124,7 +124,7 @@ export function BackupPanel() {
                         {r.file_id ? (
                           <a
                             className="text-primary underline"
-                            href={`https://drive.google.com/file/d/${r.file_id}/view`}
+                            href={`https://drive.google.com/drive/folders/${r.file_id}`}
                             target="_blank"
                             rel="noreferrer"
                           >
