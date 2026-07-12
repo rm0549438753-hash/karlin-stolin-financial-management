@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, PlayCircle, ExternalLink } from "lucide-react";
+import { Loader2, PlayCircle, ExternalLink, CheckCircle2, XCircle } from "lucide-react";
 import { triggerBackupNow, listBackupRuns } from "@/lib/backup.functions";
 
 function fmtDate(v: string | null) {
@@ -31,13 +31,19 @@ export function BackupPanel() {
     refetchInterval: running ? 3000 : false,
   });
 
+  const hasRunning = runs?.some((r: any) => r.status === "running");
+
   const runNow = useMutation({
     mutationFn: async () => {
       setRunning(true);
       return await trigger();
     },
     onSuccess: (res: any) => {
-      toast.success(`גיבוי הושלם: ${res.fileName}`);
+      if (res?.ok) {
+        toast.success(`גיבוי הושלם: ${res.fileName}`);
+      } else {
+        toast.error(`שגיאה בגיבוי: ${res?.error ?? "לא ידוע"}`);
+      }
       qc.invalidateQueries({ queryKey: ["backup_runs"] });
     },
     onError: (err: any) => toast.error(`שגיאה בגיבוי: ${err?.message ?? err}`),
@@ -45,7 +51,7 @@ export function BackupPanel() {
   });
 
   const lastSuccess = runs?.find((r: any) => r.status === "success");
-  const folderId = lastSuccess?.folder_id ?? runs?.find((r: any) => r.folder_id)?.folder_id;
+  const rootFolderId = lastSuccess?.folder_id ?? runs?.find((r: any) => r.folder_id)?.folder_id;
 
   return (
     <div className="space-y-4">
@@ -55,27 +61,27 @@ export function BackupPanel() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            כל יום ב-02:00 (שעון ישראל) המערכת יוצרת קובץ Excel עם כל הנתונים
-            (תנועות, חשבונות, קופות, קטגוריות, היסטוריית פעילות ועוד) ומעלה אותו
-            לתיקייה <b>"גיבויים - מרכז קארלין סטולין"</b> בגוגל דרייב. שומרים גיבויים
-            של 30 הימים האחרונים.
+            כל יום ב-02:00 (שעון ישראל) המערכת מייצאת את כל הטבלאות כקובצי CSV
+            (מפוצלים לחלקים כדי להישאר בגבולות הזיכרון) ומעלה לתיקייה{" "}
+            <b>"גיבויים - מרכז קארלין סטולין"</b> בגוגל דרייב. שומרים גיבויים של
+            30 הימים האחרונים.
           </p>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => runNow.mutate()} disabled={runNow.isPending || running}>
+            <Button onClick={() => runNow.mutate()} disabled={runNow.isPending || running || hasRunning}>
               {runNow.isPending || running ? (
                 <><Loader2 className="ml-2 h-4 w-4 animate-spin" /> מריץ גיבוי...</>
               ) : (
                 <><PlayCircle className="ml-2 h-4 w-4" /> הפעל גיבוי עכשיו</>
               )}
             </Button>
-            {folderId && (
+            {rootFolderId && (
               <Button variant="outline" asChild>
                 <a
-                  href={`https://drive.google.com/drive/folders/${folderId}`}
+                  href={`https://drive.google.com/drive/folders/${rootFolderId}`}
                   target="_blank"
                   rel="noreferrer"
                 >
-                  <ExternalLink className="ml-2 h-4 w-4" /> פתח תיקייה בדרייב
+                  <ExternalLink className="ml-2 h-4 w-4" /> פתח תיקיית גיבויים ראשית
                 </a>
               </Button>
             )}
@@ -97,44 +103,56 @@ export function BackupPanel() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>סטטוס</TableHead>
                     <TableHead>התחלה</TableHead>
                     <TableHead>סיום</TableHead>
-                    <TableHead>סטטוס</TableHead>
                     <TableHead>מקור</TableHead>
-                    <TableHead>קובץ</TableHead>
                     <TableHead>גודל</TableHead>
-                    <TableHead>שגיאה</TableHead>
+                    <TableHead>תיקייה</TableHead>
+                    <TableHead>פרטי שגיאה</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {runs.map((r: any) => (
                     <TableRow key={r.id}>
+                      <TableCell className="whitespace-nowrap">
+                        {r.status === "success" ? (
+                          <span className="inline-flex items-center gap-1 text-green-600 font-medium">
+                            <CheckCircle2 className="h-4 w-4" /> הושלם בהצלחה
+                          </span>
+                        ) : r.status === "failed" ? (
+                          <span className="inline-flex items-center gap-1 text-red-600 font-medium">
+                            <XCircle className="h-4 w-4" /> נכשל
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-amber-600 font-medium">
+                            <Loader2 className="h-4 w-4 animate-spin" /> רץ...
+                          </span>
+                        )}
+                      </TableCell>
                       <TableCell className="whitespace-nowrap">{fmtDate(r.started_at)}</TableCell>
                       <TableCell className="whitespace-nowrap">{fmtDate(r.finished_at)}</TableCell>
-                      <TableCell>
-                        <span className={
-                          r.status === "success" ? "text-green-600" :
-                          r.status === "failed" ? "text-red-600" : "text-amber-600"
-                        }>
-                          {r.status === "success" ? "הצלחה" : r.status === "failed" ? "כשל" : "רץ"}
-                        </span>
-                      </TableCell>
                       <TableCell>{r.triggered_by === "cron" ? "אוטומטי" : "ידני"}</TableCell>
+                      <TableCell>{fmtSize(r.size_bytes)}</TableCell>
                       <TableCell className="whitespace-nowrap">
                         {r.file_id ? (
-                          <a
-                            className="text-primary underline"
-                            href={`https://drive.google.com/drive/folders/${r.file_id}`}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            {r.file_name}
-                          </a>
-                        ) : (r.file_name ?? "—")}
+                          <Button size="sm" variant="outline" asChild>
+                            <a
+                              href={`https://drive.google.com/drive/folders/${r.file_id}`}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              <ExternalLink className="ml-1 h-3 w-3" /> פתח תיקייה
+                            </a>
+                          </Button>
+                        ) : "—"}
                       </TableCell>
-                      <TableCell>{fmtSize(r.size_bytes)}</TableCell>
-                      <TableCell className="max-w-[300px] truncate text-red-600" title={r.error_message ?? undefined}>
-                        {r.error_message ?? "—"}
+                      <TableCell className="max-w-[360px]">
+                        {r.error_message ? (
+                          <div className="rounded-md border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-900 p-2 text-xs text-red-700 dark:text-red-300 whitespace-pre-wrap break-words">
+                            {r.error_message}
+                          </div>
+                        ) : "—"}
                       </TableCell>
                     </TableRow>
                   ))}
