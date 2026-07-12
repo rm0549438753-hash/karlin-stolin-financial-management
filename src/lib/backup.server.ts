@@ -1,5 +1,5 @@
-// Server-only helper: build a single XLSX workbook with every table in a
-// separate sheet, wipe the backup folder on Drive, and upload the file.
+// Server-only helper: build one financial XLSX workbook, wipe the backup
+// folder on Drive, and upload the file.
 import * as XLSX from "xlsx";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
@@ -8,7 +8,6 @@ const ROOT_FOLDER_NAME = "גיבויים - מרכז קארלין סטולין";
 const FOLDER_MIME = "application/vnd.google-apps.folder";
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 const PAGE_SIZE = 1000;
-const HISTORY_JSON_LIMIT = 500;
 
 function driveHeaders(extra: Record<string, string> = {}) {
   const lovableKey = process.env.LOVABLE_API_KEY;
@@ -114,14 +113,6 @@ function fmtNum(v: any): number | string {
   return Number.isFinite(n) ? n : "";
 }
 
-function truncateJson(v: any): string {
-  if (v === null || v === undefined) return "";
-  try {
-    const s = typeof v === "string" ? v : JSON.stringify(v);
-    return s.length > HISTORY_JSON_LIMIT ? s.slice(0, HISTORY_JSON_LIMIT) + "…" : s;
-  } catch { return String(v); }
-}
-
 type Col = { header: string; get: (r: any, m: Maps) => any };
 type Maps = {
   fund: Map<string, string>;
@@ -207,19 +198,18 @@ function addSheet(wb: XLSX.WorkBook, name: string, used: Set<string>, header: st
 }
 
 async function buildWorkbook(): Promise<{ bytes: Uint8Array; counts: Record<string, number> }> {
-  const [accounts, funds, expTypes, categories, subcats, syncIgnores, importBatches, actionHistory, profiles, userRoles] =
-    await Promise.all([
-      fetchAll("accounts"),
-      fetchAll("funds"),
-      fetchAll("expense_types"),
-      fetchAll("categories"),
-      fetchAll("subcategories"),
-      fetchAll("sync_ignores"),
-      fetchAll("import_batches"),
-      fetchAll("action_history", { col: "created_at", asc: false }),
-      fetchAll("profiles"),
-      fetchAll("user_roles"),
-    ]);
+  // A financial backup contains all transactions and the lookup data needed
+  // to understand them. Operational logs (especially action_history with tens
+  // of thousands of JSON snapshots) are deliberately excluded: loading them
+  // into SheetJS duplicates the data several times and exceeds the Worker
+  // memory limit before the file can be uploaded.
+  const [accounts, funds, expTypes, categories, subcats] = await Promise.all([
+    fetchAll("accounts"),
+    fetchAll("funds"),
+    fetchAll("expense_types"),
+    fetchAll("categories"),
+    fetchAll("subcategories"),
+  ]);
 
   const transactions = await fetchAll("transactions", { col: "transaction_date", asc: false });
 
@@ -276,46 +266,12 @@ async function buildWorkbook(): Promise<{ bytes: Uint8Array; counts: Record<stri
     subcats.map((s: any) => [s.name, maps.cat.get(s.category_id) ?? ""]));
   counts["תת קטגוריות"] = subcats.length;
 
-  addSheet(wb, "היסטוריית פעילות", used,
-    ["מתי", "טבלה", "פעולה", "מבצע", "מזהה רשומה", "נתונים ישנים", "נתונים חדשים", "בוטל?", "מבטל"],
-    actionHistory.map((h: any) => [
-      new Date(h.created_at).toLocaleString("he-IL"),
-      h.table_name, h.action, h.actor_id ?? "", h.record_id ?? "",
-      truncateJson(h.old_data), truncateJson(h.new_data),
-      h.undone_at ? "כן" : "", h.undone_by ?? "",
-    ]));
-  counts["היסטוריית פעילות"] = actionHistory.length;
-
-  addSheet(wb, "חריגות סנכרון", used,
-    ["חשבון", "מפתח", "הערה", "נוצר"],
-    syncIgnores.map((s: any) => [maps.account.get(s.account_id) ?? "", s.ignore_key ?? "", s.note ?? "", s.created_at ? new Date(s.created_at).toLocaleString("he-IL") : ""]));
-  counts["חריגות סנכרון"] = syncIgnores.length;
-
-  addSheet(wb, "ייבואים", used,
-    ["מתי", "חשבון", "מקור", "שורות"],
-    importBatches.map((b: any) => [
-      b.created_at ? new Date(b.created_at).toLocaleString("he-IL") : "",
-      maps.account.get(b.account_id) ?? "",
-      b.source ?? "", b.rows_count ?? "",
-    ]));
-  counts["ייבואים"] = importBatches.length;
-
-  const roleByUser = new Map<string, string[]>();
-  for (const r of userRoles) {
-    const arr = roleByUser.get(r.user_id) ?? [];
-    arr.push(r.role);
-    roleByUser.set(r.user_id, arr);
-  }
-  addSheet(wb, "משתמשים", used,
-    ["מייל", "שם", "תפקידים", "נוצר"],
-    profiles.map((p: any) => [
-      p.email ?? "", p.full_name ?? "",
-      (roleByUser.get(p.id) ?? []).join(", "),
-      p.created_at ? new Date(p.created_at).toLocaleString("he-IL") : "",
-    ]));
-  counts["משתמשים"] = profiles.length;
-
-  const bytes = XLSX.write(wb, { type: "array", bookType: "xlsx" }) as Uint8Array;
+  const bytes = XLSX.write(wb, {
+    type: "array",
+    bookType: "xlsx",
+    compression: true,
+    bookSST: false,
+  }) as Uint8Array;
   return { bytes, counts };
 }
 
