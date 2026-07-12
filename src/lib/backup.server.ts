@@ -1,70 +1,34 @@
-// Server-only helper: export each table as CSV chunks and upload to Google Drive.
-// Streams each chunk (page) directly to Drive to stay well under Worker memory limits.
+// Server-only helper: build a single XLSX workbook with every table in a
+// separate sheet, wipe the backup folder on Drive, and upload the file.
+import * as XLSX from "xlsx";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/google_drive";
 const ROOT_FOLDER_NAME = "גיבויים - מרכז קארלין סטולין";
 const FOLDER_MIME = "application/vnd.google-apps.folder";
-const CSV_MIME = "text/csv";
-const RETENTION_DAYS = 30;
+const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 const PAGE_SIZE = 1000;
-const TABLES = [
-  "transactions",
-  "accounts",
-  "funds",
-  "expense_types",
-  "categories",
-  "subcategories",
-  "action_history",
-  "sync_ignores",
-  "profiles",
-  "user_roles",
-  "import_batches",
-] as const;
-
-type BackupProgress = {
-  tableIndex: number;
-  offset: number;
-  partIndex: number;
-  headers: string[] | null;
-  counts: Record<string, number>;
-  totalBytes: number;
-};
+const HISTORY_JSON_LIMIT = 500;
 
 function driveHeaders(extra: Record<string, string> = {}) {
   const lovableKey = process.env.LOVABLE_API_KEY;
   const driveKey = process.env.GOOGLE_DRIVE_API_KEY;
-  if (!lovableKey || !driveKey) {
-    throw new Error("Missing LOVABLE_API_KEY or GOOGLE_DRIVE_API_KEY");
-  }
-  return {
-    Authorization: `Bearer ${lovableKey}`,
-    "X-Connection-Api-Key": driveKey,
-    ...extra,
-  };
+  if (!lovableKey || !driveKey) throw new Error("Missing LOVABLE_API_KEY or GOOGLE_DRIVE_API_KEY");
+  return { Authorization: `Bearer ${lovableKey}`, "X-Connection-Api-Key": driveKey, ...extra };
 }
 
 async function driveJson(path: string, init?: RequestInit) {
   const res = await fetch(`${GATEWAY_URL}${path}`, init);
   const text = await res.text();
-  if (!res.ok) {
-    throw new Error(`Drive API ${res.status}: ${text.slice(0, 500)}`);
-  }
+  if (!res.ok) throw new Error(`Drive API ${res.status}: ${text.slice(0, 500)}`);
   return text ? JSON.parse(text) : {};
 }
 
 async function findFolder(name: string, parentId?: string): Promise<string | null> {
-  const parts = [
-    `name='${name.replace(/'/g, "\\'")}'`,
-    `mimeType='${FOLDER_MIME}'`,
-    `trashed=false`,
-  ];
+  const parts = [`name='${name.replace(/'/g, "\\'")}'`, `mimeType='${FOLDER_MIME}'`, `trashed=false`];
   if (parentId) parts.push(`'${parentId}' in parents`);
   const q = encodeURIComponent(parts.join(" and "));
-  const found = await driveJson(
-    `/drive/v3/files?q=${q}&fields=files(id,name)&pageSize=10`,
-    { headers: driveHeaders() }
-  );
+  const found = await driveJson(`/drive/v3/files?q=${q}&fields=files(id,name)&pageSize=10`, { headers: driveHeaders() });
   return found.files?.[0]?.id ?? null;
 }
 
@@ -83,43 +47,26 @@ async function ensureFolder(name: string, parentId?: string): Promise<string> {
   return (await findFolder(name, parentId)) ?? (await createFolder(name, parentId));
 }
 
-function blankProgress(): BackupProgress {
-  return { tableIndex: 0, offset: 0, partIndex: 0, headers: null, counts: {}, totalBytes: 0 };
+async function wipeFolder(folderId: string) {
+  const q = encodeURIComponent(`'${folderId}' in parents and trashed=false`);
+  const listed = await driveJson(
+    `/drive/v3/files?q=${q}&fields=files(id,name)&pageSize=1000`,
+    { headers: driveHeaders() }
+  );
+  for (const f of listed.files || []) {
+    await fetch(`${GATEWAY_URL}/drive/v3/files/${f.id}?supportsAllDrives=true`, {
+      method: "DELETE",
+      headers: driveHeaders(),
+    }).catch(() => {});
+  }
 }
 
-function readProgress(value: unknown): BackupProgress {
-  if (!value || typeof value !== "object" || !("tableIndex" in value)) return blankProgress();
-  const p = value as Partial<BackupProgress>;
-  return {
-    tableIndex: Number(p.tableIndex) || 0,
-    offset: Number(p.offset) || 0,
-    partIndex: Number(p.partIndex) || 0,
-    headers: Array.isArray(p.headers) ? p.headers.map(String) : null,
-    counts: p.counts && typeof p.counts === "object" ? p.counts : {},
-    totalBytes: Number(p.totalBytes) || 0,
-  };
-}
-
-function csvEscape(v: any): string {
-  if (v === null || v === undefined) return "";
-  let s: string;
-  if (typeof v === "object") s = JSON.stringify(v);
-  else s = String(v);
-  if (/[",\n\r]/.test(s)) s = `"${s.replace(/"/g, '""')}"`;
-  return s;
-}
-
-async function uploadCsv(folderId: string, fileName: string, content: string): Promise<{ id: string; size: number }> {
-  const bytes = new TextEncoder().encode("\uFEFF" + content); // BOM for Excel
+async function uploadXlsx(folderId: string, fileName: string, bytes: Uint8Array) {
   const boundary = "----lovableBackup" + Math.random().toString(36).slice(2);
-  const metadata = { name: fileName, mimeType: CSV_MIME, parents: [folderId] };
+  const metadata = { name: fileName, mimeType: XLSX_MIME, parents: [folderId] };
   const enc = new TextEncoder();
-  const meta = enc.encode(
-    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n`
-  );
-  const head = enc.encode(
-    `--${boundary}\r\nContent-Type: ${CSV_MIME}\r\nContent-Transfer-Encoding: binary\r\n\r\n`
-  );
+  const meta = enc.encode(`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n`);
+  const head = enc.encode(`--${boundary}\r\nContent-Type: ${XLSX_MIME}\r\nContent-Transfer-Encoding: binary\r\n\r\n`);
   const tail = enc.encode(`\r\n--${boundary}--`);
   const body = new Uint8Array(meta.length + head.length + bytes.length + tail.length);
   body.set(meta, 0);
@@ -133,173 +80,305 @@ async function uploadCsv(folderId: string, fileName: string, content: string): P
     body,
   });
   const text = await res.text();
-  if (!res.ok) throw new Error(`Upload ${fileName} failed ${res.status}: ${text.slice(0, 500)}`);
+  if (!res.ok) throw new Error(`Upload failed ${res.status}: ${text.slice(0, 500)}`);
   const json = JSON.parse(text);
-  return { id: json.id as string, size: bytes.length };
+  return { id: json.id as string };
 }
 
-async function pruneOldBackups(rootFolderId: string) {
-  const q = encodeURIComponent(
-    `'${rootFolderId}' in parents and mimeType='${FOLDER_MIME}' and trashed=false`
-  );
-  const listed = await driveJson(
-    `/drive/v3/files?q=${q}&fields=files(id,name,createdTime)&pageSize=200`,
-    { headers: driveHeaders() }
-  );
-  const cutoff = Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000;
-  for (const f of listed.files || []) {
-    let fileTime = new Date(f.createdTime).getTime();
-    const m = /backup-(\d{4}-\d{2}-\d{2})/.exec(f.name);
-    if (m) fileTime = new Date(m[1]).getTime();
-    if (fileTime < cutoff) {
-      await fetch(`${GATEWAY_URL}/drive/v3/files/${f.id}?supportsAllDrives=true`, {
-        method: "DELETE",
-        headers: driveHeaders(),
-      }).catch(() => {});
-    }
+async function fetchAll(table: string, order?: { col: string; asc: boolean }): Promise<any[]> {
+  const rows: any[] = [];
+  let from = 0;
+  while (true) {
+    let q = supabaseAdmin.from(table as any).select("*").range(from, from + PAGE_SIZE - 1);
+    if (order) q = q.order(order.col, { ascending: order.asc });
+    const { data, error } = await q;
+    if (error) throw new Error(`fetch ${table}@${from}: ${error.message}`);
+    if (!data || data.length === 0) break;
+    rows.push(...data);
+    if (data.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
   }
+  return rows;
 }
 
-export async function runBackup(
-  triggeredBy: "cron" | "manual",
-  existingRunId?: string
-) {
+function fmtDateIL(v: any): string {
+  if (!v) return "";
+  const s = String(v);
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : s;
+}
+
+function fmtNum(v: any): number | string {
+  if (v === null || v === undefined || v === "") return "";
+  const n = Number(v);
+  return Number.isFinite(n) ? n : "";
+}
+
+function truncateJson(v: any): string {
+  if (v === null || v === undefined) return "";
+  try {
+    const s = typeof v === "string" ? v : JSON.stringify(v);
+    return s.length > HISTORY_JSON_LIMIT ? s.slice(0, HISTORY_JSON_LIMIT) + "…" : s;
+  } catch { return String(v); }
+}
+
+type Col = { header: string; get: (r: any, m: Maps) => any };
+type Maps = {
+  fund: Map<string, string>;
+  exp: Map<string, string>;
+  cat: Map<string, string>;
+  sub: Map<string, string>;
+  account: Map<string, string>;
+};
+
+const COMMON: Col[] = [
+  { header: "קופה", get: (r, m) => (r.fund_id ? m.fund.get(r.fund_id) ?? "" : "") },
+  { header: "סוג", get: (r, m) => (r.expense_type_id ? m.exp.get(r.expense_type_id) ?? "" : "") },
+  { header: "קטגוריה", get: (r, m) => (r.category_id ? m.cat.get(r.category_id) ?? "" : "") },
+  { header: "תת קטגוריה", get: (r, m) => (r.subcategory_id ? m.sub.get(r.subcategory_id) ?? "" : "") },
+  { header: "הערה", get: (r) => r.note ?? "" },
+  { header: "לא מסווג", get: (r) => (!r.fund_id && !r.expense_type_id ? "כן" : "") },
+];
+
+const COLS_BY_SCHEMA: Record<string, Col[]> = {
+  mercantile: [
+    { header: "תאריך", get: (r) => fmtDateIL(r.transaction_date) },
+    { header: "יום ערך", get: (r) => fmtDateIL(r.value_date) },
+    { header: "תיאור התנועה", get: (r) => r.description ?? "" },
+    { header: "אסמכתה", get: (r) => r.reference ?? "" },
+    { header: "זכות", get: (r) => fmtNum(r.credit) },
+    { header: "חובה", get: (r) => fmtNum(r.debit) },
+    { header: "יתרה", get: (r) => fmtNum(r.balance) },
+    { header: "עמלה", get: (r) => fmtNum(r.fee) },
+    { header: "ערוץ ביצוע", get: (r) => r.channel ?? "" },
+    ...COMMON,
+  ],
+  pagi: [
+    { header: "תאריך", get: (r) => fmtDateIL(r.transaction_date) },
+    { header: "תאריך ערך", get: (r) => fmtDateIL(r.value_date) },
+    { header: "תאור", get: (r) => r.description ?? "" },
+    { header: "אסמכתא", get: (r) => r.reference ?? "" },
+    { header: "סוג פעולה", get: (r) => r.operation_type ?? "" },
+    { header: "זכות", get: (r) => fmtNum(r.credit) },
+    { header: "חובה", get: (r) => fmtNum(r.debit) },
+    { header: "יתרה", get: (r) => fmtNum(r.balance) },
+    ...COMMON,
+  ],
+  checks: [
+    { header: "תאריך", get: (r) => fmtDateIL(r.transaction_date) },
+    { header: "תאריך ערך", get: (r) => fmtDateIL(r.value_date) },
+    { header: "שם", get: (r) => r.payee ?? "" },
+    { header: "עמותה", get: (r) => r.association ?? "" },
+    { header: "סכום", get: (r) => fmtNum(r.amount) },
+    { header: "צ'ק עתידי", get: (r) => (r.future_check === true ? "כן" : "") },
+    ...COMMON,
+  ],
+  cash: [
+    { header: "תאריך", get: (r) => fmtDateIL(r.transaction_date) },
+    { header: "פירוט", get: (r) => r.description ?? "" },
+    { header: "סכום הכנסה", get: (r) => fmtNum(r.credit) },
+    { header: "סכום הוצאה", get: (r) => fmtNum(r.debit) },
+    { header: "הערה", get: (r) => r.note ?? "" },
+    { header: "קופה", get: (r, m) => (r.fund_id ? m.fund.get(r.fund_id) ?? "" : "") },
+    { header: "סוג", get: (r, m) => (r.expense_type_id ? m.exp.get(r.expense_type_id) ?? "" : "") },
+    { header: "קטגוריה", get: (r, m) => (r.category_id ? m.cat.get(r.category_id) ?? "" : "") },
+    { header: "תת קטגוריה", get: (r, m) => (r.subcategory_id ? m.sub.get(r.subcategory_id) ?? "" : "") },
+  ],
+};
+
+function safeSheetName(name: string, used: Set<string>): string {
+  let n = (name || "גיליון").replace(/[\\/?*\[\]:]/g, " ").slice(0, 31);
+  if (!n.trim()) n = "גיליון";
+  let candidate = n;
+  let i = 2;
+  while (used.has(candidate)) {
+    const suffix = ` (${i++})`;
+    candidate = n.slice(0, 31 - suffix.length) + suffix;
+  }
+  used.add(candidate);
+  return candidate;
+}
+
+function addSheet(wb: XLSX.WorkBook, name: string, used: Set<string>, header: string[], rows: any[][]) {
+  const aoa = [header, ...rows];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws["!cols"] = header.map((h) => ({ wch: Math.min(30, Math.max(10, String(h).length + 4)) }));
+  XLSX.utils.book_append_sheet(wb, ws, safeSheetName(name, used));
+}
+
+async function buildWorkbook(): Promise<{ bytes: Uint8Array; counts: Record<string, number> }> {
+  const [accounts, funds, expTypes, categories, subcats, syncIgnores, importBatches, actionHistory, profiles, userRoles] =
+    await Promise.all([
+      fetchAll("accounts"),
+      fetchAll("funds"),
+      fetchAll("expense_types"),
+      fetchAll("categories"),
+      fetchAll("subcategories"),
+      fetchAll("sync_ignores"),
+      fetchAll("import_batches"),
+      fetchAll("action_history", { col: "created_at", asc: false }),
+      fetchAll("profiles"),
+      fetchAll("user_roles"),
+    ]);
+
+  const transactions = await fetchAll("transactions", { col: "transaction_date", asc: false });
+
+  const maps: Maps = {
+    fund: new Map(funds.map((f: any) => [f.id, f.name])),
+    exp: new Map(expTypes.map((e: any) => [e.id, e.name])),
+    cat: new Map(categories.map((c: any) => [c.id, c.name])),
+    sub: new Map(subcats.map((s: any) => [s.id, s.name])),
+    account: new Map(accounts.map((a: any) => [a.id, a.name])),
+  };
+
+  const wb = XLSX.utils.book_new();
+  const used = new Set<string>();
+  const counts: Record<string, number> = {};
+
+  // Per-account transaction sheets, columns matching the on-screen layout.
+  const byAccount = new Map<string, any[]>();
+  for (const t of transactions) {
+    const arr = byAccount.get(t.account_id) ?? [];
+    arr.push(t);
+    byAccount.set(t.account_id, arr);
+  }
+  for (const acc of accounts) {
+    const cols = COLS_BY_SCHEMA[acc.schema_type as string] ?? COLS_BY_SCHEMA.mercantile;
+    const rows = byAccount.get(acc.id) ?? [];
+    const data = rows.map((r) => cols.map((c) => c.get(r, maps)));
+    addSheet(wb, acc.name, used, cols.map((c) => c.header), data);
+    counts[`תנועות · ${acc.name}`] = rows.length;
+  }
+
+  // Lookup sheets
+  addSheet(wb, "חשבונות", used,
+    ["שם", "סוג סכמה", "מטבע", "יתרת פתיחה", "פעיל"],
+    accounts.map((a: any) => [a.name, a.schema_type, a.currency ?? "", fmtNum(a.opening_balance), a.active === false ? "לא" : "כן"]));
+  counts["חשבונות"] = accounts.length;
+
+  addSheet(wb, "קופות", used,
+    ["שם"],
+    funds.map((f: any) => [f.name]));
+  counts["קופות"] = funds.length;
+
+  addSheet(wb, "סוגי הוצאה", used,
+    ["שם"],
+    expTypes.map((e: any) => [e.name]));
+  counts["סוגי הוצאה"] = expTypes.length;
+
+  addSheet(wb, "קטגוריות", used,
+    ["שם"],
+    categories.map((c: any) => [c.name]));
+  counts["קטגוריות"] = categories.length;
+
+  addSheet(wb, "תת קטגוריות", used,
+    ["שם", "קטגוריה"],
+    subcats.map((s: any) => [s.name, maps.cat.get(s.category_id) ?? ""]));
+  counts["תת קטגוריות"] = subcats.length;
+
+  addSheet(wb, "היסטוריית פעילות", used,
+    ["מתי", "טבלה", "פעולה", "מבצע", "מזהה רשומה", "נתונים ישנים", "נתונים חדשים", "בוטל?", "מבטל"],
+    actionHistory.map((h: any) => [
+      new Date(h.created_at).toLocaleString("he-IL"),
+      h.table_name, h.action, h.actor_id ?? "", h.record_id ?? "",
+      truncateJson(h.old_data), truncateJson(h.new_data),
+      h.undone_at ? "כן" : "", h.undone_by ?? "",
+    ]));
+  counts["היסטוריית פעילות"] = actionHistory.length;
+
+  addSheet(wb, "חריגות סנכרון", used,
+    ["חשבון", "מפתח", "הערה", "נוצר"],
+    syncIgnores.map((s: any) => [maps.account.get(s.account_id) ?? "", s.ignore_key ?? "", s.note ?? "", s.created_at ? new Date(s.created_at).toLocaleString("he-IL") : ""]));
+  counts["חריגות סנכרון"] = syncIgnores.length;
+
+  addSheet(wb, "ייבואים", used,
+    ["מתי", "חשבון", "מקור", "שורות"],
+    importBatches.map((b: any) => [
+      b.created_at ? new Date(b.created_at).toLocaleString("he-IL") : "",
+      maps.account.get(b.account_id) ?? "",
+      b.source ?? "", b.rows_count ?? "",
+    ]));
+  counts["ייבואים"] = importBatches.length;
+
+  const roleByUser = new Map<string, string[]>();
+  for (const r of userRoles) {
+    const arr = roleByUser.get(r.user_id) ?? [];
+    arr.push(r.role);
+    roleByUser.set(r.user_id, arr);
+  }
+  addSheet(wb, "משתמשים", used,
+    ["מייל", "שם", "תפקידים", "נוצר"],
+    profiles.map((p: any) => [
+      p.email ?? "", p.full_name ?? "",
+      (roleByUser.get(p.id) ?? []).join(", "),
+      p.created_at ? new Date(p.created_at).toLocaleString("he-IL") : "",
+    ]));
+  counts["משתמשים"] = profiles.length;
+
+  const bytes = XLSX.write(wb, { type: "array", bookType: "xlsx" }) as Uint8Array;
+  return { bytes, counts };
+}
+
+export async function runBackup(triggeredBy: "cron" | "manual", existingRunId?: string) {
   let runId = existingRunId;
   if (!runId) {
-    const { data: run, error: runErr } = await supabaseAdmin
+    const { data: run, error } = await supabaseAdmin
       .from("backup_runs")
       .insert({ status: "running", triggered_by: triggeredBy })
       .select("id")
       .single();
-    if (runErr || !run) throw new Error(runErr?.message ?? "Could not create run");
+    if (error || !run) throw new Error(error?.message ?? "Could not create run");
     runId = run.id;
   }
 
-  let currentTable = "(init)";
   try {
-    return await processBackupBatch(runId);
-  } catch (err: any) {
-    const raw = err?.message ?? String(err);
-    const message = `[${currentTable}] ${raw}`.slice(0, 2000);
-    await supabaseAdmin
-      .from("backup_runs")
-      .update({
-        status: "failed",
-        finished_at: new Date().toISOString(),
-        error_message: message,
-      })
-      .eq("id", runId);
-    throw new Error(message);
-  }
-}
-
-async function processBackupBatch(runId: string) {
-  const { data: run, error: runError } = await supabaseAdmin
-    .from("backup_runs")
-    .select("*")
-    .eq("id", runId)
-    .single();
-  if (runError || !run) throw new Error(runError?.message ?? "Backup run not found");
-  if (run.status === "success" || run.status === "failed") {
-    return { ok: run.status === "success", status: run.status, runId };
-  }
-
-  let rootFolderId = run.folder_id as string | null;
-  let dayFolderId = run.file_id as string | null;
-  let dayFolderName = run.file_name as string | null;
-  if (!rootFolderId || !dayFolderId || !dayFolderName) {
-    rootFolderId = await ensureFolder(ROOT_FOLDER_NAME);
+    const rootFolderId = await ensureFolder(ROOT_FOLDER_NAME);
     const now = new Date();
-    dayFolderName = `backup-${now.toISOString().slice(0, 10)}-${now.toISOString().slice(11, 16).replace(":", "")}`;
-    dayFolderId = await createFolder(dayFolderName, rootFolderId);
+    const stamp = now.toISOString().slice(0, 10) + "-" + now.toISOString().slice(11, 16).replace(":", "");
+    const fileName = `גיבוי-${stamp}.xlsx`;
+
     await supabaseAdmin.from("backup_runs").update({
-      file_name: dayFolderName,
-      file_id: dayFolderId,
       folder_id: rootFolderId,
+      file_name: fileName,
       heartbeat_at: new Date().toISOString(),
+      current_table: "building",
     }).eq("id", runId);
-  }
 
-  const progress = readProgress(run.row_counts);
+    const { bytes, counts } = await buildWorkbook();
 
-  const table = TABLES[progress.tableIndex];
-  const { data, error } = await supabaseAdmin
-    .from(table as any)
-    .select("*")
-    .range(progress.offset, progress.offset + PAGE_SIZE - 1);
-  if (error) throw new Error(`Fetch ${table} @${progress.offset}: ${error.message}`);
+    await supabaseAdmin.from("backup_runs").update({
+      heartbeat_at: new Date().toISOString(),
+      current_table: "cleanup",
+      size_bytes: bytes.length,
+    }).eq("id", runId);
 
-  if (!data || data.length === 0) {
-    progress.counts[table] = progress.offset;
-    progress.tableIndex += 1;
-    progress.offset = 0;
-    progress.partIndex = 0;
-    progress.headers = null;
-  } else {
-    const headers = progress.headers ?? Object.keys(data[0]);
-    let csv = headers.join(",") + "\n";
-    for (const row of data) csv += headers.map((h) => csvEscape((row as any)[h])).join(",") + "\n";
-    const partIndex = progress.partIndex + 1;
-    const fileName = data.length < PAGE_SIZE && partIndex === 1
-      ? `${table}.csv`
-      : `${table}-part-${String(partIndex).padStart(3, "0")}.csv`;
-    const uploaded = await uploadCsv(dayFolderId, fileName, csv);
-    progress.totalBytes += uploaded.size;
-    progress.offset += data.length;
-    progress.partIndex = partIndex;
-    progress.headers = headers;
-    progress.counts[table] = progress.offset;
-    if (data.length < PAGE_SIZE) {
-      progress.tableIndex += 1;
-      progress.offset = 0;
-      progress.partIndex = 0;
-      progress.headers = null;
-    }
-  }
+    // User wants a clean slate — wipe old backups before uploading.
+    await wipeFolder(rootFolderId);
 
-  await supabaseAdmin.from("backup_runs").update({
-    row_counts: progress,
-    size_bytes: progress.totalBytes,
-    current_table: progress.tableIndex < TABLES.length ? TABLES[progress.tableIndex] : null,
-    processed_rows: Object.values(progress.counts).reduce((sum, value) => sum + Number(value || 0), 0),
-    heartbeat_at: new Date().toISOString(),
-  }).eq("id", runId);
+    await supabaseAdmin.from("backup_runs").update({
+      heartbeat_at: new Date().toISOString(),
+      current_table: "uploading",
+    }).eq("id", runId);
 
-  if (progress.tableIndex >= TABLES.length) {
-    await pruneOldBackups(rootFolderId).catch(() => {});
+    const uploaded = await uploadXlsx(rootFolderId, fileName, bytes);
+
+    const totalRows = Object.values(counts).reduce((s, n) => s + Number(n || 0), 0);
     await supabaseAdmin.from("backup_runs").update({
       status: "success",
       finished_at: new Date().toISOString(),
       heartbeat_at: new Date().toISOString(),
       current_table: null,
-      size_bytes: progress.totalBytes,
-      row_counts: progress.counts,
+      file_id: uploaded.id,
+      size_bytes: bytes.length,
+      processed_rows: totalRows,
+      row_counts: counts,
     }).eq("id", runId);
-    return { ok: true, status: "success" as const, runId, fileName: dayFolderName, fileId: dayFolderId, folderId: rootFolderId, sizeBytes: progress.totalBytes, rowCounts: progress.counts };
-  }
-  return { ok: true, status: "running" as const, runId, fileName: dayFolderName, fileId: dayFolderId, folderId: rootFolderId, sizeBytes: progress.totalBytes, rowCounts: progress.counts };
-}
 
-export async function resumePendingBackup() {
-  const staleCutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
-  await supabaseAdmin.from("backup_runs").update({
-    status: "failed",
-    finished_at: new Date().toISOString(),
-    error_message: "הריצה הופסקה ללא התקדמות במשך יותר מ־15 דקות.",
-  }).eq("status", "running").lt("heartbeat_at", staleCutoff);
-
-  const { data: run, error } = await supabaseAdmin
-    .from("backup_runs")
-    .select("id")
-    .eq("status", "running")
-    .order("started_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  if (!run) return { ok: true, status: "idle" as const };
-
-  try {
-    return await processBackupBatch(run.id);
+    return {
+      ok: true, status: "success" as const, runId,
+      fileName, fileId: uploaded.id, folderId: rootFolderId,
+      sizeBytes: bytes.length, rowCounts: counts,
+    };
   } catch (err: any) {
     const message = (err?.message ?? String(err)).slice(0, 2000);
     await supabaseAdmin.from("backup_runs").update({
@@ -307,7 +386,19 @@ export async function resumePendingBackup() {
       finished_at: new Date().toISOString(),
       heartbeat_at: new Date().toISOString(),
       error_message: message,
-    }).eq("id", run.id);
-    return { ok: false, status: "failed" as const, runId: run.id, error: message };
+    }).eq("id", runId);
+    throw new Error(message);
   }
+}
+
+// Kept for API compatibility — no more chunked resume with single-file backups.
+// Any stale "running" row that never finished is marked failed so the UI stops polling.
+export async function resumePendingBackup() {
+  const staleCutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+  await supabaseAdmin.from("backup_runs").update({
+    status: "failed",
+    finished_at: new Date().toISOString(),
+    error_message: "הריצה הופסקה ללא התקדמות במשך יותר מ־15 דקות.",
+  }).eq("status", "running").lt("heartbeat_at", staleCutoff);
+  return { ok: true, status: "idle" as const };
 }

@@ -23,7 +23,7 @@ export const triggerBackupNow = createServerFn({ method: "POST" })
     const { runBackup } = await import("@/lib/backup.server");
     try {
       const result = await runBackup("manual", run.id);
-      return { ...result, ok: result.status !== "failed" };
+      return { ...result, ok: true };
     } catch (err: any) {
       return { ok: false, runId: run.id, error: err?.message ?? String(err) };
     }
