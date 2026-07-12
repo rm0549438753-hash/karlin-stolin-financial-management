@@ -71,9 +71,13 @@ export function BackupPanel() {
     onSettled: () => setRunning(false),
   });
 
-  const advance = useMutation({
-    mutationFn: () => continueRun(),
-    onSettled: () => qc.invalidateQueries({ queryKey: ["backup_runs"] }),
+  const deleteRun = useMutation({
+    mutationFn: (id: string) => del({ data: { id } }),
+    onSuccess: () => {
+      toast.success("נמחק");
+      qc.invalidateQueries({ queryKey: ["backup_runs"] });
+    },
+    onError: (err: any) => toast.error(`שגיאה: ${err?.message ?? err}`),
   });
 
   useEffect(() => {
