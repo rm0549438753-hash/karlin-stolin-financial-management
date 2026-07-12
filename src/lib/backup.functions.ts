@@ -53,7 +53,21 @@ export const listBackupRuns = createServerFn({ method: "GET" })
       .from("backup_runs")
       .select("*")
       .order("started_at", { ascending: false })
-      .limit(50);
+      .limit(200);
     if (error) throw new Error(error.message);
     return data ?? [];
+  });
+
+export const deleteBackupRun = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { id: string }) => data)
+  .handler(async ({ context, data }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (!isAdmin) throw new Error("Forbidden");
+    const { error } = await context.supabase.from("backup_runs").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
