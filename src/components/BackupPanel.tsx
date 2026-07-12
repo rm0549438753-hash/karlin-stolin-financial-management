@@ -193,13 +193,13 @@ export function BackupPanel() {
                           <TableCell className="whitespace-nowrap">
                             {r.file_id ? (
                               <a
-                                href={`https://drive.google.com/drive/folders/${r.file_id}`}
+                                href={`https://drive.google.com/file/d/${r.file_id}/view`}
                                 target="_blank"
                                 rel="noreferrer"
                                 onClick={(e) => e.stopPropagation()}
                                 className="inline-flex items-center gap-1 text-primary hover:underline text-sm"
                               >
-                                <ExternalLink className="h-3 w-3" /> פתח
+                                <ExternalLink className="h-3 w-3" /> פתח קובץ
                               </a>
                             ) : "—"}
                           </TableCell>
