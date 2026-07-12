@@ -17,6 +17,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedActionHistoryRouteImport } from './routes/_authenticated/action-history'
+import { Route as ApiPublicHooksDailyChecksEmailRouteImport } from './routes/api/public/hooks/daily-checks-email'
 import { Route as ApiPublicHooksDailyBackupRouteImport } from './routes/api/public/hooks/daily-backup'
 
 const AuthRoute = AuthRouteImport.update({
@@ -60,6 +61,12 @@ const AuthenticatedActionHistoryRoute =
     path: '/action-history',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicHooksDailyChecksEmailRoute =
+  ApiPublicHooksDailyChecksEmailRouteImport.update({
+    id: '/api/public/hooks/daily-checks-email',
+    path: '/api/public/hooks/daily-checks-email',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksDailyBackupRoute =
   ApiPublicHooksDailyBackupRouteImport.update({
     id: '/api/public/hooks/daily-backup',
@@ -76,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/transactions': typeof AuthenticatedTransactionsRoute
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
+  '/api/public/hooks/daily-checks-email': typeof ApiPublicHooksDailyChecksEmailRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -86,6 +94,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/transactions': typeof AuthenticatedTransactionsRoute
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
+  '/api/public/hooks/daily-checks-email': typeof ApiPublicHooksDailyChecksEmailRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -98,6 +107,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/transactions': typeof AuthenticatedTransactionsRoute
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
+  '/api/public/hooks/daily-checks-email': typeof ApiPublicHooksDailyChecksEmailRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -110,6 +120,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/transactions'
     | '/api/public/hooks/daily-backup'
+    | '/api/public/hooks/daily-checks-email'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -120,6 +131,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/transactions'
     | '/api/public/hooks/daily-backup'
+    | '/api/public/hooks/daily-checks-email'
   id:
     | '__root__'
     | '/'
@@ -131,6 +143,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/transactions'
     | '/api/public/hooks/daily-backup'
+    | '/api/public/hooks/daily-checks-email'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -138,6 +151,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ApiPublicHooksDailyBackupRoute: typeof ApiPublicHooksDailyBackupRoute
+  ApiPublicHooksDailyChecksEmailRoute: typeof ApiPublicHooksDailyChecksEmailRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -198,6 +212,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedActionHistoryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/hooks/daily-checks-email': {
+      id: '/api/public/hooks/daily-checks-email'
+      path: '/api/public/hooks/daily-checks-email'
+      fullPath: '/api/public/hooks/daily-checks-email'
+      preLoaderRoute: typeof ApiPublicHooksDailyChecksEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/daily-backup': {
       id: '/api/public/hooks/daily-backup'
       path: '/api/public/hooks/daily-backup'
@@ -232,6 +253,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ApiPublicHooksDailyBackupRoute: ApiPublicHooksDailyBackupRoute,
+  ApiPublicHooksDailyChecksEmailRoute: ApiPublicHooksDailyChecksEmailRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
