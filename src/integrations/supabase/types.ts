@@ -86,6 +86,51 @@ export type Database = {
         }
         Relationships: []
       }
+      backup_runs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          file_id: string | null
+          file_name: string | null
+          finished_at: string | null
+          folder_id: string | null
+          id: string
+          row_counts: Json | null
+          size_bytes: number | null
+          started_at: string
+          status: string
+          triggered_by: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          file_id?: string | null
+          file_name?: string | null
+          finished_at?: string | null
+          folder_id?: string | null
+          id?: string
+          row_counts?: Json | null
+          size_bytes?: number | null
+          started_at?: string
+          status?: string
+          triggered_by?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          file_id?: string | null
+          file_name?: string | null
+          finished_at?: string | null
+          folder_id?: string | null
+          id?: string
+          row_counts?: Json | null
+          size_bytes?: number | null
+          started_at?: string
+          status?: string
+          triggered_by?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
