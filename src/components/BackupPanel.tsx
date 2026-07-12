@@ -5,8 +5,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, PlayCircle, ExternalLink, CheckCircle2, XCircle } from "lucide-react";
-import { triggerBackupNow, continueBackupNow, listBackupRuns } from "@/lib/backup.functions";
+import { Loader2, PlayCircle, ExternalLink, CheckCircle2, XCircle, ChevronDown, ChevronLeft, Trash2, RefreshCw } from "lucide-react";
+import { triggerBackupNow, continueBackupNow, listBackupRuns, deleteBackupRun } from "@/lib/backup.functions";
 
 function fmtDate(v: string | null) {
   if (!v) return "—";
@@ -38,7 +38,9 @@ export function BackupPanel() {
   const list = useServerFn(listBackupRuns);
   const trigger = useServerFn(triggerBackupNow);
   const continueRun = useServerFn(continueBackupNow);
+  const del = useServerFn(deleteBackupRun);
   const [running, setRunning] = useState(false);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const { data: runs, isLoading } = useQuery({
     queryKey: ["backup_runs"],
@@ -72,6 +74,15 @@ export function BackupPanel() {
   const advance = useMutation({
     mutationFn: () => continueRun(),
     onSettled: () => qc.invalidateQueries({ queryKey: ["backup_runs"] }),
+  });
+
+  const deleteRun = useMutation({
+    mutationFn: (id: string) => del({ data: { id } }),
+    onSuccess: () => {
+      toast.success("נמחק");
+      qc.invalidateQueries({ queryKey: ["backup_runs"] });
+    },
+    onError: (err: any) => toast.error(`שגיאה: ${err?.message ?? err}`),
   });
 
   useEffect(() => {
@@ -133,6 +144,7 @@ export function BackupPanel() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-8"></TableHead>
                     <TableHead>סטטוס</TableHead>
                     <TableHead>התחלה</TableHead>
                     <TableHead>סיום</TableHead>
@@ -140,60 +152,122 @@ export function BackupPanel() {
                     <TableHead>התקדמות</TableHead>
                     <TableHead>גודל</TableHead>
                     <TableHead>תיקייה</TableHead>
-                    <TableHead>פרטי שגיאה</TableHead>
+                    <TableHead>פעולות</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {runs.map((r: any) => (
-                    <TableRow key={r.id}>
-                      <TableCell className="whitespace-nowrap">
-                        {r.status === "success" ? (
-                          <span className="inline-flex items-center gap-1 text-green-600 font-medium">
-                            <CheckCircle2 className="h-4 w-4" /> הושלם בהצלחה
-                          </span>
-                        ) : r.status === "failed" ? (
-                          <span className="inline-flex items-center gap-1 text-red-600 font-medium">
-                            <XCircle className="h-4 w-4" /> נכשל
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-amber-600 font-medium">
-                            <Loader2 className="h-4 w-4 animate-spin" /> רץ...
-                          </span>
+                  {runs.map((r: any) => {
+                    const isOpen = openId === r.id;
+                    return (
+                      <>
+                        <TableRow key={r.id} className="cursor-pointer" onClick={() => setOpenId(isOpen ? null : r.id)}>
+                          <TableCell>
+                            {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            {r.status === "success" ? (
+                              <span className="inline-flex items-center gap-1 text-green-600 font-medium">
+                                <CheckCircle2 className="h-4 w-4" /> הושלם
+                              </span>
+                            ) : r.status === "failed" ? (
+                              <span className="inline-flex items-center gap-1 text-red-600 font-medium">
+                                <XCircle className="h-4 w-4" /> נכשל
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-amber-600 font-medium">
+                                <Loader2 className="h-4 w-4 animate-spin" /> רץ...
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">{fmtDate(r.started_at)}</TableCell>
+                          <TableCell className="whitespace-nowrap">{fmtDate(r.finished_at)}</TableCell>
+                          <TableCell>{r.triggered_by === "cron" ? "אוטומטי" : "ידני"}</TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            {r.status === "running"
+                              ? `${TABLE_LABELS[r.current_table] ?? r.current_table ?? "מתחיל"} · ${Number(r.processed_rows ?? 0).toLocaleString("he-IL")} רשומות`
+                              : r.status === "success"
+                                ? `${Number(r.processed_rows ?? 0).toLocaleString("he-IL")} רשומות`
+                                : "—"}
+                          </TableCell>
+                          <TableCell>{fmtSize(r.size_bytes)}</TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            {r.file_id ? (
+                              <a
+                                href={`https://drive.google.com/drive/folders/${r.file_id}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center gap-1 text-primary hover:underline text-sm"
+                              >
+                                <ExternalLink className="h-3 w-3" /> פתח
+                              </a>
+                            ) : "—"}
+                          </TableCell>
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                title="הרץ גיבוי חדש"
+                                onClick={() => runNow.mutate()}
+                                disabled={runNow.isPending || hasRunning}
+                              >
+                                <RefreshCw className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                title="מחק"
+                                onClick={() => { if (confirm("למחוק את השורה?")) deleteRun.mutate(r.id); }}
+                                disabled={deleteRun.isPending || r.status === "running"}
+                              >
+                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                        {isOpen && (
+                          <TableRow key={r.id + "-detail"} className="bg-muted/40">
+                            <TableCell colSpan={9}>
+                              <div className="p-3 space-y-3 text-sm">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                  <div><div className="text-xs text-muted-foreground">ID</div><div className="font-mono text-xs" dir="ltr">{r.id}</div></div>
+                                  <div><div className="text-xs text-muted-foreground">שם קובץ</div><div className="truncate">{r.file_name ?? "—"}</div></div>
+                                  <div><div className="text-xs text-muted-foreground">Folder ID</div><div className="font-mono text-xs" dir="ltr">{r.folder_id ?? "—"}</div></div>
+                                  <div><div className="text-xs text-muted-foreground">Heartbeat</div><div>{fmtDate(r.heartbeat_at)}</div></div>
+                                  <div><div className="text-xs text-muted-foreground">טבלה נוכחית</div><div>{TABLE_LABELS[r.current_table] ?? r.current_table ?? "—"}</div></div>
+                                  <div><div className="text-xs text-muted-foreground">שורות שעובדו</div><div>{Number(r.processed_rows ?? 0).toLocaleString("he-IL")}</div></div>
+                                  <div><div className="text-xs text-muted-foreground">גודל</div><div>{fmtSize(r.size_bytes)}</div></div>
+                                  <div><div className="text-xs text-muted-foreground">מקור</div><div>{r.triggered_by === "cron" ? "אוטומטי" : "ידני"}</div></div>
+                                </div>
+                                {r.row_counts && (
+                                  <div>
+                                    <div className="text-xs text-muted-foreground mb-1">כמות שורות לפי טבלה</div>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-1 text-xs">
+                                      {Object.entries(r.row_counts as Record<string, number>).map(([k, v]) => (
+                                        <div key={k} className="flex justify-between rounded border px-2 py-1 bg-background">
+                                          <span>{TABLE_LABELS[k] ?? k}</span>
+                                          <span className="font-mono">{Number(v).toLocaleString("he-IL")}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                {r.error_message && (
+                                  <div>
+                                    <div className="text-xs text-muted-foreground mb-1">פרטי שגיאה</div>
+                                    <div className="rounded-md border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-900 p-2 text-xs text-red-700 dark:text-red-300 whitespace-pre-wrap break-words">
+                                      {r.error_message}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
                         )}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">{fmtDate(r.started_at)}</TableCell>
-                      <TableCell className="whitespace-nowrap">{fmtDate(r.finished_at)}</TableCell>
-                      <TableCell>{r.triggered_by === "cron" ? "אוטומטי" : "ידני"}</TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {r.status === "running"
-                          ? `${TABLE_LABELS[r.current_table] ?? r.current_table ?? "מתחיל"} · ${Number(r.processed_rows ?? 0).toLocaleString("he-IL")} רשומות`
-                          : r.status === "success"
-                            ? `${Number(r.processed_rows ?? 0).toLocaleString("he-IL")} רשומות`
-                            : "—"}
-                      </TableCell>
-                      <TableCell>{fmtSize(r.size_bytes)}</TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {r.file_id ? (
-                          <Button size="sm" variant="outline" asChild>
-                            <a
-                              href={`https://drive.google.com/drive/folders/${r.file_id}`}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              <ExternalLink className="ml-1 h-3 w-3" /> פתח תיקייה
-                            </a>
-                          </Button>
-                        ) : "—"}
-                      </TableCell>
-                      <TableCell className="max-w-[360px]">
-                        {r.error_message ? (
-                          <div className="rounded-md border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-900 p-2 text-xs text-red-700 dark:text-red-300 whitespace-pre-wrap break-words">
-                            {r.error_message}
-                          </div>
-                        ) : "—"}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                      </>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
