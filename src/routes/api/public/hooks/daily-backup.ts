@@ -13,8 +13,11 @@ export const Route = createFileRoute("/api/public/hooks/daily-backup")({
           });
         }
         try {
-          const { runBackup } = await import("@/lib/backup.server");
-          const result = await runBackup("cron");
+          const body = await request.json().catch(() => ({})) as { resumeOnly?: boolean };
+          const { runBackup, resumePendingBackup } = await import("@/lib/backup.server");
+          const result = body.resumeOnly
+            ? await resumePendingBackup()
+            : await runBackup("cron");
           return Response.json({ ...result });
         } catch (err: any) {
           console.error("[daily-backup] failed:", err);

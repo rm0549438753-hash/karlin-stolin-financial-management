@@ -11,7 +11,6 @@ import logoAsset from "@/assets/karlin-logo.png.asset.json";
 export const Route = createFileRoute("/auth")({
   ssr: false,
   beforeLoad: async () => {
-    if (typeof window === "undefined") return;
     const { data } = await supabase.auth.getUser();
     if (data.user) throw redirect({ to: "/dashboard" });
   },

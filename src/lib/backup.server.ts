@@ -7,9 +7,29 @@ const ROOT_FOLDER_NAME = "גיבויים - מרכז קארלין סטולין";
 const FOLDER_MIME = "application/vnd.google-apps.folder";
 const CSV_MIME = "text/csv";
 const RETENTION_DAYS = 30;
+const PAGE_SIZE = 1000;
+const TABLES = [
+  "transactions",
+  "accounts",
+  "funds",
+  "expense_types",
+  "categories",
+  "subcategories",
+  "action_history",
+  "sync_ignores",
+  "profiles",
+  "user_roles",
+  "import_batches",
+] as const;
 
-// Small page size + immediate upload keeps peak memory low.
-const PAGE_SIZE = 500;
+type BackupProgress = {
+  tableIndex: number;
+  offset: number;
+  partIndex: number;
+  headers: string[] | null;
+  counts: Record<string, number>;
+  totalBytes: number;
+};
 
 function driveHeaders(extra: Record<string, string> = {}) {
   const lovableKey = process.env.LOVABLE_API_KEY;
@@ -63,6 +83,23 @@ async function ensureFolder(name: string, parentId?: string): Promise<string> {
   return (await findFolder(name, parentId)) ?? (await createFolder(name, parentId));
 }
 
+function blankProgress(): BackupProgress {
+  return { tableIndex: 0, offset: 0, partIndex: 0, headers: null, counts: {}, totalBytes: 0 };
+}
+
+function readProgress(value: unknown): BackupProgress {
+  if (!value || typeof value !== "object" || !("tableIndex" in value)) return blankProgress();
+  const p = value as Partial<BackupProgress>;
+  return {
+    tableIndex: Number(p.tableIndex) || 0,
+    offset: Number(p.offset) || 0,
+    partIndex: Number(p.partIndex) || 0,
+    headers: Array.isArray(p.headers) ? p.headers.map(String) : null,
+    counts: p.counts && typeof p.counts === "object" ? p.counts : {},
+    totalBytes: Number(p.totalBytes) || 0,
+  };
+}
+
 function csvEscape(v: any): string {
   if (v === null || v === undefined) return "";
   let s: string;
@@ -99,58 +136,6 @@ async function uploadCsv(folderId: string, fileName: string, content: string): P
   if (!res.ok) throw new Error(`Upload ${fileName} failed ${res.status}: ${text.slice(0, 500)}`);
   const json = JSON.parse(text);
   return { id: json.id as string, size: bytes.length };
-}
-
-/**
- * Export a table page-by-page. Each page is uploaded as its own CSV file
- * (e.g. transactions-part-01.csv). Peak memory stays bounded to a single page.
- * For small tables (single page) the file is written as `<table>.csv`.
- */
-async function exportTable(
-  table: string,
-  folderId: string
-): Promise<{ rows: number; size: number; parts: number }> {
-  let from = 0;
-  let total = 0;
-  let totalSize = 0;
-  let partIndex = 0;
-  let headers: string[] | null = null;
-
-  while (true) {
-    const { data, error } = await supabaseAdmin
-      .from(table as any)
-      .select("*")
-      .range(from, from + PAGE_SIZE - 1);
-    if (error) throw new Error(`Fetch ${table} @${from}: ${error.message}`);
-    if (!data || data.length === 0) break;
-
-    if (!headers) headers = Object.keys(data[0]);
-
-    // Build CSV for this page only.
-    let csv = headers.join(",") + "\n";
-    for (const r of data) {
-      csv += headers.map((h) => csvEscape((r as any)[h])).join(",") + "\n";
-    }
-
-    partIndex += 1;
-    // Small tables: single file; large tables: numbered parts.
-    const fileName =
-      data.length < PAGE_SIZE && partIndex === 1
-        ? `${table}.csv`
-        : `${table}-part-${String(partIndex).padStart(2, "0")}.csv`;
-
-    const { size } = await uploadCsv(folderId, fileName, csv);
-    totalSize += size;
-    total += data.length;
-
-    // Free the string before the next iteration.
-    csv = "";
-
-    if (data.length < PAGE_SIZE) break;
-    from += PAGE_SIZE;
-  }
-
-  return { rows: total, size: totalSize, parts: partIndex };
 }
 
 async function pruneOldBackups(rootFolderId: string) {
@@ -192,65 +177,7 @@ export async function runBackup(
 
   let currentTable = "(init)";
   try {
-    const rootFolderId = await ensureFolder(ROOT_FOLDER_NAME);
-    const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10);
-    const timeStr = today.toISOString().slice(11, 16).replace(":", "");
-    const dayFolderName = `backup-${dateStr}-${timeStr}`;
-    const dayFolderId = await createFolder(dayFolderName, rootFolderId);
-
-    // Persist folder id immediately so the UI can link to it even if the run
-    // fails partway through.
-    await supabaseAdmin
-      .from("backup_runs")
-      .update({ file_name: dayFolderName, file_id: dayFolderId, folder_id: rootFolderId })
-      .eq("id", runId);
-
-    const tables = [
-      "transactions",
-      "accounts",
-      "funds",
-      "expense_types",
-      "categories",
-      "subcategories",
-      "action_history",
-      "sync_ignores",
-      "profiles",
-      "user_roles",
-      "import_batches",
-      "backup_runs",
-    ];
-
-    const counts: Record<string, number> = {};
-    let totalBytes = 0;
-    for (const t of tables) {
-      currentTable = t;
-      const res = await exportTable(t, dayFolderId);
-      counts[t] = res.rows;
-      totalBytes += res.size;
-    }
-
-    await pruneOldBackups(rootFolderId).catch(() => {});
-
-    await supabaseAdmin
-      .from("backup_runs")
-      .update({
-        status: "success",
-        finished_at: new Date().toISOString(),
-        size_bytes: totalBytes,
-        row_counts: counts,
-      })
-      .eq("id", runId);
-
-    return {
-      ok: true,
-      runId,
-      fileName: dayFolderName,
-      fileId: dayFolderId,
-      folderId: rootFolderId,
-      sizeBytes: totalBytes,
-      rowCounts: counts,
-    };
+    return await processBackupBatch(runId);
   } catch (err: any) {
     const raw = err?.message ?? String(err);
     const message = `[${currentTable}] ${raw}`.slice(0, 2000);
@@ -263,5 +190,124 @@ export async function runBackup(
       })
       .eq("id", runId);
     throw new Error(message);
+  }
+}
+
+async function processBackupBatch(runId: string) {
+  const { data: run, error: runError } = await supabaseAdmin
+    .from("backup_runs")
+    .select("*")
+    .eq("id", runId)
+    .single();
+  if (runError || !run) throw new Error(runError?.message ?? "Backup run not found");
+  if (run.status === "success" || run.status === "failed") {
+    return { ok: run.status === "success", status: run.status, runId };
+  }
+
+  let rootFolderId = run.folder_id as string | null;
+  let dayFolderId = run.file_id as string | null;
+  let dayFolderName = run.file_name as string | null;
+  if (!rootFolderId || !dayFolderId || !dayFolderName) {
+    rootFolderId = await ensureFolder(ROOT_FOLDER_NAME);
+    const now = new Date();
+    dayFolderName = `backup-${now.toISOString().slice(0, 10)}-${now.toISOString().slice(11, 16).replace(":", "")}`;
+    dayFolderId = await createFolder(dayFolderName, rootFolderId);
+    await supabaseAdmin.from("backup_runs").update({
+      file_name: dayFolderName,
+      file_id: dayFolderId,
+      folder_id: rootFolderId,
+      heartbeat_at: new Date().toISOString(),
+    }).eq("id", runId);
+  }
+
+  const progress = readProgress(run.row_counts);
+
+  const table = TABLES[progress.tableIndex];
+  const { data, error } = await supabaseAdmin
+    .from(table as any)
+    .select("*")
+    .range(progress.offset, progress.offset + PAGE_SIZE - 1);
+  if (error) throw new Error(`Fetch ${table} @${progress.offset}: ${error.message}`);
+
+  if (!data || data.length === 0) {
+    progress.counts[table] = progress.offset;
+    progress.tableIndex += 1;
+    progress.offset = 0;
+    progress.partIndex = 0;
+    progress.headers = null;
+  } else {
+    const headers = progress.headers ?? Object.keys(data[0]);
+    let csv = headers.join(",") + "\n";
+    for (const row of data) csv += headers.map((h) => csvEscape((row as any)[h])).join(",") + "\n";
+    const partIndex = progress.partIndex + 1;
+    const fileName = data.length < PAGE_SIZE && partIndex === 1
+      ? `${table}.csv`
+      : `${table}-part-${String(partIndex).padStart(3, "0")}.csv`;
+    const uploaded = await uploadCsv(dayFolderId, fileName, csv);
+    progress.totalBytes += uploaded.size;
+    progress.offset += data.length;
+    progress.partIndex = partIndex;
+    progress.headers = headers;
+    progress.counts[table] = progress.offset;
+    if (data.length < PAGE_SIZE) {
+      progress.tableIndex += 1;
+      progress.offset = 0;
+      progress.partIndex = 0;
+      progress.headers = null;
+    }
+  }
+
+  await supabaseAdmin.from("backup_runs").update({
+    row_counts: progress,
+    size_bytes: progress.totalBytes,
+    current_table: progress.tableIndex < TABLES.length ? TABLES[progress.tableIndex] : null,
+    processed_rows: Object.values(progress.counts).reduce((sum, value) => sum + Number(value || 0), 0),
+    heartbeat_at: new Date().toISOString(),
+  }).eq("id", runId);
+
+  if (progress.tableIndex >= TABLES.length) {
+    await pruneOldBackups(rootFolderId).catch(() => {});
+    await supabaseAdmin.from("backup_runs").update({
+      status: "success",
+      finished_at: new Date().toISOString(),
+      heartbeat_at: new Date().toISOString(),
+      current_table: null,
+      size_bytes: progress.totalBytes,
+      row_counts: progress.counts,
+    }).eq("id", runId);
+    return { ok: true, status: "success" as const, runId, fileName: dayFolderName, fileId: dayFolderId, folderId: rootFolderId, sizeBytes: progress.totalBytes, rowCounts: progress.counts };
+  }
+  return { ok: true, status: "running" as const, runId, fileName: dayFolderName, fileId: dayFolderId, folderId: rootFolderId, sizeBytes: progress.totalBytes, rowCounts: progress.counts };
+}
+
+export async function resumePendingBackup() {
+  const staleCutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+  await supabaseAdmin.from("backup_runs").update({
+    status: "failed",
+    finished_at: new Date().toISOString(),
+    error_message: "הריצה הופסקה ללא התקדמות במשך יותר מ־15 דקות.",
+  }).eq("status", "running").lt("heartbeat_at", staleCutoff);
+
+  const { data: run, error } = await supabaseAdmin
+    .from("backup_runs")
+    .select("id")
+    .eq("status", "running")
+    .order("started_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!run) return { ok: true, status: "idle" as const };
+
+  try {
+    return await processBackupBatch(run.id);
+  } catch (err: any) {
+    const message = (err?.message ?? String(err)).slice(0, 2000);
+    await supabaseAdmin.from("backup_runs").update({
+      status: "failed",
+      finished_at: new Date().toISOString(),
+      heartbeat_at: new Date().toISOString(),
+      error_message: message,
+    }).eq("id", run.id);
+    return { ok: false, status: "failed" as const, runId: run.id, error: message };
   }
 }

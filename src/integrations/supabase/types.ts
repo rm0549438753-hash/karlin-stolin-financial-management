@@ -89,12 +89,15 @@ export type Database = {
       backup_runs: {
         Row: {
           created_at: string
+          current_table: string | null
           error_message: string | null
           file_id: string | null
           file_name: string | null
           finished_at: string | null
           folder_id: string | null
+          heartbeat_at: string
           id: string
+          processed_rows: number
           row_counts: Json | null
           size_bytes: number | null
           started_at: string
@@ -103,12 +106,15 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          current_table?: string | null
           error_message?: string | null
           file_id?: string | null
           file_name?: string | null
           finished_at?: string | null
           folder_id?: string | null
+          heartbeat_at?: string
           id?: string
+          processed_rows?: number
           row_counts?: Json | null
           size_bytes?: number | null
           started_at?: string
@@ -117,12 +123,15 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          current_table?: string | null
           error_message?: string | null
           file_id?: string | null
           file_name?: string | null
           finished_at?: string | null
           folder_id?: string | null
+          heartbeat_at?: string
           id?: string
+          processed_rows?: number
           row_counts?: Json | null
           size_bytes?: number | null
           started_at?: string
