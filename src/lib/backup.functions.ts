@@ -13,8 +13,25 @@ export const triggerBackupNow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await ensureAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Create the run row synchronously so the UI has a row to poll.
+    const { data: run, error } = await supabaseAdmin
+      .from("backup_runs")
+      .insert({ status: "running", triggered_by: "manual" })
+      .select("id")
+      .single();
+    if (error || !run) throw new Error(error?.message ?? "Could not create run");
+
+    // Run the actual backup and wait for completion (surface success/failure
+    // in this response). Errors are also persisted in backup_runs.
     const { runBackup } = await import("@/lib/backup.server");
-    return await runBackup("manual");
+    try {
+      const result = await runBackup("manual", run.id);
+      return { ...result, ok: true as const };
+    } catch (err: any) {
+      return { ok: false, runId: run.id, error: err?.message ?? String(err) };
+    }
   });
 
 export const listBackupRuns = createServerFn({ method: "GET" })
