@@ -28,7 +28,7 @@ export const triggerBackupNow = createServerFn({ method: "POST" })
     const { runBackup } = await import("@/lib/backup.server");
     try {
       const result = await runBackup("manual", run.id);
-      return { ok: true, ...result };
+      return { ...result, ok: true as const };
     } catch (err: any) {
       return { ok: false, runId: run.id, error: err?.message ?? String(err) };
     }
