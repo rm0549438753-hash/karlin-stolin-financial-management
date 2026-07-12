@@ -194,6 +194,48 @@ export type Database = {
         }
         Relationships: []
       }
+      check_email_settings: {
+        Row: {
+          body_intro: string
+          body_outro: string
+          id: string
+          include_association: boolean
+          include_note: boolean
+          recipients: string[]
+          send_when_empty: boolean
+          singleton: boolean
+          subject_template: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          body_intro?: string
+          body_outro?: string
+          id?: string
+          include_association?: boolean
+          include_note?: boolean
+          recipients?: string[]
+          send_when_empty?: boolean
+          singleton?: boolean
+          subject_template?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          body_intro?: string
+          body_outro?: string
+          id?: string
+          include_association?: boolean
+          include_note?: boolean
+          recipients?: string[]
+          send_when_empty?: boolean
+          singleton?: boolean
+          subject_template?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       expense_types: {
         Row: {
           created_at: string
