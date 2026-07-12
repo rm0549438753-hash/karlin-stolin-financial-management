@@ -1,0 +1,2 @@
+CREATE POLICY "Admins can delete email settings" ON public.check_email_settings FOR DELETE TO authenticated USING (public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "Admins can update import batches" ON public.import_batches FOR UPDATE TO authenticated USING (public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'admin'));
