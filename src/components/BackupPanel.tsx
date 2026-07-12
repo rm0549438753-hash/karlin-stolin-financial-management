@@ -5,8 +5,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, PlayCircle, ExternalLink, CheckCircle2, XCircle } from "lucide-react";
-import { triggerBackupNow, continueBackupNow, listBackupRuns } from "@/lib/backup.functions";
+import { Loader2, PlayCircle, ExternalLink, CheckCircle2, XCircle, ChevronDown, ChevronLeft, Trash2, RefreshCw } from "lucide-react";
+import { triggerBackupNow, continueBackupNow, listBackupRuns, deleteBackupRun } from "@/lib/backup.functions";
 
 function fmtDate(v: string | null) {
   if (!v) return "—";
