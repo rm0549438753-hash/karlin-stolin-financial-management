@@ -362,11 +362,12 @@ export async function runBackup(triggeredBy: "cron" | "manual", existingRunId?: 
 // Kept for API compatibility — no more chunked resume with single-file backups.
 // Any stale "running" row that never finished is marked failed so the UI stops polling.
 export async function resumePendingBackup() {
-  const staleCutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+  const staleCutoff = new Date(Date.now() - 2 * 60 * 1000).toISOString();
   await supabaseAdmin.from("backup_runs").update({
     status: "failed",
     finished_at: new Date().toISOString(),
-    error_message: "הריצה הופסקה ללא התקדמות במשך יותר מ־15 דקות.",
+    current_table: null,
+    error_message: "הריצה הופסקה ללא התקדמות במשך יותר מ־2 דקות.",
   }).eq("status", "running").lt("heartbeat_at", staleCutoff);
   return { ok: true, status: "idle" as const };
 }
