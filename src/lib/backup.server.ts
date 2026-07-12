@@ -46,17 +46,22 @@ async function ensureFolder(name: string, parentId?: string): Promise<string> {
   return (await findFolder(name, parentId)) ?? (await createFolder(name, parentId));
 }
 
-async function wipeFolder(folderId: string) {
+async function wipeFolder(folderId: string, keepFileId?: string) {
   const q = encodeURIComponent(`'${folderId}' in parents and trashed=false`);
   const listed = await driveJson(
     `/drive/v3/files?q=${q}&fields=files(id,name)&pageSize=1000`,
     { headers: driveHeaders() }
   );
   for (const f of listed.files || []) {
-    await fetch(`${GATEWAY_URL}/drive/v3/files/${f.id}?supportsAllDrives=true`, {
+    if (f.id === keepFileId) continue;
+    const res = await fetch(`${GATEWAY_URL}/drive/v3/files/${f.id}?supportsAllDrives=true`, {
       method: "DELETE",
       headers: driveHeaders(),
-    }).catch(() => {});
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Delete old backup failed ${res.status}: ${text.slice(0, 500)}`);
+    }
   }
 }
 
@@ -266,12 +271,13 @@ async function buildWorkbook(): Promise<{ bytes: Uint8Array; counts: Record<stri
     subcats.map((s: any) => [s.name, maps.cat.get(s.category_id) ?? ""]));
   counts["תת קטגוריות"] = subcats.length;
 
-  const bytes = XLSX.write(wb, {
+  const output = XLSX.write(wb, {
     type: "array",
     bookType: "xlsx",
     compression: true,
     bookSST: false,
-  }) as Uint8Array;
+  }) as ArrayBuffer;
+  const bytes = new Uint8Array(output);
   return { bytes, counts };
 }
 
@@ -308,15 +314,21 @@ export async function runBackup(triggeredBy: "cron" | "manual", existingRunId?: 
       size_bytes: bytes.length,
     }).eq("id", runId);
 
-    // User wants a clean slate — wipe old backups before uploading.
-    await wipeFolder(rootFolderId);
-
     await supabaseAdmin.from("backup_runs").update({
       heartbeat_at: new Date().toISOString(),
       current_table: "uploading",
     }).eq("id", runId);
 
     const uploaded = await uploadXlsx(rootFolderId, fileName, bytes);
+
+    // Keep the previous backup until the new file is safely uploaded, then
+    // remove every older file while preserving the newly-created workbook.
+    await supabaseAdmin.from("backup_runs").update({
+      heartbeat_at: new Date().toISOString(),
+      current_table: "cleanup",
+      file_id: uploaded.id,
+    }).eq("id", runId);
+    await wipeFolder(rootFolderId, uploaded.id);
 
     const totalRows = Object.values(counts).reduce((s, n) => s + Number(n || 0), 0);
     await supabaseAdmin.from("backup_runs").update({
