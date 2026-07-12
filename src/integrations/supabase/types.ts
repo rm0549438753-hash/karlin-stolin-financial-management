@@ -152,6 +152,39 @@ export type Database = {
         }
         Relationships: []
       }
+      check_email_runs: {
+        Row: {
+          check_count: number
+          error_message: string | null
+          for_date: string
+          id: string
+          ran_at: string
+          status: string
+          total_amount: number
+          triggered_by: string
+        }
+        Insert: {
+          check_count?: number
+          error_message?: string | null
+          for_date: string
+          id?: string
+          ran_at?: string
+          status: string
+          total_amount?: number
+          triggered_by?: string
+        }
+        Update: {
+          check_count?: number
+          error_message?: string | null
+          for_date?: string
+          id?: string
+          ran_at?: string
+          status?: string
+          total_amount?: number
+          triggered_by?: string
+        }
+        Relationships: []
+      }
       expense_types: {
         Row: {
           created_at: string
