@@ -38,7 +38,9 @@ export function BackupPanel() {
   const list = useServerFn(listBackupRuns);
   const trigger = useServerFn(triggerBackupNow);
   const continueRun = useServerFn(continueBackupNow);
+  const del = useServerFn(deleteBackupRun);
   const [running, setRunning] = useState(false);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const { data: runs, isLoading } = useQuery({
     queryKey: ["backup_runs"],
