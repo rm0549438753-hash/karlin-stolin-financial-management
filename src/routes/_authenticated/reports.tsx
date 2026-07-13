@@ -133,6 +133,9 @@ function ReportsPage() {
           <TabsTrigger value="fund-opening" className="gap-1.5 text-base font-semibold px-4 py-2">
             <Wallet className="w-4 h-4" />יתרת תחילת שנה
           </TabsTrigger>
+          <TabsTrigger value="cash-balance" className="gap-1.5 text-base font-semibold px-4 py-2">
+            <Coins className="w-4 h-4" />יתרת מזומן
+          </TabsTrigger>
         </TabsList>
 
         {isLoading && <p className="text-sm text-muted-foreground">טוען…</p>}
@@ -141,6 +144,7 @@ function ReportsPage() {
         <TabsContent value="uncategorized"><UncategorizedReport txs={txs} lookups={lookups} /></TabsContent>
         <TabsContent value="no-date"><NoDateReport txs={txs} lookups={lookups} /></TabsContent>
         <TabsContent value="fund-opening"><FundOpeningBalancesReport /></TabsContent>
+        <TabsContent value="cash-balance"><CashBalanceReport /></TabsContent>
 
       </Tabs>
     </AppShell>
