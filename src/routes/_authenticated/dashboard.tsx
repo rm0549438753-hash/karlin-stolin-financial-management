@@ -810,6 +810,7 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-right">קופה</TableHead>
+                  <TableHead className="text-left">יתרת תחילת שנה</TableHead>
                   <TableHead className="text-left">נכנס לקופה</TableHead>
                   <TableHead className="text-left">יצא מהקופה</TableHead>
                   <TableHead className="text-left">יתרה</TableHead>
@@ -824,6 +825,9 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                     onClick={() => setOpenVault({ id: r.id, name: r.name })}
                   >
                     <TableCell className="text-right font-medium text-primary underline-offset-2 hover:underline">{r.name}</TableCell>
+                    <TableCell className={`text-left whitespace-nowrap tabular-nums ${r.opening >= 0 ? "text-income" : "text-expense"}`}>
+                      {r.opening ? formatCurrency(r.opening) : "—"}
+                    </TableCell>
                     <TableCell className="text-left text-income whitespace-nowrap">{formatCurrency(r.credit)}</TableCell>
                     <TableCell className="text-left text-expense whitespace-nowrap">{formatCurrency(r.debit)}</TableCell>
                     <TableCell className={`text-left whitespace-nowrap font-semibold ${r.balance >= 0 ? "text-income" : "text-expense"}`}>
@@ -835,6 +839,7 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                 {summary.length > 0 && (
                   <TableRow className="bg-muted/40 font-semibold">
                     <TableCell className="text-right">סה"כ</TableCell>
+                    <TableCell className={`text-left ${totals.opening >= 0 ? "text-income" : "text-expense"}`}>{formatCurrency(totals.opening)}</TableCell>
                     <TableCell className="text-left text-income">{formatCurrency(totals.credit)}</TableCell>
                     <TableCell className="text-left text-expense">{formatCurrency(totals.debit)}</TableCell>
                     <TableCell className={`text-left ${totals.balance >= 0 ? "text-income" : "text-expense"}`}>
@@ -844,7 +849,7 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                   </TableRow>
                 )}
                 {summary.length === 0 && (
-                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">אין קופות מוגדרות</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">אין קופות מוגדרות</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
