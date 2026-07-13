@@ -129,6 +129,9 @@ function ReportsPage() {
           <TabsTrigger value="no-date" className="gap-1.5 text-base font-semibold px-4 py-2">
             <CalendarX className="w-4 h-4" />ללא תאריך
           </TabsTrigger>
+          <TabsTrigger value="fund-opening" className="gap-1.5 text-base font-semibold px-4 py-2">
+            <Wallet className="w-4 h-4" />יתרת תחילת שנה
+          </TabsTrigger>
         </TabsList>
 
         {isLoading && <p className="text-sm text-muted-foreground">טוען…</p>}
@@ -136,6 +139,7 @@ function ReportsPage() {
         <TabsContent value="future-checks"><FutureChecksReport txs={txs} lookups={lookups} /></TabsContent>
         <TabsContent value="uncategorized"><UncategorizedReport txs={txs} lookups={lookups} /></TabsContent>
         <TabsContent value="no-date"><NoDateReport txs={txs} lookups={lookups} /></TabsContent>
+        <TabsContent value="fund-opening"><FundOpeningBalancesReport /></TabsContent>
 
       </Tabs>
     </AppShell>
