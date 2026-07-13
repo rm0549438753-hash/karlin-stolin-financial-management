@@ -25,6 +25,7 @@ import { PrintDialog, type PrintColumn } from "@/components/PrintDialog";
 import { useUserRole } from "@/hooks/use-auth";
 import { ExportMenu } from "@/components/ExportMenu";
 import { exportRowsAsPdf, objectsToTable } from "@/lib/export-pdf";
+import { useFundOpeningBalances } from "@/components/FundOpeningBalancesReport";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -749,6 +750,14 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
 
 /* ===================== Vaults Tab ===================== */
 function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
+  const currentYear = new Date().getFullYear();
+  const { data: openingBalances = [] } = useFundOpeningBalances(currentYear);
+  const openingByFund = useMemo(() => {
+    const m = new Map<string, number>();
+    openingBalances.forEach((b) => m.set(b.fund_id, Number(b.amount)));
+    return m;
+  }, [openingBalances]);
+
   const vaultFunds = useMemo(
     () => [...lookups.funds].sort((a: any, b: any) => a.name.localeCompare(b.name, "he")),
 
@@ -768,13 +777,14 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       const rows = txs.filter((t) => t.fund_id === f.id);
       const credit = rows.reduce((s, t) => s + (Number(t.amount) > 0 ? Number(t.amount) : 0), 0);
       const debit = rows.reduce((s, t) => s + (Number(t.amount) < 0 ? -Number(t.amount) : 0), 0);
-      return { id: f.id, name: f.name, credit, debit, balance: credit - debit, count: rows.length };
+      const opening = openingByFund.get(f.id) ?? 0;
+      return { id: f.id, name: f.name, opening, credit, debit, balance: opening + credit - debit, count: rows.length };
     });
-  }, [vaultFunds, txs]);
+  }, [vaultFunds, txs, openingByFund]);
 
   const totals = useMemo(() => summary.reduce(
-    (acc: any, r: any) => ({ credit: acc.credit + r.credit, debit: acc.debit + r.debit, balance: acc.balance + r.balance }),
-    { credit: 0, debit: 0, balance: 0 },
+    (acc: any, r: any) => ({ opening: acc.opening + r.opening, credit: acc.credit + r.credit, debit: acc.debit + r.debit, balance: acc.balance + r.balance }),
+    { opening: 0, credit: 0, debit: 0, balance: 0 },
   ), [summary]);
 
   const openRows = useMemo(
@@ -800,6 +810,7 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-right">קופה</TableHead>
+                  <TableHead className="text-left">יתרת תחילת שנה</TableHead>
                   <TableHead className="text-left">נכנס לקופה</TableHead>
                   <TableHead className="text-left">יצא מהקופה</TableHead>
                   <TableHead className="text-left">יתרה</TableHead>
@@ -814,6 +825,9 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                     onClick={() => setOpenVault({ id: r.id, name: r.name })}
                   >
                     <TableCell className="text-right font-medium text-primary underline-offset-2 hover:underline">{r.name}</TableCell>
+                    <TableCell className={`text-left whitespace-nowrap tabular-nums ${r.opening >= 0 ? "text-income" : "text-expense"}`}>
+                      {r.opening ? formatCurrency(r.opening) : "—"}
+                    </TableCell>
                     <TableCell className="text-left text-income whitespace-nowrap">{formatCurrency(r.credit)}</TableCell>
                     <TableCell className="text-left text-expense whitespace-nowrap">{formatCurrency(r.debit)}</TableCell>
                     <TableCell className={`text-left whitespace-nowrap font-semibold ${r.balance >= 0 ? "text-income" : "text-expense"}`}>
@@ -825,6 +839,7 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                 {summary.length > 0 && (
                   <TableRow className="bg-muted/40 font-semibold">
                     <TableCell className="text-right">סה"כ</TableCell>
+                    <TableCell className={`text-left ${totals.opening >= 0 ? "text-income" : "text-expense"}`}>{formatCurrency(totals.opening)}</TableCell>
                     <TableCell className="text-left text-income">{formatCurrency(totals.credit)}</TableCell>
                     <TableCell className="text-left text-expense">{formatCurrency(totals.debit)}</TableCell>
                     <TableCell className={`text-left ${totals.balance >= 0 ? "text-income" : "text-expense"}`}>
@@ -834,7 +849,7 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                   </TableRow>
                 )}
                 {summary.length === 0 && (
-                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">אין קופות מוגדרות</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">אין קופות מוגדרות</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
