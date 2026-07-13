@@ -257,6 +257,44 @@ export type Database = {
         }
         Relationships: []
       }
+      fund_opening_balances: {
+        Row: {
+          amount: number
+          created_at: string
+          fund_id: string
+          id: string
+          note: string | null
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          fund_id: string
+          id?: string
+          note?: string | null
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          fund_id?: string
+          id?: string
+          note?: string | null
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fund_opening_balances_fund_id_fkey"
+            columns: ["fund_id"]
+            isOneToOne: false
+            referencedRelation: "funds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       funds: {
         Row: {
           created_at: string
