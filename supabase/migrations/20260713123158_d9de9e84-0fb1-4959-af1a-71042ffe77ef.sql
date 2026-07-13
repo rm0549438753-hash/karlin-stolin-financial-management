@@ -1,0 +1,2 @@
+DROP POLICY IF EXISTS "Editors can create action history" ON public.action_history;
+CREATE POLICY "No direct inserts to action history" ON public.action_history FOR INSERT TO authenticated WITH CHECK (false);
