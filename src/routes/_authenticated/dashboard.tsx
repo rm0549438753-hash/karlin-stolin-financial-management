@@ -26,6 +26,7 @@ import { useUserRole } from "@/hooks/use-auth";
 import { ExportMenu } from "@/components/ExportMenu";
 import { exportRowsAsPdf, objectsToTable } from "@/lib/export-pdf";
 import { useFundOpeningBalances } from "@/components/FundOpeningBalancesReport";
+import { CashBalanceCard } from "@/components/CashBalanceReport";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
