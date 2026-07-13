@@ -25,6 +25,7 @@ import { PrintDialog, type PrintColumn } from "@/components/PrintDialog";
 import { useUserRole } from "@/hooks/use-auth";
 import { ExportMenu } from "@/components/ExportMenu";
 import { exportRowsAsPdf, objectsToTable } from "@/lib/export-pdf";
+import { useFundOpeningBalances } from "@/components/FundOpeningBalancesReport";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
