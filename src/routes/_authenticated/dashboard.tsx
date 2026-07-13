@@ -26,6 +26,7 @@ import { useUserRole } from "@/hooks/use-auth";
 import { ExportMenu } from "@/components/ExportMenu";
 import { exportRowsAsPdf, objectsToTable } from "@/lib/export-pdf";
 import { useFundOpeningBalances } from "@/components/FundOpeningBalancesReport";
+import { CashBalanceCard } from "@/components/CashBalanceReport";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -218,6 +219,7 @@ function DashboardPage() {
       }
     >
       <AlertsBanner />
+      <div className="mt-4"><CashBalanceCard /></div>
       <Tabs defaultValue="institution" className="space-y-4 mt-4" dir="rtl">
         <div className="flex items-center justify-between gap-3 flex-wrap">
         <TabsList className="flex flex-wrap h-auto max-w-3xl flex-1 gap-1">

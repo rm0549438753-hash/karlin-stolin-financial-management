@@ -15,8 +15,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { useAccounts, useCategories, useExpenseTypes, useFunds, useSubcategories } from "@/hooks/use-lookups";
 import { TransactionDialog, type TransactionRow } from "@/components/TransactionDialog";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { CalendarClock, AlertTriangle, Download, Printer, Search, Pencil, X, Trash2, CalendarX, Save, Wallet } from "lucide-react";
+import { CalendarClock, AlertTriangle, Download, Printer, Search, Pencil, X, Trash2, CalendarX, Save, Wallet, Coins } from "lucide-react";
 import { FundOpeningBalancesReport } from "@/components/FundOpeningBalancesReport";
+import { CashBalanceReport } from "@/components/CashBalanceReport";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { PrintDialog } from "@/components/PrintDialog";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -132,6 +133,9 @@ function ReportsPage() {
           <TabsTrigger value="fund-opening" className="gap-1.5 text-base font-semibold px-4 py-2">
             <Wallet className="w-4 h-4" />יתרת תחילת שנה
           </TabsTrigger>
+          <TabsTrigger value="cash-balance" className="gap-1.5 text-base font-semibold px-4 py-2">
+            <Coins className="w-4 h-4" />יתרת מזומן
+          </TabsTrigger>
         </TabsList>
 
         {isLoading && <p className="text-sm text-muted-foreground">טוען…</p>}
@@ -140,6 +144,7 @@ function ReportsPage() {
         <TabsContent value="uncategorized"><UncategorizedReport txs={txs} lookups={lookups} /></TabsContent>
         <TabsContent value="no-date"><NoDateReport txs={txs} lookups={lookups} /></TabsContent>
         <TabsContent value="fund-opening"><FundOpeningBalancesReport /></TabsContent>
+        <TabsContent value="cash-balance"><CashBalanceReport /></TabsContent>
 
       </Tabs>
     </AppShell>
