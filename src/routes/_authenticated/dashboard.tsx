@@ -749,6 +749,14 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
 
 /* ===================== Vaults Tab ===================== */
 function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
+  const currentYear = new Date().getFullYear();
+  const { data: openingBalances = [] } = useFundOpeningBalances(currentYear);
+  const openingByFund = useMemo(() => {
+    const m = new Map<string, number>();
+    openingBalances.forEach((b) => m.set(b.fund_id, Number(b.amount)));
+    return m;
+  }, [openingBalances]);
+
   const vaultFunds = useMemo(
     () => [...lookups.funds].sort((a: any, b: any) => a.name.localeCompare(b.name, "he")),
 
@@ -768,13 +776,14 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       const rows = txs.filter((t) => t.fund_id === f.id);
       const credit = rows.reduce((s, t) => s + (Number(t.amount) > 0 ? Number(t.amount) : 0), 0);
       const debit = rows.reduce((s, t) => s + (Number(t.amount) < 0 ? -Number(t.amount) : 0), 0);
-      return { id: f.id, name: f.name, credit, debit, balance: credit - debit, count: rows.length };
+      const opening = openingByFund.get(f.id) ?? 0;
+      return { id: f.id, name: f.name, opening, credit, debit, balance: opening + credit - debit, count: rows.length };
     });
-  }, [vaultFunds, txs]);
+  }, [vaultFunds, txs, openingByFund]);
 
   const totals = useMemo(() => summary.reduce(
-    (acc: any, r: any) => ({ credit: acc.credit + r.credit, debit: acc.debit + r.debit, balance: acc.balance + r.balance }),
-    { credit: 0, debit: 0, balance: 0 },
+    (acc: any, r: any) => ({ opening: acc.opening + r.opening, credit: acc.credit + r.credit, debit: acc.debit + r.debit, balance: acc.balance + r.balance }),
+    { opening: 0, credit: 0, debit: 0, balance: 0 },
   ), [summary]);
 
   const openRows = useMemo(
