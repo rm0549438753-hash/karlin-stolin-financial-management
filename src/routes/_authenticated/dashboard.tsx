@@ -774,15 +774,20 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     navigate({ to: "/transactions", search: { account: acc, highlight: t.id } });
   };
 
+  const yearStart = `${currentYear}-01-01`;
   const summary = useMemo(() => {
     return vaultFunds.map((f: any) => {
       const rows = txs.filter((t) => t.fund_id === f.id);
-      const credit = rows.reduce((s, t) => s + (Number(t.amount) > 0 ? Number(t.amount) : 0), 0);
-      const debit = rows.reduce((s, t) => s + (Number(t.amount) < 0 ? -Number(t.amount) : 0), 0);
+      // Opening balance is a year-start snapshot; only include current-year
+      // activity so pre-year net movement isn't double-counted.
+      const yearRows = rows.filter((t) => t.transaction_date && t.transaction_date >= yearStart);
+      const credit = yearRows.reduce((s, t) => s + (Number(t.amount) > 0 ? Number(t.amount) : 0), 0);
+      const debit = yearRows.reduce((s, t) => s + (Number(t.amount) < 0 ? -Number(t.amount) : 0), 0);
       const opening = openingByFund.get(f.id) ?? 0;
       return { id: f.id, name: f.name, opening, credit, debit, balance: opening + credit - debit, count: rows.length };
     });
-  }, [vaultFunds, txs, openingByFund]);
+  }, [vaultFunds, txs, openingByFund, yearStart]);
+
 
   const totals = useMemo(() => summary.reduce(
     (acc: any, r: any) => ({ opening: acc.opening + r.opening, credit: acc.credit + r.credit, debit: acc.debit + r.debit, balance: acc.balance + r.balance }),
