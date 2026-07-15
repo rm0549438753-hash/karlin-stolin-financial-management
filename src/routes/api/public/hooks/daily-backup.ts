@@ -7,6 +7,19 @@ function timingSafeEq(a: string, b: string) {
   return r === 0;
 }
 
+async function verifyCronSecret(provided: string | null | undefined): Promise<boolean> {
+  if (!provided) return false;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .schema("private" as any)
+    .from("cron_secrets")
+    .select("value")
+    .eq("name", "hook")
+    .maybeSingle();
+  if (error || !data?.value) return false;
+  return timingSafeEq(provided, data.value as string);
+}
+
 export const Route = createFileRoute("/api/public/hooks/daily-backup")({
   server: {
     handlers: {
@@ -14,8 +27,7 @@ export const Route = createFileRoute("/api/public/hooks/daily-backup")({
         const provided =
           request.headers.get("x-cron-secret") ??
           request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-        const expected = process.env.CRON_HOOK_SECRET;
-        if (!expected || !provided || !timingSafeEq(provided, expected)) {
+        if (!(await verifyCronSecret(provided))) {
           return new Response(JSON.stringify({ error: "unauthorized" }), {
             status: 401,
             headers: { "Content-Type": "application/json" },
