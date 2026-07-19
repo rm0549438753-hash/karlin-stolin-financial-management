@@ -10,14 +10,9 @@ function timingSafeEq(a: string, b: string) {
 async function verifyCronSecret(provided: string | null | undefined): Promise<boolean> {
   if (!provided) return false;
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin
-    .schema("private" as any)
-    .from("cron_secrets")
-    .select("value")
-    .eq("name", "hook")
-    .maybeSingle();
-  if (error || !data?.value) return false;
-  return timingSafeEq(provided, data.value as string);
+  const { data, error } = await supabaseAdmin.rpc("get_cron_hook_secret");
+  if (error || !data) return false;
+  return timingSafeEq(provided, data as string);
 }
 
 export const Route = createFileRoute("/api/public/hooks/daily-checks-email")({
