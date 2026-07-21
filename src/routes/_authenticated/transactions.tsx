@@ -123,6 +123,7 @@ function TransactionsPage() {
   const [searchDesc, setSearchDesc] = useState("");
   const [searchRef, setSearchRef] = useState("");
   const [searchName, setSearchName] = useState("");
+  const [searchAmount, setSearchAmount] = useState("");
   const [category, setCategory] = useState<string[]>([]);
   const [subcategory, setSubcategory] = useState<string[]>([]);
   const [fund, setFund] = useState<string[]>([]);
@@ -166,7 +167,7 @@ function TransactionsPage() {
     }
   }, [urlSearch.highlight]);
   // Reset selection when filters change
-  useEffect(() => { setSelectedIds(new Set()); }, [searchDesc, searchRef, searchName, category, subcategory, fund, expType, from, to, onlyUncat]);
+  useEffect(() => { setSelectedIds(new Set()); }, [searchDesc, searchRef, searchName, searchAmount, category, subcategory, fund, expType, from, to, onlyUncat]);
 
 
 
@@ -281,12 +282,25 @@ function TransactionsPage() {
         (x.association ?? "").toLowerCase().includes(qName),
       );
     }
+    const qAmt = searchAmount.trim().replace(/[,\s₪]/g, "");
+    if (qAmt) {
+      const n = Number(qAmt);
+      if (!isNaN(n)) {
+        const abs = Math.abs(n);
+        r = r.filter((x) => {
+          const amt = Math.abs(Number(x.amount) || 0);
+          const cr = Math.abs(Number(x.credit) || 0);
+          const db = Math.abs(Number(x.debit) || 0);
+          return amt === abs || cr === abs || db === abs;
+        });
+      }
+    }
     r = [...r].sort((a, b) => {
       const cmp = (a.transaction_date ?? "").localeCompare(b.transaction_date ?? "");
       return dateSort === "asc" ? cmp : -cmp;
     });
     return r;
-  }, [rows, searchDesc, searchRef, searchName, onlyUncat, dateSort]);
+  }, [rows, searchDesc, searchRef, searchName, searchAmount, onlyUncat, dateSort]);
 
   const columns: ColumnDef[] = selectedAccount ? COLUMNS_BY_SCHEMA[selectedAccount.schema_type] : [];
 
@@ -519,13 +533,17 @@ function TransactionsPage() {
                 <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <Input value={searchName} onChange={(e) => setSearchName(e.target.value)} placeholder="שם / עמותה" className="pr-9 bg-card" />
               </div>
+              <div className="relative min-w-[120px]">
+                <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input value={searchAmount} onChange={(e) => setSearchAmount(e.target.value)} placeholder="סכום" className="pr-9 bg-card" dir="ltr" inputMode="decimal" />
+              </div>
               <DateInput value={from} onChange={setFrom} placeholder="מתאריך" />
               <DateInput value={to} onChange={setTo} placeholder="עד תאריך" />
               <MultiFilter value={expType} onChange={setExpType} placeholder="כל הסוגים" items={expTypes} />
               <MultiFilter value={fund} onChange={setFund} placeholder="כל הקופות" items={funds} />
               <MultiFilter value={category} onChange={(v) => { setCategory(v); setSubcategory([]); }} placeholder="כל הקטגוריות" items={categories} />
               <MultiFilter value={subcategory} onChange={setSubcategory} placeholder="כל תתי הקטגוריות" items={category.length === 0 ? subcats : subcats.filter((s) => category.includes(s.category_id ?? ""))} />
-              <Button variant="ghost" size="sm" onClick={() => { setSearchDesc(""); setSearchRef(""); setSearchName(""); setCategory([]); setSubcategory([]); setFund([]); setExpType([]); setFrom(""); setTo(""); setOnlyUncat(false); }}>איפוס</Button>
+              <Button variant="ghost" size="sm" onClick={() => { setSearchDesc(""); setSearchRef(""); setSearchName(""); setSearchAmount(""); setCategory([]); setSubcategory([]); setFund([]); setExpType([]); setFrom(""); setTo(""); setOnlyUncat(false); }}>איפוס</Button>
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 border-b bg-background text-sm">
