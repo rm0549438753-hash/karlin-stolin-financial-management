@@ -263,14 +263,22 @@ function TransactionsPage() {
   const filtered = useMemo(() => {
     let r: any[] = rows;
     if (onlyUncat) r = r.filter((x) => !x.fund_id && !x.expense_type_id);
-    if (search.trim()) {
-      const q = search.toLowerCase();
+    const qDesc = searchDesc.trim().toLowerCase();
+    const qRef = searchRef.trim().toLowerCase();
+    const qName = searchName.trim().toLowerCase();
+    if (qDesc) {
       r = r.filter((x) =>
-        (x.description ?? "").toLowerCase().includes(q) ||
-        (x.reference ?? "").toLowerCase().includes(q) ||
-        (x.note ?? "").toLowerCase().includes(q) ||
-        (x.payee ?? "").toLowerCase().includes(q) ||
-        (x.association ?? "").toLowerCase().includes(q),
+        (x.description ?? "").toLowerCase().includes(qDesc) ||
+        (x.note ?? "").toLowerCase().includes(qDesc),
+      );
+    }
+    if (qRef) {
+      r = r.filter((x) => (x.reference ?? "").toLowerCase().includes(qRef));
+    }
+    if (qName) {
+      r = r.filter((x) =>
+        (x.payee ?? "").toLowerCase().includes(qName) ||
+        (x.association ?? "").toLowerCase().includes(qName),
       );
     }
     r = [...r].sort((a, b) => {
@@ -278,7 +286,7 @@ function TransactionsPage() {
       return dateSort === "asc" ? cmp : -cmp;
     });
     return r;
-  }, [rows, search, onlyUncat, dateSort]);
+  }, [rows, searchDesc, searchRef, searchName, onlyUncat, dateSort]);
 
   const columns: ColumnDef[] = selectedAccount ? COLUMNS_BY_SCHEMA[selectedAccount.schema_type] : [];
 
