@@ -193,9 +193,12 @@ function TransactionsPage() {
       }
       return all;
     },
-
+    staleTime: 2 * 60_000,
+    gcTime: 15 * 60_000,
+    refetchOnWindowFocus: false,
   });
 
+  // Fetch full uncategorized count for this account (unfiltered), cached
   const { data: uncatCount = 0 } = useQuery({
     queryKey: ["uncategorized-count", account],
     enabled: !!account,
@@ -209,7 +212,11 @@ function TransactionsPage() {
       if (error) throw error;
       return count ?? 0;
     },
+    staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
+    refetchOnWindowFocus: false,
   });
+
 
   const { data: batches = [] } = useQuery({
     queryKey: ["import-batches", account],
