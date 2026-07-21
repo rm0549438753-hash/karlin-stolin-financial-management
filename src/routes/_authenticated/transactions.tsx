@@ -120,7 +120,9 @@ function TransactionsPage() {
   const { data: expTypes = [] } = useExpenseTypes();
   const { data: subcats = [] } = useSubcategories();
 
-  const [search, setSearch] = useState("");
+  const [searchDesc, setSearchDesc] = useState("");
+  const [searchRef, setSearchRef] = useState("");
+  const [searchName, setSearchName] = useState("");
   const [category, setCategory] = useState<string[]>([]);
   const [subcategory, setSubcategory] = useState<string[]>([]);
   const [fund, setFund] = useState<string[]>([]);
@@ -154,17 +156,17 @@ function TransactionsPage() {
   useEffect(() => {
     setSelectedIds(new Set());
     setOnlyUncat(false);
-    setSearch(""); setCategory([]); setSubcategory([]); setFund([]); setExpType([]); setFrom(""); setTo("");
+    setSearchDesc(""); setSearchRef(""); setSearchName(""); setCategory([]); setSubcategory([]); setFund([]); setExpType([]); setFrom(""); setTo("");
   }, [account]);
   // When navigating with highlight, also clear filters so the row is visible
   useEffect(() => {
     if (urlSearch.highlight) {
       setOnlyUncat(false);
-      setSearch(""); setCategory([]); setSubcategory([]); setFund([]); setExpType([]); setFrom(""); setTo("");
+      setSearchDesc(""); setSearchRef(""); setSearchName(""); setCategory([]); setSubcategory([]); setFund([]); setExpType([]); setFrom(""); setTo("");
     }
   }, [urlSearch.highlight]);
   // Reset selection when filters change
-  useEffect(() => { setSelectedIds(new Set()); }, [search, category, subcategory, fund, expType, from, to, onlyUncat]);
+  useEffect(() => { setSelectedIds(new Set()); }, [searchDesc, searchRef, searchName, category, subcategory, fund, expType, from, to, onlyUncat]);
 
 
 
@@ -261,14 +263,22 @@ function TransactionsPage() {
   const filtered = useMemo(() => {
     let r: any[] = rows;
     if (onlyUncat) r = r.filter((x) => !x.fund_id && !x.expense_type_id);
-    if (search.trim()) {
-      const q = search.toLowerCase();
+    const qDesc = searchDesc.trim().toLowerCase();
+    const qRef = searchRef.trim().toLowerCase();
+    const qName = searchName.trim().toLowerCase();
+    if (qDesc) {
       r = r.filter((x) =>
-        (x.description ?? "").toLowerCase().includes(q) ||
-        (x.reference ?? "").toLowerCase().includes(q) ||
-        (x.note ?? "").toLowerCase().includes(q) ||
-        (x.payee ?? "").toLowerCase().includes(q) ||
-        (x.association ?? "").toLowerCase().includes(q),
+        (x.description ?? "").toLowerCase().includes(qDesc) ||
+        (x.note ?? "").toLowerCase().includes(qDesc),
+      );
+    }
+    if (qRef) {
+      r = r.filter((x) => (x.reference ?? "").toLowerCase().includes(qRef));
+    }
+    if (qName) {
+      r = r.filter((x) =>
+        (x.payee ?? "").toLowerCase().includes(qName) ||
+        (x.association ?? "").toLowerCase().includes(qName),
       );
     }
     r = [...r].sort((a, b) => {
@@ -276,7 +286,7 @@ function TransactionsPage() {
       return dateSort === "asc" ? cmp : -cmp;
     });
     return r;
-  }, [rows, search, onlyUncat, dateSort]);
+  }, [rows, searchDesc, searchRef, searchName, onlyUncat, dateSort]);
 
   const columns: ColumnDef[] = selectedAccount ? COLUMNS_BY_SCHEMA[selectedAccount.schema_type] : [];
 
@@ -497,9 +507,17 @@ function TransactionsPage() {
 
           <div className="rounded-2xl border bg-card overflow-hidden">
             <div className="px-4 py-3 bg-muted/40 flex flex-wrap gap-2 items-center">
-              <div className="relative flex-1 min-w-[200px]">
+              <div className="relative min-w-[160px]">
                 <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="חיפוש בתיאור / אסמכתה / הערה / שם" className="pr-9 bg-card" />
+                <Input value={searchDesc} onChange={(e) => setSearchDesc(e.target.value)} placeholder="תיאור / הערה" className="pr-9 bg-card" />
+              </div>
+              <div className="relative min-w-[140px]">
+                <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input value={searchRef} onChange={(e) => setSearchRef(e.target.value)} placeholder="אסמכתא" className="pr-9 bg-card" dir="ltr" />
+              </div>
+              <div className="relative min-w-[140px]">
+                <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input value={searchName} onChange={(e) => setSearchName(e.target.value)} placeholder="שם / עמותה" className="pr-9 bg-card" />
               </div>
               <DateInput value={from} onChange={setFrom} placeholder="מתאריך" />
               <DateInput value={to} onChange={setTo} placeholder="עד תאריך" />
@@ -507,7 +525,7 @@ function TransactionsPage() {
               <MultiFilter value={fund} onChange={setFund} placeholder="כל הקופות" items={funds} />
               <MultiFilter value={category} onChange={(v) => { setCategory(v); setSubcategory([]); }} placeholder="כל הקטגוריות" items={categories} />
               <MultiFilter value={subcategory} onChange={setSubcategory} placeholder="כל תתי הקטגוריות" items={category.length === 0 ? subcats : subcats.filter((s) => category.includes(s.category_id ?? ""))} />
-              <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setCategory([]); setSubcategory([]); setFund([]); setExpType([]); setFrom(""); setTo(""); setOnlyUncat(false); }}>איפוס</Button>
+              <Button variant="ghost" size="sm" onClick={() => { setSearchDesc(""); setSearchRef(""); setSearchName(""); setCategory([]); setSubcategory([]); setFund([]); setExpType([]); setFrom(""); setTo(""); setOnlyUncat(false); }}>איפוס</Button>
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 border-b bg-background text-sm">
