@@ -9,6 +9,8 @@ export function AlertsBanner() {
   const { data: accounts = [] } = useAccounts();
   const checksAccount = accounts.find((a: any) => a.schema_type === "checks");
 
+  const CACHE = { staleTime: 5 * 60_000, gcTime: 30 * 60_000, refetchOnWindowFocus: false } as const;
+
   const { data: upcomingChecks = [] } = useQuery({
     queryKey: ["alerts-upcoming-checks", checksAccount?.id],
     enabled: !!checksAccount,
@@ -25,6 +27,7 @@ export function AlertsBanner() {
       if (error) throw error;
       return data ?? [];
     },
+    ...CACHE,
   });
 
   const { data: uncategorizedCount = 0 } = useQuery({
@@ -38,6 +41,7 @@ export function AlertsBanner() {
       if (error) throw error;
       return count ?? 0;
     },
+    ...CACHE,
   });
 
   const checksAccountId = checksAccount?.id;
@@ -67,7 +71,9 @@ export function AlertsBanner() {
       }
       return (othersCount ?? 0) + checksCount;
     },
+    ...CACHE,
   });
+
 
   const totalChecks = upcomingChecks.reduce((s: number, t: any) => s + Math.abs(Number(t.amount)), 0);
 
