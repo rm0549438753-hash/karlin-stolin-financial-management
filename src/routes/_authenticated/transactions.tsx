@@ -533,13 +533,17 @@ function TransactionsPage() {
                 <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <Input value={searchName} onChange={(e) => setSearchName(e.target.value)} placeholder="שם / עמותה" className="pr-9 bg-card" />
               </div>
+              <div className="relative min-w-[120px]">
+                <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input value={searchAmount} onChange={(e) => setSearchAmount(e.target.value)} placeholder="סכום" className="pr-9 bg-card" dir="ltr" inputMode="decimal" />
+              </div>
               <DateInput value={from} onChange={setFrom} placeholder="מתאריך" />
               <DateInput value={to} onChange={setTo} placeholder="עד תאריך" />
               <MultiFilter value={expType} onChange={setExpType} placeholder="כל הסוגים" items={expTypes} />
               <MultiFilter value={fund} onChange={setFund} placeholder="כל הקופות" items={funds} />
               <MultiFilter value={category} onChange={(v) => { setCategory(v); setSubcategory([]); }} placeholder="כל הקטגוריות" items={categories} />
               <MultiFilter value={subcategory} onChange={setSubcategory} placeholder="כל תתי הקטגוריות" items={category.length === 0 ? subcats : subcats.filter((s) => category.includes(s.category_id ?? ""))} />
-              <Button variant="ghost" size="sm" onClick={() => { setSearchDesc(""); setSearchRef(""); setSearchName(""); setCategory([]); setSubcategory([]); setFund([]); setExpType([]); setFrom(""); setTo(""); setOnlyUncat(false); }}>איפוס</Button>
+              <Button variant="ghost" size="sm" onClick={() => { setSearchDesc(""); setSearchRef(""); setSearchName(""); setSearchAmount(""); setCategory([]); setSubcategory([]); setFund([]); setExpType([]); setFrom(""); setTo(""); setOnlyUncat(false); }}>איפוס</Button>
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 border-b bg-background text-sm">
