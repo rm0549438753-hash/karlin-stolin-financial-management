@@ -123,6 +123,7 @@ function TransactionsPage() {
   const [searchDesc, setSearchDesc] = useState("");
   const [searchRef, setSearchRef] = useState("");
   const [searchName, setSearchName] = useState("");
+  const [searchAmount, setSearchAmount] = useState("");
   const [category, setCategory] = useState<string[]>([]);
   const [subcategory, setSubcategory] = useState<string[]>([]);
   const [fund, setFund] = useState<string[]>([]);
