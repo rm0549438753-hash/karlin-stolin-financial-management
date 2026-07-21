@@ -167,7 +167,7 @@ function TransactionsPage() {
     }
   }, [urlSearch.highlight]);
   // Reset selection when filters change
-  useEffect(() => { setSelectedIds(new Set()); }, [searchDesc, searchRef, searchName, category, subcategory, fund, expType, from, to, onlyUncat]);
+  useEffect(() => { setSelectedIds(new Set()); }, [searchDesc, searchRef, searchName, searchAmount, category, subcategory, fund, expType, from, to, onlyUncat]);
 
 
 
