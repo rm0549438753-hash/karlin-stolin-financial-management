@@ -282,12 +282,25 @@ function TransactionsPage() {
         (x.association ?? "").toLowerCase().includes(qName),
       );
     }
+    const qAmt = searchAmount.trim().replace(/[,\s₪]/g, "");
+    if (qAmt) {
+      const n = Number(qAmt);
+      if (!isNaN(n)) {
+        const abs = Math.abs(n);
+        r = r.filter((x) => {
+          const amt = Math.abs(Number(x.amount) || 0);
+          const cr = Math.abs(Number(x.credit) || 0);
+          const db = Math.abs(Number(x.debit) || 0);
+          return amt === abs || cr === abs || db === abs;
+        });
+      }
+    }
     r = [...r].sort((a, b) => {
       const cmp = (a.transaction_date ?? "").localeCompare(b.transaction_date ?? "");
       return dateSort === "asc" ? cmp : -cmp;
     });
     return r;
-  }, [rows, searchDesc, searchRef, searchName, onlyUncat, dateSort]);
+  }, [rows, searchDesc, searchRef, searchName, searchAmount, onlyUncat, dateSort]);
 
   const columns: ColumnDef[] = selectedAccount ? COLUMNS_BY_SCHEMA[selectedAccount.schema_type] : [];
 
