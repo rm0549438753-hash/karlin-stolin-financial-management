@@ -507,9 +507,17 @@ function TransactionsPage() {
 
           <div className="rounded-2xl border bg-card overflow-hidden">
             <div className="px-4 py-3 bg-muted/40 flex flex-wrap gap-2 items-center">
-              <div className="relative flex-1 min-w-[200px]">
+              <div className="relative min-w-[160px]">
                 <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="חיפוש בתיאור / אסמכתה / הערה / שם" className="pr-9 bg-card" />
+                <Input value={searchDesc} onChange={(e) => setSearchDesc(e.target.value)} placeholder="תיאור / הערה" className="pr-9 bg-card" />
+              </div>
+              <div className="relative min-w-[140px]">
+                <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input value={searchRef} onChange={(e) => setSearchRef(e.target.value)} placeholder="אסמכתא" className="pr-9 bg-card" dir="ltr" />
+              </div>
+              <div className="relative min-w-[140px]">
+                <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input value={searchName} onChange={(e) => setSearchName(e.target.value)} placeholder="שם / עמותה" className="pr-9 bg-card" />
               </div>
               <DateInput value={from} onChange={setFrom} placeholder="מתאריך" />
               <DateInput value={to} onChange={setTo} placeholder="עד תאריך" />
@@ -517,7 +525,7 @@ function TransactionsPage() {
               <MultiFilter value={fund} onChange={setFund} placeholder="כל הקופות" items={funds} />
               <MultiFilter value={category} onChange={(v) => { setCategory(v); setSubcategory([]); }} placeholder="כל הקטגוריות" items={categories} />
               <MultiFilter value={subcategory} onChange={setSubcategory} placeholder="כל תתי הקטגוריות" items={category.length === 0 ? subcats : subcats.filter((s) => category.includes(s.category_id ?? ""))} />
-              <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setCategory([]); setSubcategory([]); setFund([]); setExpType([]); setFrom(""); setTo(""); setOnlyUncat(false); }}>איפוס</Button>
+              <Button variant="ghost" size="sm" onClick={() => { setSearchDesc(""); setSearchRef(""); setSearchName(""); setCategory([]); setSubcategory([]); setFund([]); setExpType([]); setFrom(""); setTo(""); setOnlyUncat(false); }}>איפוס</Button>
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 border-b bg-background text-sm">
