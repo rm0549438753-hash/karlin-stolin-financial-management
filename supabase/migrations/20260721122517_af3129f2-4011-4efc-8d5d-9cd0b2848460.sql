@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.enforce_checks_negative() FROM PUBLIC, anon, authenticated;
