@@ -80,19 +80,33 @@ function toDateStr(v: any): string | null {
     if (parsed) {
       return `${parsed.y}-${String(parsed.m).padStart(2, "0")}-${String(parsed.d).padStart(2, "0")}`;
     }
+    // Fallback: build from UTC components to avoid TZ shift
     const d = new Date(Math.round((v - 25569) * 86400 * 1000));
-    return d.toISOString().slice(0, 10);
+    const y = d.getUTCFullYear();
+    const mo = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(d.getUTCDate()).padStart(2, "0");
+    return `${y}-${mo}-${day}`;
   }
   const s = String(v).trim();
+  // ISO yyyy-mm-dd (with optional time) — parse directly to avoid TZ shift
+  const iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (iso) {
+    const [, y, mo, d] = iso;
+    return `${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  }
   // dd/mm/yyyy or dd.mm.yyyy
-  const m = s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})$/);
+  const m = s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})/);
   if (m) {
     const [, d, mo, y] = m;
     const yy = y.length === 2 ? "20" + y : y;
     return `${yy}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
   }
   const parsed = new Date(s);
-  return isNaN(parsed.getTime()) ? null : parsed.toISOString().slice(0, 10);
+  if (isNaN(parsed.getTime())) return null;
+  const y = parsed.getFullYear();
+  const mo = String(parsed.getMonth() + 1).padStart(2, "0");
+  const d = String(parsed.getDate()).padStart(2, "0");
+  return `${y}-${mo}-${d}`;
 }
 
 function toNum(v: any): number | null {
