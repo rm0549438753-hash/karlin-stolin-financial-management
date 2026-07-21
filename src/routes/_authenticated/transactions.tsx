@@ -120,7 +120,9 @@ function TransactionsPage() {
   const { data: expTypes = [] } = useExpenseTypes();
   const { data: subcats = [] } = useSubcategories();
 
-  const [search, setSearch] = useState("");
+  const [searchDesc, setSearchDesc] = useState("");
+  const [searchRef, setSearchRef] = useState("");
+  const [searchName, setSearchName] = useState("");
   const [category, setCategory] = useState<string[]>([]);
   const [subcategory, setSubcategory] = useState<string[]>([]);
   const [fund, setFund] = useState<string[]>([]);
