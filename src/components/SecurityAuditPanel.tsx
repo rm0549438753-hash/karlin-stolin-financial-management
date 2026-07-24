@@ -197,7 +197,7 @@ export function SecurityAuditPanel() {
                       </TableCell>
                     </TableRow>
                   )}
-                </>
+                </Fragment>
               ))}
             </TableBody>
           </Table>
