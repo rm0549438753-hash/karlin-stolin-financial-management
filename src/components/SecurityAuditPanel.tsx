@@ -108,10 +108,18 @@ export function SecurityAuditPanel() {
             סריקה אוטומטית של תלויות npm כל יום בשעה 09:00. בודקת פגיעויות ידועות מול מאגר OSV.dev.
           </p>
         </div>
-        <Button onClick={() => runNow.mutate()} disabled={running}>
-          {running ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <PlayCircle className="w-4 h-4 ml-2" />}
-          הרץ סריקה עכשיו
-        </Button>
+        <div className="flex gap-2">
+          {latestVulns.length > 0 && (
+            <Button variant="default" onClick={copyFixPrompt} className="bg-orange-600 hover:bg-orange-700">
+              <Wrench className="w-4 h-4 ml-2" />
+              תקן דרך Lovable ({latestVulns.length})
+            </Button>
+          )}
+          <Button onClick={() => runNow.mutate()} disabled={running} variant="outline">
+            {running ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <PlayCircle className="w-4 h-4 ml-2" />}
+            הרץ סריקה עכשיו
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <h3 className="font-semibold mb-2">ריצות אחרונות</h3>
