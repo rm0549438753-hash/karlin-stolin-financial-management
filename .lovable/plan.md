@@ -1,36 +1,53 @@
-## הבעיה
+# סריקת תלויות npm יומית — ללא התראות מייל
 
-בדקתי את `src/components/ImportDialog.tsx` — הפונקציה `toDateStr` שממירה ערכי תאריך מהאקסל לפורמט `YYYY-MM-DD`. יש שם שני מסלולים שגורמים להזזה של יום אחד לפי אזור זמן ישראל (UTC+2/+3):
+## מה ייבנה
 
-1. **מסלול Fallback למספר סידורי של Excel** (שורה 83):
-   ```js
-   const d = new Date(Math.round((v - 25569) * 86400 * 1000));
-   return d.toISOString().slice(0, 10);
-   ```
-   `toISOString()` מחזיר UTC. תאריך שנשמר באקסל כ-01/03/2026 חצות מקומי הופך ל-`2026-02-28T21:00:00Z` → נחתך ל-`2026-02-28`. יום פחות.
+### 1. Server route (hook לcron)
+`src/routes/api/public/hooks/daily-security-audit.ts`
+- מקבל POST מ-pg_cron, מאומת עם `x-cron-secret` (אותה שיטה של הגיבוי היומי ומייל הצ׳קים).
+- קורא את `package.json` (dependencies + devDependencies).
+- שולח בקשה ל-API הציבורי של npm audit (`https://registry.npmjs.org/-/npm/v1/security/audits`) עם רשימת החבילות והגרסאות.
+- סופר findings לפי חומרה (low / moderate / high / critical).
+- שומר את התוצאה בטבלה `security_audit_runs`.
+- **לא שולח מייל**.
 
-2. **מסלול מחרוזת שלא תואמת `dd/mm/yyyy`** (שורות 94-95):
-   ```js
-   const parsed = new Date(s);
-   return isNaN(...) ? null : parsed.toISOString().slice(0, 10);
-   ```
-   אותו באג. מחרוזת כמו `"2026-03-01"` נפרסת כחצות UTC → בישראל זה כבר 03:00 של אותו יום, אבל הפוך: `"2026-03-01T00:00:00"` (ללא TZ) נחשב כמקומי בכרום, אבל `new Date("2026-03-01")` (ISO קצר) נחשב UTC. תלוי בפורמט המדויק שהאקסל מייצר, וזה מסביר את ה"לפעמים".
+### 2. טבלה חדשה
+```text
+security_audit_runs
+- id, ran_at
+- status: ok | vulnerabilities | failed
+- low_count, moderate_count, high_count, critical_count
+- report_json (jsonb — פירוט מלא של החבילות הפגיעות)
+- error_message, triggered_by (cron | manual)
+```
+RLS: רק admin רואה/מוחק.
 
-המסלול הראשי (`v instanceof Date` + `cellDates:true`) בטוח כי משתמש ב-`getFullYear/getMonth/getDate` מקומיים. הבעיה קורית רק כשהתא מגיע כמספר גולמי או כמחרוזת לא סטנדרטית.
+### 3. UI בהגדרות → טאב חדש "סריקת אבטחה"
+`SecurityAuditPanel.tsx`:
+- כפתור "הרץ סריקה עכשיו" (ידני).
+- טבלת "ריצות אחרונות": תאריך, סטטוס, ספירת findings בכל חומרה, כפתור פרטים שמציג את הרשימה המפורטת (שם חבילה, גרסה נוכחית, גרסה מתוקנת, קישור למידע).
+- כפתור מחיקה לכל ריצה.
 
-## התיקון
-
-להחליף את שני המסלולים שמשתמשים ב-`toISOString()` בבנייה מרכיבי תאריך מקומיים:
-
-- **מסלול Excel serial (fallback)**: להשתמש ב-`getUTCFullYear/getUTCMonth/getUTCDate` (כי בנינו את ה-Date מ-epoch UTC מכוון), במקום `toISOString`. זה נותן את היום המקורי ללא הזזה.
-- **מסלול מחרוזת חופשית**: אחרי `new Date(s)`, לבנות את המחרוזת מ-`getFullYear/getMonth/getDate` מקומיים (עקבי עם ענף ה-`Date` הקיים).
-
-בנוסף, להרחיב את ה-regex של `dd/mm/yyyy` שיטפל גם ב-ISO `yyyy-mm-dd` במפורש (בלי לעבור דרך `new Date`), כדי שאם האקסל מייצא ISO מחרוזתי — נתפוס ישירות.
+### 4. cron יומי
+כל יום ב-09:00 שעון ישראל (06:00 UTC):
+```
+SELECT cron.schedule('daily-security-audit', '0 6 * * *', ...)
+```
+עם `x-cron-secret` דרך ה-RPC הקיים `get_cron_hook_secret`.
 
 ## קבצים
 
-- `src/components/ImportDialog.tsx` — לעדכן את `toDateStr` בלבד.
+**חדשים:**
+- `supabase/migrations/*_security_audit.sql` — טבלה + GRANT + RLS
+- `src/routes/api/public/hooks/daily-security-audit.ts` — cron hook
+- `src/lib/security-audit.server.ts` — לוגיקת הסריקה
+- `src/lib/security-audit.functions.ts` — server functions ל-UI (list / trigger / delete)
+- `src/components/SecurityAuditPanel.tsx` — UI
+- הוספת ה-cron ל-DB (insert אחרי המיגרציה)
 
-## אימות
+**שינויים:**
+- `src/routes/_authenticated/settings.tsx` — הוספת טאב "סריקת אבטחה"
 
-אחרי התיקון, לייבא מחדש קובץ אקסל לדוגמה שבו ראית הזזת תאריך ולוודא שהתאריכים תואמים לאקסל. אין צורך במחיקת נתונים קיימים כחלק מהתיקון — אם תרצה, נריץ בנפרד עדכון על תנועות שכבר יובאו עם תאריך שגוי (זה יידרש רק אם תראה שקיימות תנועות עם סטייה — אני יכול לזהות ולתקן אותן במיגרציה נפרדת אחרי שנוודא שהיבוא החדש תקין).
+## הערה על מגבלת ה-worker
+
+`bun audit` המקומי לא יכול לרוץ ב-Cloudflare Workers (אין `child_process`). לכן משתמשים ישירות ב-API של npm audit — הוא בודק את אותם CVEs הידועים ומחזיר אותה רשימת פגיעויות.
