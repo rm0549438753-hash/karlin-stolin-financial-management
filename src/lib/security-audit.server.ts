@@ -62,6 +62,21 @@ function cleanVersion(v: string): string {
   return v.replace(/^[\^~><=v\s]+/g, "").trim();
 }
 
+// Resolve an npm alias like "npm:@e965/xlsx@^0.20.3" to the real { name, version }.
+// Non-alias specs return { name: originalName, version: cleaned }.
+function resolveAlias(name: string, spec: string): { name: string; version: string } {
+  if (spec.startsWith("npm:")) {
+    const rest = spec.slice(4);
+    // Split on the LAST "@" (not the leading scope "@")
+    const at = rest.lastIndexOf("@");
+    if (at > 0) {
+      return { name: rest.slice(0, at), version: cleanVersion(rest.slice(at + 1)) };
+    }
+    return { name: rest, version: "" };
+  }
+  return { name, version: cleanVersion(spec) };
+}
+
 async function readPackageJson(): Promise<Record<string, string>> {
   // Bundled at build time — the file is embedded, not read from disk at runtime.
   // Using dynamic import with a JSON assertion works in the Cloudflare worker.
@@ -74,12 +89,14 @@ async function readPackageJson(): Promise<Record<string, string>> {
 
 export async function runSecurityAudit(triggeredBy: "cron" | "manual") {
   const deps = await readPackageJson();
-  const entries = Object.entries(deps);
+  const entries = Object.entries(deps).map(
+    ([name, spec]) => [resolveAlias(name, spec).name, resolveAlias(name, spec).version] as [string, string],
+  );
 
   // Build OSV batch query
   const queries = entries.map(([name, version]) => ({
     package: { name, ecosystem: "npm" },
-    version: cleanVersion(version),
+    version,
   }));
 
   const res = await fetch("https://api.osv.dev/v1/querybatch", {
