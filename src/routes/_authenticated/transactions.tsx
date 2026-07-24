@@ -157,13 +157,14 @@ function TransactionsPage() {
   useEffect(() => {
     setSelectedIds(new Set());
     setOnlyUncat(false);
-    setSearchDesc(""); setSearchRef(""); setSearchName(""); setCategory([]); setSubcategory([]); setFund([]); setExpType([]); setFrom(""); setTo("");
+    setSearchDesc(""); setSearchRef(""); setSearchName(""); setSearchAmount(""); setCategory([]); setSubcategory([]); setFund([]); setExpType([]); setFrom(""); setTo("");
   }, [account]);
   // When navigating with highlight, also clear filters so the row is visible
   useEffect(() => {
     if (urlSearch.highlight) {
       setOnlyUncat(false);
-      setSearchDesc(""); setSearchRef(""); setSearchName(""); setCategory([]); setSubcategory([]); setFund([]); setExpType([]); setFrom(""); setTo("");
+      setSearchDesc(""); setSearchRef(""); setSearchName(""); setSearchAmount(""); setCategory([]); setSubcategory([]); setFund([]); setExpType([]); setFrom(""); setTo("");
+
     }
   }, [urlSearch.highlight]);
   // Reset selection when filters change
