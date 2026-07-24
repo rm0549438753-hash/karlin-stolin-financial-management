@@ -381,6 +381,48 @@ export type Database = {
         }
         Relationships: []
       }
+      security_audit_runs: {
+        Row: {
+          critical_count: number
+          error_message: string | null
+          high_count: number
+          id: string
+          low_count: number
+          moderate_count: number
+          ran_at: string
+          report_json: Json | null
+          status: string
+          total_dependencies: number
+          triggered_by: string
+        }
+        Insert: {
+          critical_count?: number
+          error_message?: string | null
+          high_count?: number
+          id?: string
+          low_count?: number
+          moderate_count?: number
+          ran_at?: string
+          report_json?: Json | null
+          status?: string
+          total_dependencies?: number
+          triggered_by?: string
+        }
+        Update: {
+          critical_count?: number
+          error_message?: string | null
+          high_count?: number
+          id?: string
+          low_count?: number
+          moderate_count?: number
+          ran_at?: string
+          report_json?: Json | null
+          status?: string
+          total_dependencies?: number
+          triggered_by?: string
+        }
+        Relationships: []
+      }
       subcategories: {
         Row: {
           category_id: string | null
