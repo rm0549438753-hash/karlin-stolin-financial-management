@@ -116,7 +116,7 @@ export async function runSecurityAudit(triggeredBy: "cron" | "manual") {
   batch.results.forEach((r, idx) => {
     for (const v of r.vulns ?? []) {
       if (!idToPackages.has(v.id)) {
-        idToPackages.set(v.id, { name: entries[idx][0], version: cleanVersion(entries[idx][1]) });
+        idToPackages.set(v.id, { name: entries[idx][0], version: entries[idx][1] });
       }
     }
   });
