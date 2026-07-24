@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, PlayCircle, ChevronDown, ChevronLeft, Trash2, ShieldCheck, ShieldAlert, XCircle, ExternalLink } from "lucide-react";
+import { Loader2, PlayCircle, ChevronDown, ChevronLeft, Trash2, ShieldCheck, ShieldAlert, XCircle, ExternalLink, Wrench, Copy } from "lucide-react";
 import {
   triggerSecurityAuditNow,
   listSecurityAuditRuns,
@@ -69,6 +69,36 @@ export function SecurityAuditPanel() {
     onError: (e: any) => toast.error(e?.message ?? "שגיאה"),
   });
 
+  const latest = runs?.[0] as any | undefined;
+  const latestVulns: any[] = latest?.report_json?.vulnerabilities ?? [];
+
+  function buildFixPrompt(vulns: any[]) {
+    const lines = vulns.map((v: any, i: number) =>
+      `${i + 1}. ${v.package}@${v.version} — חומרה: ${SEV_LABELS[v.severity] || v.severity}` +
+      (v.fixed_in ? ` — תיקון בגרסה: ${v.fixed_in}` : " — אין גרסת תיקון ידועה") +
+      (v.summary ? `\n   ${v.summary}` : "") +
+      (v.reference ? `\n   ${v.reference}` : "")
+    );
+    return [
+      "בבקשה תקן את פגיעויות ה-npm הבאות שנמצאו בסריקת האבטחה:",
+      "",
+      ...lines,
+      "",
+      "עבור על כל אחת, שדרג את החבילה ל-fixed_in (או לגרסה תואמת), ואם אין תיקון — הצע חלופה או אמור מפורשות שאי אפשר לתקן. הרץ סריקה חוזרת בסוף.",
+    ].join("\n");
+  }
+
+  async function copyFixPrompt() {
+    if (!latestVulns.length) return;
+    const text = buildFixPrompt(latestVulns);
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("בקשת התיקון הועתקה — הדבק בצ׳אט של Lovable כדי שאתקן את החבילות");
+    } catch {
+      toast.error("לא ניתן להעתיק ללוח");
+    }
+  }
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -78,10 +108,18 @@ export function SecurityAuditPanel() {
             סריקה אוטומטית של תלויות npm כל יום בשעה 09:00. בודקת פגיעויות ידועות מול מאגר OSV.dev.
           </p>
         </div>
-        <Button onClick={() => runNow.mutate()} disabled={running}>
-          {running ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <PlayCircle className="w-4 h-4 ml-2" />}
-          הרץ סריקה עכשיו
-        </Button>
+        <div className="flex gap-2">
+          {latestVulns.length > 0 && (
+            <Button variant="default" onClick={copyFixPrompt} className="bg-orange-600 hover:bg-orange-700">
+              <Wrench className="w-4 h-4 ml-2" />
+              תקן דרך Lovable ({latestVulns.length})
+            </Button>
+          )}
+          <Button onClick={() => runNow.mutate()} disabled={running} variant="outline">
+            {running ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <PlayCircle className="w-4 h-4 ml-2" />}
+            הרץ סריקה עכשיו
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <h3 className="font-semibold mb-2">ריצות אחרונות</h3>
