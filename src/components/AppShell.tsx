@@ -1,6 +1,6 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
-  LayoutDashboard, Receipt, BarChart3, Settings as SettingsIcon, LogOut,
+  LayoutDashboard, Receipt, BarChart3, Settings as SettingsIcon, LogOut, ShieldCheck,
 } from "lucide-react";
 import { type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -83,6 +83,17 @@ function AppSidebar() {
                     <Link to="/settings" className="flex items-center gap-3">
                       <SettingsIcon className="!w-5 !h-5" />
                       <span>הגדרות</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+
+              {role?.isAdmin && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={path === "/security-audit"} tooltip="סריקות אבטחה" className="text-white hover:bg-white/10 data-[active=true]:bg-white/15 data-[active=true]:text-white data-[active=true]:font-bold py-5 text-base">
+                    <Link to="/security-audit" className="flex items-center gap-3">
+                      <ShieldCheck className="!w-5 !h-5" />
+                      <span>סריקות אבטחה</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
