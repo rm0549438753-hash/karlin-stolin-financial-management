@@ -106,8 +106,8 @@ export function SecurityAuditPanel() {
             </TableHeader>
             <TableBody>
               {runs.map((r: any) => (
-                <>
-                  <TableRow key={r.id}>
+                <Fragment key={r.id}>
+                  <TableRow>
                     <TableCell>
                       <button
                         onClick={() => setOpenId(openId === r.id ? null : r.id)}
