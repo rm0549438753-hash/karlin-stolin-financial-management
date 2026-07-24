@@ -88,17 +88,6 @@ function AppSidebar() {
                 </SidebarMenuItem>
               )}
 
-              {role?.isAdmin && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={path === "/security-audit"} tooltip="סריקות אבטחה" className="text-white hover:bg-white/10 data-[active=true]:bg-white/15 data-[active=true]:text-white data-[active=true]:font-bold py-5 text-base">
-                    <Link to="/security-audit" className="flex items-center gap-3">
-                      <ShieldCheck className="!w-5 !h-5" />
-                      <span>סריקות אבטחה</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
-
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
