@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, PlayCircle, ChevronDown, ChevronLeft, Trash2, ShieldCheck, ShieldAlert, XCircle, ExternalLink } from "lucide-react";
+import { Loader2, PlayCircle, ChevronDown, ChevronLeft, Trash2, ShieldCheck, ShieldAlert, XCircle, ExternalLink, Wrench, Copy } from "lucide-react";
 import {
   triggerSecurityAuditNow,
   listSecurityAuditRuns,
@@ -68,6 +68,36 @@ export function SecurityAuditPanel() {
     },
     onError: (e: any) => toast.error(e?.message ?? "שגיאה"),
   });
+
+  const latest = runs?.[0] as any | undefined;
+  const latestVulns: any[] = latest?.report_json?.vulnerabilities ?? [];
+
+  function buildFixPrompt(vulns: any[]) {
+    const lines = vulns.map((v: any, i: number) =>
+      `${i + 1}. ${v.package}@${v.version} — חומרה: ${SEV_LABELS[v.severity] || v.severity}` +
+      (v.fixed_in ? ` — תיקון בגרסה: ${v.fixed_in}` : " — אין גרסת תיקון ידועה") +
+      (v.summary ? `\n   ${v.summary}` : "") +
+      (v.reference ? `\n   ${v.reference}` : "")
+    );
+    return [
+      "בבקשה תקן את פגיעויות ה-npm הבאות שנמצאו בסריקת האבטחה:",
+      "",
+      ...lines,
+      "",
+      "עבור על כל אחת, שדרג את החבילה ל-fixed_in (או לגרסה תואמת), ואם אין תיקון — הצע חלופה או אמור מפורשות שאי אפשר לתקן. הרץ סריקה חוזרת בסוף.",
+    ].join("\n");
+  }
+
+  async function copyFixPrompt() {
+    if (!latestVulns.length) return;
+    const text = buildFixPrompt(latestVulns);
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("בקשת התיקון הועתקה — הדבק בצ׳אט של Lovable כדי שאתקן את החבילות");
+    } catch {
+      toast.error("לא ניתן להעתיק ללוח");
+    }
+  }
 
   return (
     <Card>
