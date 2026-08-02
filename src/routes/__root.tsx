@@ -58,6 +58,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "robots", content: "noindex, nofollow" },
       { title: "מוסדות קרלין - ניהול כספים" },
       { name: "description", content: "מערכת לניהול פיננסי של מוסדות קרלין" },
       { property: "og:title", content: "מוסדות קרלין - ניהול כספים" },
