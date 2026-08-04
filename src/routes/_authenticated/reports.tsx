@@ -66,23 +66,9 @@ type Tx = {
 };
 
 async function fetchAllTransactions(): Promise<Tx[]> {
-  const rows: Tx[] = [];
-  let from = 0;
-  while (true) {
-    const { data, error } = await supabase
-      .from("transactions")
-      .select(TX_SELECT)
-      .order("transaction_date", { ascending: false })
-      .range(from, from + PAGE_SIZE - 1);
-    if (error) throw error;
-    const page = (data ?? []) as Tx[];
-    rows.push(...page);
-    if (page.length === 0) break;
-    from += page.length;
-    if (page.length < PAGE_SIZE) break;
-  }
-  return rows;
+  return (await fetchAllTransactionsShared()) as unknown as Tx[];
 }
+
 
 function ReportsPage() {
   const { tab } = Route.useSearch();
