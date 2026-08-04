@@ -1,5 +1,4 @@
 import { useRef, useState } from "react";
-import * as XLSX from "xlsx";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +6,15 @@ import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Upload, FileSpreadsheet } from "lucide-react";
 import type { Account } from "@/hooks/use-lookups";
+
+// Excel parsing is heavy (~700KB) — load it only when a file is actually picked.
+type XlsxMod = typeof import("xlsx");
+let xlsxMod: XlsxMod | null = null;
+async function loadXlsx(): Promise<XlsxMod> {
+  if (!xlsxMod) xlsxMod = await import("xlsx");
+  return xlsxMod;
+}
+
 
 // header → transactions column mapping (Hebrew headers from the Excel)
 const HEADER_MAP: Record<string, string> = {
@@ -76,7 +84,7 @@ function toDateStr(v: any): string | null {
     return `${y}-${m}-${d}`;
   }
   if (typeof v === "number") {
-    const parsed = XLSX.SSF.parse_date_code(v);
+    const parsed = xlsxMod?.SSF?.parse_date_code(v);
     if (parsed) {
       return `${parsed.y}-${String(parsed.m).padStart(2, "0")}-${String(parsed.d).padStart(2, "0")}`;
     }
@@ -123,6 +131,7 @@ export function ImportDialog({ open, onOpenChange, account }: { open: boolean; o
 
   async function pickFile(f: File) {
     setFile(f);
+    const XLSX = await loadXlsx();
     const buf = await f.arrayBuffer();
     const wb = XLSX.read(buf, { cellDates: true });
     const ws = wb.Sheets[wb.SheetNames[0]];
@@ -308,8 +317,8 @@ export function ImportDialog({ open, onOpenChange, account }: { open: boolean; o
       toast.success(`יובאו ${res.count} תנועות`);
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["import-batches"] });
-      qc.invalidateQueries({ queryKey: ["tx-dashboard-full"] });
-      qc.invalidateQueries({ queryKey: ["reports-all-tx"] });
+      qc.invalidateQueries({ queryKey: ["tx-all"] });
+      qc.invalidateQueries({ queryKey: ["tx-all"] });
       qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
       qc.invalidateQueries({ queryKey: ["funds"] });
       qc.invalidateQueries({ queryKey: ["expense-types"] });

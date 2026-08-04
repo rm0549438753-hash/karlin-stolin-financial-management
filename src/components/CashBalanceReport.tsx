@@ -11,7 +11,6 @@ import { formatCurrency } from "@/lib/format";
 import { Wallet, TrendingUp, TrendingDown, Printer } from "lucide-react";
 import { ExportMenu } from "@/components/ExportMenu";
 import { exportRowsAsPdf, objectsToTable } from "@/lib/export-pdf";
-import * as XLSX from "xlsx";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, LabelList,
   ComposedChart, Line,
@@ -204,7 +203,8 @@ export function CashBalanceReport() {
       "יתרה מצטברת": r.running,
     }));
 
-  const onExcel = () => {
+  const onExcel = async () => {
+    const XLSX = await import("xlsx");
     const rows = exportRows();
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();

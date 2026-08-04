@@ -2,7 +2,6 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { AlertsBanner } from "@/components/AlertsBanner";
-import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +26,7 @@ import { ExportMenu } from "@/components/ExportMenu";
 import { exportRowsAsPdf, objectsToTable } from "@/lib/export-pdf";
 import { useFundOpeningBalances } from "@/components/FundOpeningBalancesReport";
 import { CashBalanceCard } from "@/components/CashBalanceReport";
+import { TX_ALL_KEY, fetchAllTransactionsShared } from "@/lib/tx-fetch";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -59,48 +59,28 @@ type Tx = {
 
 type RawTx = Omit<Tx, "transaction_date"> & { transaction_date: string | null };
 
-async function fetchAllDashboardTransactions() {
-  const rows: RawTx[] = [];
-  let from = 0;
-
-  while (true) {
-    const { data, error } = await supabase
-      .from("transactions")
-      .select(TRANSACTION_SELECT)
-      .or("transaction_date.not.is.null,value_date.not.is.null")
-      .order("transaction_date", { ascending: false, nullsFirst: false })
-      .range(from, from + PAGE_SIZE - 1);
-
-    if (error) throw error;
-
-    const page = (data ?? []) as RawTx[];
-    rows.push(...page);
-    if (page.length === 0) break;
-    from += page.length;
-    if (page.length < PAGE_SIZE) break;
-  }
-
-
-  return rows;
-}
-
 function DashboardPage() {
   const qc = useQueryClient();
-  const { data: rawTxs = [], isLoading } = useQuery({
-    queryKey: ["tx-dashboard-full"],
-    queryFn: fetchAllDashboardTransactions,
+  const { data: allTxs = [], isLoading } = useQuery({
+    queryKey: TX_ALL_KEY,
+    queryFn: fetchAllTransactionsShared,
     staleTime: 5 * 60_000,
     gcTime: 30 * 60_000,
     refetchOnWindowFocus: false,
   });
+  const rawTxs = useMemo(
+    () => (allTxs as RawTx[]).filter((t) => t.transaction_date != null || t.value_date != null),
+    [allTxs],
+  );
+
 
   // Realtime: keep dashboard fresh when transactions change anywhere
   useEffect(() => {
     const channel = supabase
       .channel("dashboard-tx")
       .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, () => {
-        qc.invalidateQueries({ queryKey: ["tx-dashboard-full"] });
-        qc.invalidateQueries({ queryKey: ["reports-all-tx"] });
+        qc.invalidateQueries({ queryKey: ["tx-all"] });
+        qc.invalidateQueries({ queryKey: ["tx-all"] });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -331,7 +311,8 @@ function buildExportRows(rows: Tx[], lookups: any) {
   });
 }
 
-function exportTxsToExcel(rows: Tx[], lookups: any, filename: string) {
+async function exportTxsToExcel(rows: Tx[], lookups: any, filename: string) {
+  const XLSX = await import("xlsx");
   const data = buildExportRows(rows, lookups);
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();

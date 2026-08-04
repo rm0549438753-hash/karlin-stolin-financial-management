@@ -18,7 +18,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import * as XLSX from "xlsx";
 import { ExportMenu } from "@/components/ExportMenu";
 import { exportRowsAsPdf } from "@/lib/export-pdf";
 import { useUserRole } from "@/hooks/use-auth";
@@ -248,8 +247,8 @@ function TransactionsPage() {
       toast.success("הייבוא בוטל");
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["import-batches"] });
-      qc.invalidateQueries({ queryKey: ["tx-dashboard-full"] });
-      qc.invalidateQueries({ queryKey: ["reports-all-tx"] });
+      qc.invalidateQueries({ queryKey: ["tx-all"] });
+      qc.invalidateQueries({ queryKey: ["tx-all"] });
       qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאה בביטול"),
@@ -322,8 +321,8 @@ function TransactionsPage() {
     onSuccess: () => {
       toast.success("התנועה נמחקה");
       qc.invalidateQueries({ queryKey: ["transactions"] });
-      qc.invalidateQueries({ queryKey: ["tx-dashboard-full"] });
-      qc.invalidateQueries({ queryKey: ["reports-all-tx"] });
+      qc.invalidateQueries({ queryKey: ["tx-all"] });
+      qc.invalidateQueries({ queryKey: ["tx-all"] });
       qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאה"),
@@ -343,8 +342,8 @@ function TransactionsPage() {
       toast.success(`${selectedIds.size} תנועות נמחקו`);
       setSelectedIds(new Set());
       qc.invalidateQueries({ queryKey: ["transactions"] });
-      qc.invalidateQueries({ queryKey: ["tx-dashboard-full"] });
-      qc.invalidateQueries({ queryKey: ["reports-all-tx"] });
+      qc.invalidateQueries({ queryKey: ["tx-all"] });
+      qc.invalidateQueries({ queryKey: ["tx-all"] });
       qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאה"),
@@ -394,7 +393,8 @@ function TransactionsPage() {
     const rows = list.map((r) => columns.map((col) => extractText(col.render(r as any, ctx))));
     return { headers, rows };
   }
-  function exportExcel(list: any[], filename: string) {
+  async function exportExcel(list: any[], filename: string) {
+    const XLSX = await import("xlsx");
     const { headers, rows } = buildExportMatrix(list);
     const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
     const wb = XLSX.utils.book_new();
