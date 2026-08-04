@@ -22,7 +22,10 @@ async function fetchPage(from: number, withCount: boolean) {
     .from("transactions")
     .select(TX_ALL_SELECT, withCount ? { count: "exact" } : undefined)
     .order("transaction_date", { ascending: false, nullsFirst: false })
+    // deterministic tiebreaker — required because pages are fetched in parallel
+    .order("id", { ascending: true })
     .range(from, from + PAGE_SIZE - 1);
+
   const { data, error, count } = await query;
   if (error) throw error;
   return { rows: (data ?? []) as AnyTx[], count: count ?? null };
