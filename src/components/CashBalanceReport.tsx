@@ -11,7 +11,6 @@ import { formatCurrency } from "@/lib/format";
 import { Wallet, TrendingUp, TrendingDown, Printer } from "lucide-react";
 import { ExportMenu } from "@/components/ExportMenu";
 import { exportRowsAsPdf, objectsToTable } from "@/lib/export-pdf";
-import * as XLSX from "xlsx";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, LabelList,
   ComposedChart, Line,
