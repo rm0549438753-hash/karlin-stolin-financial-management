@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, redirect, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -55,13 +55,6 @@ function AuthPage() {
               {loading ? "מתחבר..." : "התחבר"}
             </Button>
           </form>
-          <p className="mt-6 text-center text-[11px] leading-5 text-muted-foreground">
-            הכניסה מיועדת למשתמשים מורשים בלבד. הפעילות במערכת מתועדת.
-            <br />
-            <Link to="/privacy" className="underline hover:text-foreground">מדיניות פרטיות</Link>
-            {" · "}
-            <Link to="/terms" className="underline hover:text-foreground">תנאי שימוש</Link>
-          </p>
         </CardContent>
       </Card>
     </div>

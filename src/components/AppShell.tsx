@@ -116,6 +116,11 @@ function UserMenu() {
         <div className="text-xs font-bold truncate">{user?.email}</div>
         <div className="text-[10px] text-white/60">{role?.isAdmin ? "מנהל" : role?.roles?.includes("editor") ? "עורך" : "צופה"}</div>
       </div>
+      <div className="px-2 flex items-center gap-2 text-[10px] text-white/60 group-data-[collapsible=icon]:hidden">
+        <Link to="/privacy" className="underline hover:text-white">מדיניות פרטיות</Link>
+        <span>·</span>
+        <Link to="/terms" className="underline hover:text-white">תנאי שימוש</Link>
+      </div>
       <Button onClick={signOut} variant="ghost" size="sm" className="justify-start gap-2 text-white hover:bg-white/10 hover:text-white">
         <LogOut className="w-4 h-4" />
         <span className="group-data-[collapsible=icon]:hidden">התנתקות</span>
