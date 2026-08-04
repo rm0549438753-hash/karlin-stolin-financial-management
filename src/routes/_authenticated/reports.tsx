@@ -89,7 +89,7 @@ function ReportsPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { data: txs = [], isLoading } = useQuery({
-    queryKey: ["reports-all-tx"],
+    queryKey: ["tx-all"],
     queryFn: fetchAllTransactions,
     staleTime: 5 * 60_000,
     gcTime: 30 * 60_000,
@@ -99,7 +99,7 @@ function ReportsPage() {
     const channel = supabase
       .channel("reports-tx")
       .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, () => {
-        qc.invalidateQueries({ queryKey: ["reports-all-tx"] });
+        qc.invalidateQueries({ queryKey: ["tx-all"] });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -554,8 +554,8 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       toast.success(`${selectedIds.size} תנועות נמחקו`);
       setSelectedIds(new Set());
       qc.invalidateQueries({ queryKey: ["transactions"] });
-      qc.invalidateQueries({ queryKey: ["reports-all-tx"] });
-      qc.invalidateQueries({ queryKey: ["tx-dashboard-full"] });
+      qc.invalidateQueries({ queryKey: ["tx-all"] });
+      qc.invalidateQueries({ queryKey: ["tx-all"] });
       qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאה"),
@@ -784,7 +784,7 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
         open={bulkEditOpen}
         onOpenChange={setBulkEditOpen}
         ids={Array.from(selectedIds)}
-        onDone={() => { setSelectedIds(new Set()); qc.invalidateQueries({ queryKey: ["reports-all-tx"] }); qc.invalidateQueries({ queryKey: ["transactions"] }); }}
+        onDone={() => { setSelectedIds(new Set()); qc.invalidateQueries({ queryKey: ["tx-all"] }); qc.invalidateQueries({ queryKey: ["transactions"] }); }}
       />
 
       <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
@@ -861,8 +861,8 @@ function NoDateReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     onSuccess: (_d, vars) => {
       toast.success("תאריך עודכן");
       setDrafts((d) => { const n = { ...d }; delete n[vars.id]; return n; });
-      qc.invalidateQueries({ queryKey: ["reports-all-tx"] });
-      qc.invalidateQueries({ queryKey: ["tx-dashboard-full"] });
+      qc.invalidateQueries({ queryKey: ["tx-all"] });
+      qc.invalidateQueries({ queryKey: ["tx-all"] });
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["alerts-no-date-count"] });
     },

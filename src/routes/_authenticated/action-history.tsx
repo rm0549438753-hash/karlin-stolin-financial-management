@@ -123,8 +123,8 @@ function ActionHistoryPage() {
       setPendingUndo(null);
       qc.invalidateQueries({ queryKey: ["action-history"] });
       qc.invalidateQueries({ queryKey: ["transactions"] });
-      qc.invalidateQueries({ queryKey: ["reports-all-tx"] });
-      qc.invalidateQueries({ queryKey: ["tx-dashboard-full"] });
+      qc.invalidateQueries({ queryKey: ["tx-all"] });
+      qc.invalidateQueries({ queryKey: ["tx-all"] });
       qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
     },
     onError: (e: any) => toast.error(e.message ?? "לא ניתן לבטל את השינוי"),

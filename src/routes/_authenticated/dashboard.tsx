@@ -80,8 +80,8 @@ function DashboardPage() {
     const channel = supabase
       .channel("dashboard-tx")
       .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, () => {
-        qc.invalidateQueries({ queryKey: ["tx-dashboard-full"] });
-        qc.invalidateQueries({ queryKey: ["reports-all-tx"] });
+        qc.invalidateQueries({ queryKey: ["tx-all"] });
+        qc.invalidateQueries({ queryKey: ["tx-all"] });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
