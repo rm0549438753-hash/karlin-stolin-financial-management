@@ -27,6 +27,7 @@ import { ExportMenu } from "@/components/ExportMenu";
 import { exportRowsAsPdf, objectsToTable } from "@/lib/export-pdf";
 import { useFundOpeningBalances } from "@/components/FundOpeningBalancesReport";
 import { CashBalanceCard } from "@/components/CashBalanceReport";
+import { TX_ALL_KEY, fetchAllTransactionsShared } from "@/lib/tx-fetch";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
