@@ -393,7 +393,8 @@ function TransactionsPage() {
     const rows = list.map((r) => columns.map((col) => extractText(col.render(r as any, ctx))));
     return { headers, rows };
   }
-  function exportExcel(list: any[], filename: string) {
+  async function exportExcel(list: any[], filename: string) {
+    const XLSX = await import("xlsx");
     const { headers, rows } = buildExportMatrix(list);
     const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
     const wb = XLSX.utils.book_new();

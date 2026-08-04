@@ -203,7 +203,8 @@ export function CashBalanceReport() {
       "יתרה מצטברת": r.running,
     }));
 
-  const onExcel = () => {
+  const onExcel = async () => {
+    const XLSX = await import("xlsx");
     const rows = exportRows();
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();

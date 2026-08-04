@@ -311,7 +311,8 @@ function buildExportRows(rows: Tx[], lookups: any) {
   });
 }
 
-function exportTxsToExcel(rows: Tx[], lookups: any, filename: string) {
+async function exportTxsToExcel(rows: Tx[], lookups: any, filename: string) {
+  const XLSX = await import("xlsx");
   const data = buildExportRows(rows, lookups);
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();

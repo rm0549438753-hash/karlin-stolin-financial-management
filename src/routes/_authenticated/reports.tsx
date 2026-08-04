@@ -143,8 +143,9 @@ function nameMap(arr: any[]) {
   return new Map<string, string>(arr.map((x) => [x.id, x.name]));
 }
 
-function exportRowsToExcel(rows: any[], filename: string) {
+async function exportRowsToExcel(rows: any[], filename: string) {
   if (!rows.length) return;
+  const XLSX = await import("xlsx");
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "דוח");
