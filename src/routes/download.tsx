@@ -15,7 +15,7 @@ export const Route = createFileRoute("/download")({
   component: DownloadPage,
 });
 
-const APK_URL = "/app-debug.apk";
+const APK_URL = "/api/public/apk";
 
 function DownloadPage() {
   return (
