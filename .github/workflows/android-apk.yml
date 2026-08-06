@@ -86,3 +86,5 @@ jobs:
             הורדה ישירה לטלפון: לחץ על app-debug.apk למטה.
           files: android/app/build/outputs/apk/debug/app-debug.apk
 
+
+# build trigger: 2026-08-06T13:42:31Z
