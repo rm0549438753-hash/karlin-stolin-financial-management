@@ -23,7 +23,7 @@ import { exportRowsAsPdf } from "@/lib/export-pdf";
 import { useUserRole } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/_authenticated/transactions")({
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { account?: string; uncategorized?: boolean; highlight?: string } => ({
     account: typeof s.account === "string" ? s.account : undefined,
     uncategorized: s.uncategorized === true || s.uncategorized === "true" ? true : undefined,
     highlight: typeof s.highlight === "string" ? s.highlight : undefined,

@@ -12,9 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: '20'
 
       - uses: actions/setup-java@v4
         with:
@@ -23,21 +23,37 @@ jobs:
 
       - uses: android-actions/setup-android@v3
 
-      - name: Install dependencies
-        run: bun install
+      # The APK is a shell that loads the live published site, so no web build
+      # is needed. A placeholder is enough to satisfy Capacitor's webDir.
+      - name: Prepare placeholder web assets
+        run: |
+          mkdir -p dist/client
+          echo '<!doctype html><meta charset="utf-8"><title>Loading</title>' > dist/client/index.html
 
-      - name: Build web assets
-        run: bun run build
+      - name: Install Capacitor CLI
+        run: npm install --no-save @capacitor/cli@^7 @capacitor/core@^7 @capacitor/android@^7
 
       - name: Add Android platform
-        run: bunx cap add android
+        run: npx cap add android
+
+      - name: Set Hebrew app name
+        run: |
+          python3 - <<'PY'
+          import re, pathlib
+          p = pathlib.Path('android/app/src/main/res/values/strings.xml')
+          s = p.read_text(encoding='utf-8')
+          s = re.sub(r'(<string name="app_name">).*?(</string>)', r'\1מרכז קארלין סטאלין\2', s)
+          s = re.sub(r'(<string name="title_activity_main">).*?(</string>)', r'\1מרכז קארלין סטאלין\2', s)
+          p.write_text(s, encoding='utf-8')
+          print(s)
+          PY
 
       - name: Sync Capacitor
-        run: bunx cap sync android
+        run: npx cap sync android
 
       - name: Build debug APK
         working-directory: android
-        run: chmod +x ./gradlew && ./gradlew assembleDebug
+        run: chmod +x ./gradlew && ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

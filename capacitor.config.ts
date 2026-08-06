@@ -8,7 +8,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
  */
 const config: CapacitorConfig = {
   appId: 'app.karlinstolin.finance',
-  appName: 'ניהול פיננסי מרכז קארלין סטאלין',
+  appName: 'KarlinStolin',
   webDir: 'dist/client',
   server: {
     url: 'https://karlin-stolin-financial-management.lovable.app',
