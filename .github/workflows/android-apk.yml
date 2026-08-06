@@ -67,6 +67,16 @@ jobs:
           name: karlin-stolin-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
 
+      - name: Upload APK to the app download page
+        env:
+          APK_UPLOAD_TOKEN: ${{ secrets.APK_UPLOAD_TOKEN }}
+        run: |
+          curl -sS --fail-with-body -X POST \
+            -H "x-upload-token: $APK_UPLOAD_TOKEN" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @android/app/build/outputs/apk/debug/app-debug.apk \
+            https://karlin-stolin-financial-management.lovable.app/api/public/apk
+
       - name: Publish APK to Release (direct download link)
         uses: softprops/action-gh-release@v2
         with:
