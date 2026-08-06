@@ -34,7 +34,7 @@ import {
 } from "recharts";
 
 export const Route = createFileRoute("/_authenticated/reports")({
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): { tab?: string } => ({
     tab: (search.tab as string) ?? "future-checks",
   }),
   component: ReportsPage,
