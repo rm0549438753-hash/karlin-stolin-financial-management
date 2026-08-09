@@ -93,16 +93,17 @@ function renderHtml(dateISO: string, rows: any[], total: number, s: Settings, va
   const introHtml = escapeHtml(applyPlaceholders(s.body_intro, vars)).replace(/\n/g, "<br>");
   const outroHtml = escapeHtml(applyPlaceholders(s.body_outro, vars)).replace(/\n/g, "<br>");
 
-  const headers = ['<th style="padding:10px 12px;border:1px solid #0b1e3f;text-align:right;">שם</th>'];
-  if (s.include_association) headers.push('<th style="padding:10px 12px;border:1px solid #0b1e3f;text-align:right;">עמותה</th>');
-  headers.push('<th style="padding:10px 12px;border:1px solid #0b1e3f;text-align:right;">סכום</th>');
-  if (s.include_note) headers.push('<th style="padding:10px 12px;border:1px solid #0b1e3f;text-align:right;">הערה</th>');
+  const TH = 'padding:10px 12px;border:1px solid #0b1e3f;text-align:right;direction:rtl;';
+  const headers = [`<th dir="rtl" style="${TH}">שם</th>`];
+  if (s.include_association) headers.push(`<th dir="rtl" style="${TH}">עמותה</th>`);
+  headers.push(`<th dir="rtl" style="${TH}">סכום</th>`);
+  if (s.include_note) headers.push(`<th dir="rtl" style="${TH}">הערה</th>`);
 
   const tableRows = rows.map((r, i) => {
-    const cells = [`<td style="padding:10px 12px;border:1px solid #e2e8f0;">${escapeHtml(r.payee || r.description || "—")}</td>`];
-    if (s.include_association) cells.push(`<td style="padding:10px 12px;border:1px solid #e2e8f0;">${escapeHtml(r.association || "—")}</td>`);
-    cells.push(`<td style="padding:10px 12px;border:1px solid #e2e8f0;font-weight:600;white-space:nowrap;">${fmtAmount(Math.abs(Number(r.amount) || 0))}</td>`);
-    if (s.include_note) cells.push(`<td style="padding:10px 12px;border:1px solid #e2e8f0;">${escapeHtml(r.note || r.reference || "")}</td>`);
+    const cells = [`<td dir="rtl" style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;direction:rtl;">${escapeHtml(r.payee || r.description || "—")}</td>`];
+    if (s.include_association) cells.push(`<td dir="rtl" style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;direction:rtl;">${escapeHtml(r.association || "—")}</td>`);
+    cells.push(`<td dir="rtl" style="padding:10px 12px;border:1px solid #e2e8f0;font-weight:600;white-space:nowrap;text-align:right;direction:rtl;">${fmtAmount(Math.abs(Number(r.amount) || 0))}</td>`);
+    if (s.include_note) cells.push(`<td dir="rtl" style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;direction:rtl;">${escapeHtml(r.note || r.reference || "")}</td>`);
     return `<tr style="background:${i % 2 ? "#f8fafc" : "#ffffff"};">${cells.join("")}</tr>`;
   }).join("");
 
@@ -110,33 +111,33 @@ function renderHtml(dateISO: string, rows: any[], total: number, s: Settings, va
   const trailCols = s.include_note ? 1 : 0;
 
   const bodyContent = rows.length === 0
-    ? `<p style="font-size:15px;margin:16px 0;">אין צ'קים לפירעון בתאריך זה.</p>`
-    : `<table style="width:100%;border-collapse:collapse;font-size:14px;margin:16px 0;">
+    ? `<p dir="rtl" style="font-size:15px;margin:16px 0;text-align:right;direction:rtl;">אין צ'קים לפירעון בתאריך זה.</p>`
+    : `<table dir="rtl" align="right" style="width:100%;border-collapse:collapse;font-size:14px;margin:16px 0;direction:rtl;text-align:right;">
         <thead><tr style="background:#0b1e3f;color:#ffffff;">${headers.join("")}</tr></thead>
         <tbody>${tableRows}</tbody>
         <tfoot>
           <tr style="background:#fef3c7;">
-            <td colspan="${totalCols}" style="padding:10px 12px;border:1px solid #e2e8f0;font-weight:700;">סה"כ</td>
-            <td style="padding:10px 12px;border:1px solid #e2e8f0;font-weight:700;">${fmtAmount(total)}</td>
-            ${trailCols ? `<td style="padding:10px 12px;border:1px solid #e2e8f0;">${rows.length} צ'קים</td>` : ""}
+            <td dir="rtl" colspan="${totalCols}" style="padding:10px 12px;border:1px solid #e2e8f0;font-weight:700;text-align:right;direction:rtl;">סה"כ</td>
+            <td dir="rtl" style="padding:10px 12px;border:1px solid #e2e8f0;font-weight:700;text-align:right;direction:rtl;">${fmtAmount(total)}</td>
+            ${trailCols ? `<td dir="rtl" style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;direction:rtl;">${rows.length} צ'קים</td>` : ""}
           </tr>
         </tfoot>
       </table>`;
 
   return `<!DOCTYPE html>
 <html lang="he" dir="rtl">
-<head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
-  <div style="max-width:720px;margin:0 auto;padding:24px;">
-    <div style="background:#0b1e3f;color:#f5c243;padding:20px 24px;border-radius:12px 12px 0 0;">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body dir="rtl" style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;color:#0f172a;direction:rtl;text-align:right;">
+  <div dir="rtl" style="max-width:720px;margin:0 auto;padding:24px;direction:rtl;text-align:right;">
+    <div dir="rtl" style="background:#0b1e3f;color:#f5c243;padding:20px 24px;border-radius:12px 12px 0 0;direction:rtl;text-align:right;">
       <div style="font-size:22px;font-weight:700;">${escapeHtml(ORG_NAME)}</div>
       <div style="font-size:14px;opacity:0.9;margin-top:4px;">התראה יומית · צ'קים לפירעון</div>
     </div>
-    <div style="background:#ffffff;padding:24px;border-radius:0 0 12px 12px;border:1px solid #e2e8f0;border-top:none;">
-      <p style="font-size:15px;margin:0 0 12px;line-height:1.6;">${introHtml}</p>
+    <div dir="rtl" style="background:#ffffff;padding:24px;border-radius:0 0 12px 12px;border:1px solid #e2e8f0;border-top:none;direction:rtl;text-align:right;">
+      <p dir="rtl" style="font-size:15px;margin:0 0 12px;line-height:1.6;text-align:right;direction:rtl;">${introHtml}</p>
       ${bodyContent}
-      <p style="font-size:15px;margin:16px 0 0;line-height:1.6;">${outroHtml}</p>
-      <p style="font-size:12px;color:#64748b;margin-top:20px;border-top:1px solid #e2e8f0;padding-top:12px;">
+      <p dir="rtl" style="font-size:15px;margin:16px 0 0;line-height:1.6;text-align:right;direction:rtl;">${outroHtml}</p>
+      <p dir="rtl" style="font-size:12px;color:#64748b;margin-top:20px;border-top:1px solid #e2e8f0;padding-top:12px;text-align:right;direction:rtl;">
         הודעה זו נשלחה אוטומטית ממערכת הניהול הפיננסי של ${escapeHtml(ORG_NAME)}.
       </p>
     </div>
@@ -144,6 +145,7 @@ function renderHtml(dateISO: string, rows: any[], total: number, s: Settings, va
 </body>
 </html>`;
 }
+
 
 async function loadSettings(admin: any): Promise<Settings> {
   const { data } = await admin.from("check_email_settings").select("*").eq("singleton", true).maybeSingle();
