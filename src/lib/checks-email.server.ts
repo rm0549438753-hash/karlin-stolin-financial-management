@@ -93,10 +93,11 @@ function renderHtml(dateISO: string, rows: any[], total: number, s: Settings, va
   const introHtml = escapeHtml(applyPlaceholders(s.body_intro, vars)).replace(/\n/g, "<br>");
   const outroHtml = escapeHtml(applyPlaceholders(s.body_outro, vars)).replace(/\n/g, "<br>");
 
-  const headers = ['<th style="padding:10px 12px;border:1px solid #0b1e3f;text-align:right;">שם</th>'];
-  if (s.include_association) headers.push('<th style="padding:10px 12px;border:1px solid #0b1e3f;text-align:right;">עמותה</th>');
-  headers.push('<th style="padding:10px 12px;border:1px solid #0b1e3f;text-align:right;">סכום</th>');
-  if (s.include_note) headers.push('<th style="padding:10px 12px;border:1px solid #0b1e3f;text-align:right;">הערה</th>');
+  const TH = 'padding:10px 12px;border:1px solid #0b1e3f;text-align:right;direction:rtl;';
+  const headers = [`<th dir="rtl" style="${TH}">שם</th>`];
+  if (s.include_association) headers.push(`<th dir="rtl" style="${TH}">עמותה</th>`);
+  headers.push(`<th dir="rtl" style="${TH}">סכום</th>`);
+  if (s.include_note) headers.push(`<th dir="rtl" style="${TH}">הערה</th>`);
 
   const tableRows = rows.map((r, i) => {
     const cells = [`<td dir="rtl" style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;direction:rtl;">${escapeHtml(r.payee || r.description || "—")}</td>`];
