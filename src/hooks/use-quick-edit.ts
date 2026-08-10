@@ -13,9 +13,16 @@ export function useQuickEditTransaction() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, field, value }: { id: string; field: QuickEditField; value: string | null }) => {
-      const { error } = await supabase.from("transactions").update({ [field]: value }).eq("id", id);
+      const patch: {
+        fund_id?: string | null;
+        expense_type_id?: string | null;
+        category_id?: string | null;
+        subcategory_id?: string | null;
+      } = { [field]: value };
+      const { error } = await supabase.from("transactions").update(patch).eq("id", id);
       if (error) throw error;
     },
+
     onMutate: async ({ id, field, value }) => {
       await qc.cancelQueries({ queryKey: ["transactions"] });
       const snapshots: Array<[readonly unknown[], unknown]> = [];
