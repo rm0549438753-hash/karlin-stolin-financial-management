@@ -264,7 +264,7 @@ export function UsersPanel() {
                 <SelectItem value="editor">עורך</SelectItem>
                 <SelectItem value="viewer">צופה (קריאה בלבד)</SelectItem>
                 <SelectItem value="admin">מנהל</SelectItem>
-                <SelectItem value="superadmin">מנהל-על</SelectItem>
+                {canManageSuperAdmin && <SelectItem value="superadmin">מנהל-על</SelectItem>}
               </SelectContent>
             </Select>
             <Button onClick={() => add.mutate()} disabled={add.isPending}>
