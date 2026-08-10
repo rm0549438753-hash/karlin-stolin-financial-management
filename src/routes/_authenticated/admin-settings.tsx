@@ -7,6 +7,7 @@ import { BackupPanel } from "@/components/BackupPanel";
 import { UpcomingChecksEmailPanel } from "@/components/UpcomingChecksEmailPanel";
 import { SecurityAuditPanel } from "@/components/SecurityAuditPanel";
 import { UsersPanel, SheetsSyncPanel } from "@/routes/_authenticated/settings";
+import { SecurityAccessPanel } from "@/components/SecurityAccessPanel";
 
 export const Route = createFileRoute("/_authenticated/admin-settings")({
   head: () => ({
