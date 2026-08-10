@@ -8,6 +8,8 @@ import { UpcomingChecksEmailPanel } from "@/components/UpcomingChecksEmailPanel"
 import { SecurityAuditPanel } from "@/components/SecurityAuditPanel";
 import { UsersPanel } from "@/routes/_authenticated/settings";
 import { SecurityAccessPanel } from "@/components/SecurityAccessPanel";
+import { EmailAutomationsPanel } from "@/components/EmailAutomationsPanel";
+
 
 export const Route = createFileRoute("/_authenticated/admin-settings")({
   head: () => ({
@@ -53,6 +55,7 @@ function AdminSettingsPage() {
           <TabsTrigger value="users">משתמשים והרשאות</TabsTrigger>
           <TabsTrigger value="backup">גיבוי יומי</TabsTrigger>
           <TabsTrigger value="checks_email">מייל צ'קים</TabsTrigger>
+          <TabsTrigger value="automations">אוטומציות מייל</TabsTrigger>
           <TabsTrigger value="security_audit">סריקת אבטחה</TabsTrigger>
           <TabsTrigger value="access">אבטחה וגישה</TabsTrigger>
         </TabsList>
@@ -60,6 +63,8 @@ function AdminSettingsPage() {
 
         <TabsContent value="backup"><BackupPanel /></TabsContent>
         <TabsContent value="checks_email"><UpcomingChecksEmailPanel /></TabsContent>
+        <TabsContent value="automations"><EmailAutomationsPanel /></TabsContent>
+
         <TabsContent value="security_audit"><SecurityAuditPanel /></TabsContent>
         <TabsContent value="access"><SecurityAccessPanel /></TabsContent>
       </Tabs>
