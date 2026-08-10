@@ -282,7 +282,11 @@ export function ClassificationRulesPanel() {
                         </TableCell>
                         <TableCell className="font-medium">{r.name}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {r.match_text ? `${FIELD_LABELS[r.match_field]} מכיל "${r.match_text}"` : "כל התנועות"}
+                          {r.match_text
+                            ? `${FIELD_LABELS[r.match_field]}: ${splitTerms(r.match_text).join(" / ")}`
+                            : "כל התנועות"}
+                          {r.match_text && r.match_whole_word ? " · מילה שלמה" : ""}
+                          {r.match_text && r.match_smart ? " · התאמה חכמה" : ""}
                           {r.account_id ? ` · ${nameOf.get(r.account_id) ?? ""}` : ""}
                           {r.amount_min != null || r.amount_max != null
                             ? ` · סכום ${r.amount_min ?? "0"}–${r.amount_max ?? "∞"}`
