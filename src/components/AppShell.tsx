@@ -15,6 +15,7 @@ import {
 import logoAsset from "@/assets/karlin-logo.png.asset.json";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { GlobalSearch } from "@/components/GlobalSearch";
+import { useIdleLogout } from "@/hooks/use-idle-logout";
 
 const GOLD = "#D4AF37";
 
@@ -79,14 +80,26 @@ function AppSidebar() {
 
               {(role?.isAdmin || role?.isEditor) && (
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={path === "/settings"} tooltip="הגדרות" className="text-white hover:bg-white/10 data-[active=true]:bg-white/15 data-[active=true]:text-white data-[active=true]:font-bold py-5 text-base">
+                  <SidebarMenuButton asChild isActive={path === "/settings"} tooltip="הגדרות מערכת" className="text-white hover:bg-white/10 data-[active=true]:bg-white/15 data-[active=true]:text-white data-[active=true]:font-bold py-5 text-base">
                     <Link to="/settings" className="flex items-center gap-3">
                       <SettingsIcon className="!w-5 !h-5" />
-                      <span>הגדרות</span>
+                      <span>הגדרות מערכת</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
+
+              {role?.isSuperAdmin && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={path === "/admin-settings"} tooltip="הגדרות ניהול" className="text-white hover:bg-white/10 data-[active=true]:bg-white/15 data-[active=true]:text-white data-[active=true]:font-bold py-5 text-base">
+                    <Link to="/admin-settings" className="flex items-center gap-3">
+                      <ShieldCheck className="!w-5 !h-5" />
+                      <span>הגדרות ניהול</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+
 
             </SidebarMenu>
           </SidebarGroupContent>
@@ -130,6 +143,7 @@ function UserMenu() {
 }
 
 export function AppShell({ children, title, actions }: { children: ReactNode; title: string; actions?: ReactNode }) {
+  useIdleLogout();
   return (
     <SidebarProvider defaultOpen>
       <div className="min-h-screen flex w-full bg-background" dir="rtl">

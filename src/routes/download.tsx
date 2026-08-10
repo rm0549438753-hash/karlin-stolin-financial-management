@@ -1,5 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Download, Smartphone, ShieldCheck } from "lucide-react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getDownloadCodeStatus, checkDownloadCode } from "@/lib/security.functions";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/download")({
   head: () => ({
@@ -18,6 +23,27 @@ export const Route = createFileRoute("/download")({
 const APK_URL = "/api/public/apk";
 
 function DownloadPage() {
+  const [code, setCode] = useState("");
+  const [unlocked, setUnlocked] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const { data: status } = useQuery({
+    queryKey: ["download-code-status"],
+    queryFn: () => getDownloadCodeStatus(),
+  });
+  const required = status?.required ?? false;
+
+  async function verify() {
+    setChecking(true);
+    const res = await checkDownloadCode({ data: { code: code.trim() } }).catch(() => null);
+    setChecking(false);
+    if (res?.ok) {
+      setUnlocked(true);
+      toast.success("הקוד אומת — ניתן להוריד");
+    } else {
+      toast.error("קוד שגוי");
+    }
+  }
+
   return (
     <div dir="rtl" className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="w-full max-w-md rounded-2xl border bg-card text-card-foreground shadow-lg p-8 text-center space-y-6">
@@ -32,14 +58,33 @@ function DownloadPage() {
           </p>
         </div>
 
-        <a
-          href={APK_URL}
-          download
-          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-4 text-lg font-semibold text-primary-foreground shadow transition hover:opacity-90"
-        >
-          <Download className="h-5 w-5" />
-          הורדת האפליקציה
-        </a>
+        {required && !unlocked ? (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">להורדה יש להזין את קוד הגישה שקיבלת מהמנהל.</p>
+            <Input
+              placeholder="קוד גישה"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") verify(); }}
+            />
+            <button
+              onClick={verify}
+              disabled={checking || !code.trim()}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-4 text-lg font-semibold text-primary-foreground shadow transition hover:opacity-90 disabled:opacity-50"
+            >
+              {checking ? "בודק..." : "אימות קוד"}
+            </button>
+          </div>
+        ) : (
+          <a
+            href={required ? `${APK_URL}?code=${encodeURIComponent(code.trim())}` : APK_URL}
+            download
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-4 text-lg font-semibold text-primary-foreground shadow transition hover:opacity-90"
+          >
+            <Download className="h-5 w-5" />
+            הורדת האפליקציה
+          </a>
+        )}
 
         <ol className="text-right text-sm text-muted-foreground space-y-2 list-decimal pr-5">
           <li>לחץ על הכפתור — הקובץ יורד למכשיר.</li>

@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
 import logoAsset from "@/assets/karlin-logo.png.asset.json";
+import { checkLoginLockout, reportFailedLogin, logLoginEvent } from "@/lib/security.functions";
+import { getDeviceKey } from "@/lib/device-key";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -26,11 +28,30 @@ function AuthPage() {
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) return toast.error("שגיאת התחברות: " + error.message);
-    toast.success("התחברת בהצלחה");
-    navigate({ to: "/dashboard" });
+    try {
+      const lock = await checkLoginLockout({ data: { email: email.trim() } });
+      if (lock.locked) {
+        setLoading(false);
+        return toast.error(`החשבון ננעל זמנית עקב ניסיונות התחברות כושלים. נסה שוב בעוד ${lock.windowMinutes} דקות.`);
+      }
+
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        const res = await reportFailedLogin({ data: { email: email.trim() } }).catch(() => null);
+        setLoading(false);
+        if (res?.locked) return toast.error("החשבון ננעל זמנית ל-15 דקות עקב 5 ניסיונות כושלים.");
+        const left = res ? ` (נותרו ${res.remaining} ניסיונות)` : "";
+        return toast.error("שגיאת התחברות: " + error.message + left);
+      }
+
+      await logLoginEvent({ data: { deviceKey: getDeviceKey() } }).catch(() => null);
+      setLoading(false);
+      toast.success("התחברת בהצלחה");
+      navigate({ to: "/dashboard" });
+    } catch (err: any) {
+      setLoading(false);
+      toast.error(err?.message ?? "שגיאת התחברות");
+    }
   }
 
   return (
