@@ -51,14 +51,13 @@ function AdminSettingsPage() {
       <Tabs defaultValue="users" className="space-y-4">
         <TabsList className="flex-wrap">
           <TabsTrigger value="users">משתמשים והרשאות</TabsTrigger>
-          <TabsTrigger value="sheets">סנכרון גוגל שיטס</TabsTrigger>
           <TabsTrigger value="backup">גיבוי יומי</TabsTrigger>
           <TabsTrigger value="checks_email">מייל צ'קים</TabsTrigger>
           <TabsTrigger value="security_audit">סריקת אבטחה</TabsTrigger>
           <TabsTrigger value="access">אבטחה וגישה</TabsTrigger>
         </TabsList>
         <TabsContent value="users"><UsersPanel /></TabsContent>
-        <TabsContent value="sheets"><SheetsSyncPanel /></TabsContent>
+
         <TabsContent value="backup"><BackupPanel /></TabsContent>
         <TabsContent value="checks_email"><UpcomingChecksEmailPanel /></TabsContent>
         <TabsContent value="security_audit"><SecurityAuditPanel /></TabsContent>
