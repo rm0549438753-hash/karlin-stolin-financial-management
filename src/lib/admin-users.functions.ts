@@ -159,6 +159,8 @@ export const adminSetUserBlocked = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     if (data.userId === context.userId) throw new Error("לא ניתן לחסום את עצמך");
+    await assertMayTargetUser(context, data.userId);
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
       ban_duration: data.blocked ? "876600h" : "none",
