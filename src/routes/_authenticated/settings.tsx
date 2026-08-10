@@ -190,6 +190,8 @@ function LookupCRUD({ table, label, hasKind, hasCategory }: { table: string; lab
 export function UsersPanel() {
   const qc = useQueryClient();
   const { user: me } = useAuthUser();
+  const { data: myRole } = useUserRole();
+  const canManageSuperAdmin = !!myRole?.isSuperAdmin;
   const createUser = useServerFn(adminCreateUser);
   const deleteUser = useServerFn(adminDeleteUser);
   const setBlocked = useServerFn(adminSetUserBlocked);
