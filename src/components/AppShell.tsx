@@ -118,6 +118,9 @@ function UserMenu() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   async function signOut() {
+    const { logSessionEvent } = await import("@/lib/security.functions");
+    const { getDeviceKey } = await import("@/lib/device-key");
+    await logSessionEvent({ data: { deviceKey: getDeviceKey(), eventType: "logout" } }).catch(() => null);
     await qc.cancelQueries();
     qc.clear();
     await supabase.auth.signOut();
@@ -128,6 +131,9 @@ function UserMenu() {
       <div className="px-2 py-1 group-data-[collapsible=icon]:hidden">
         <div className="text-xs font-bold truncate">{user?.email}</div>
         <div className="text-[10px] text-white/60">{role?.isAdmin ? "מנהל" : role?.roles?.includes("editor") ? "עורך" : "צופה"}</div>
+      </div>
+      <div className="px-2 group-data-[collapsible=icon]:hidden">
+        <a href="/download" className="text-xs font-semibold underline hover:text-white/80">להורדת האפליקציה</a>
       </div>
       <div className="px-2 flex items-center gap-2 text-[10px] text-white/60 group-data-[collapsible=icon]:hidden">
         <Link to="/privacy" className="underline hover:text-white">מדיניות פרטיות</Link>

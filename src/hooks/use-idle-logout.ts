@@ -17,6 +17,9 @@ export function useIdleLogout() {
 
     async function signOut() {
       if (cancelled) return;
+      const { logSessionEvent } = await import("@/lib/security.functions");
+      const { getDeviceKey } = await import("@/lib/device-key");
+      await logSessionEvent({ data: { deviceKey: getDeviceKey(), eventType: "idle_logout" } }).catch(() => null);
       await queryClient.cancelQueries();
       queryClient.clear();
       await supabase.auth.signOut();
