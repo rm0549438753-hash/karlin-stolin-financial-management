@@ -664,10 +664,30 @@ function TransactionsPage() {
               </div>
             )}
 
+              {/* Mobile: stacked cards */}
+              <div className="md:hidden">
+                {isLoading ? (
+                  <CardsSkeleton />
+                ) : (
+                  <TransactionCardList
+                    rows={filtered}
+                    ctx={ctx}
+                    selectedIds={selectedIds}
+                    onToggle={toggleOne}
+                    onEdit={(r) => { setEditing(r); setDialogOpen(true); }}
+                    onDelete={role?.isAdmin ? (id) => setDeleteId(id) : undefined}
+                    canEdit={role?.isEditor}
+                    canDelete={role?.isAdmin}
+                    highlightId={urlSearch.highlight ?? kbHighlightId}
+                  />
+                )}
+              </div>
+
               <Table
-                className="border-collapse w-full table-auto text-[11px]"
-                containerClassName="max-h-[calc(100vh-8rem)] overflow-auto overscroll-contain"
+                className="border-collapse w-full table-auto text-[11px] hidden md:table"
+                containerClassName="max-h-[calc(100vh-8rem)] overflow-auto overscroll-contain hidden md:block"
               >
+
                 <TableHeader className="bg-primary/95">
                   <TableRow className="bg-primary hover:bg-primary border-b-2 border-primary">
                     <TableHead className="sticky top-0 z-20 w-7 px-0.5 border-l border-primary-foreground/20 text-center bg-primary text-primary-foreground shadow-[0_1px_0_hsl(var(--border))]">
