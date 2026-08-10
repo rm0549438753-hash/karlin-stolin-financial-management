@@ -86,6 +86,45 @@ export type Database = {
         }
         Relationships: []
       }
+      action_history_archive: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          record_id: string
+          table_name: string
+          undone_at: string | null
+          undone_by: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id: string
+          table_name: string
+          undone_at?: string | null
+          undone_by?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string
+          table_name?: string
+          undone_at?: string | null
+          undone_by?: string | null
+        }
+        Relationships: []
+      }
       app_download_settings: {
         Row: {
           code_cipher: string | null
@@ -287,6 +326,242 @@ export type Database = {
         }
         Relationships: []
       }
+      classification_rules: {
+        Row: {
+          account_id: string | null
+          amount_max: number | null
+          amount_min: number | null
+          applied_count: number
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          match_field: string
+          match_text: string | null
+          mode: string
+          name: string
+          priority: number
+          set_category_id: string | null
+          set_expense_type_id: string | null
+          set_fund_id: string | null
+          set_subcategory_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          amount_max?: number | null
+          amount_min?: number | null
+          applied_count?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          match_field?: string
+          match_text?: string | null
+          mode?: string
+          name: string
+          priority?: number
+          set_category_id?: string | null
+          set_expense_type_id?: string | null
+          set_fund_id?: string | null
+          set_subcategory_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          amount_max?: number | null
+          amount_min?: number | null
+          applied_count?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          match_field?: string
+          match_text?: string | null
+          mode?: string
+          name?: string
+          priority?: number
+          set_category_id?: string | null
+          set_expense_type_id?: string | null
+          set_fund_id?: string | null
+          set_subcategory_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classification_rules_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "classification_rules_set_category_id_fkey"
+            columns: ["set_category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "classification_rules_set_expense_type_id_fkey"
+            columns: ["set_expense_type_id"]
+            isOneToOne: false
+            referencedRelation: "expense_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "classification_rules_set_fund_id_fkey"
+            columns: ["set_fund_id"]
+            isOneToOne: false
+            referencedRelation: "funds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "classification_rules_set_subcategory_id_fkey"
+            columns: ["set_subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "subcategories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      classification_suggestions: {
+        Row: {
+          created_at: string
+          id: string
+          rule_id: string
+          status: string
+          transaction_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          rule_id: string
+          status?: string
+          transaction_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          rule_id?: string
+          status?: string
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classification_suggestions_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "classification_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "classification_suggestions_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_automation_runs: {
+        Row: {
+          automation_id: string | null
+          error_message: string | null
+          id: string
+          ran_at: string
+          recipients: string[]
+          status: string
+          summary: string | null
+          triggered_by: string
+        }
+        Insert: {
+          automation_id?: string | null
+          error_message?: string | null
+          id?: string
+          ran_at?: string
+          recipients?: string[]
+          status: string
+          summary?: string | null
+          triggered_by?: string
+        }
+        Update: {
+          automation_id?: string | null
+          error_message?: string | null
+          id?: string
+          ran_at?: string
+          recipients?: string[]
+          status?: string
+          summary?: string | null
+          triggered_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_automation_runs_automation_id_fkey"
+            columns: ["automation_id"]
+            isOneToOne: false
+            referencedRelation: "email_automations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_automations: {
+        Row: {
+          body_intro: string
+          body_outro: string
+          created_at: string
+          days_ahead: number | null
+          frequency: string
+          id: string
+          is_active: boolean
+          last_run_at: string | null
+          name: string
+          recipients: string[]
+          send_hour: number
+          send_when_empty: boolean
+          subject_template: string
+          threshold_value: number | null
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          body_intro?: string
+          body_outro?: string
+          created_at?: string
+          days_ahead?: number | null
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          last_run_at?: string | null
+          name: string
+          recipients?: string[]
+          send_hour?: number
+          send_when_empty?: boolean
+          subject_template?: string
+          threshold_value?: number | null
+          trigger_type: string
+          updated_at?: string
+        }
+        Update: {
+          body_intro?: string
+          body_outro?: string
+          created_at?: string
+          days_ahead?: number | null
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          last_run_at?: string | null
+          name?: string
+          recipients?: string[]
+          send_hour?: number
+          send_when_empty?: boolean
+          subject_template?: string
+          threshold_value?: number | null
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       expense_types: {
         Row: {
           created_at: string
@@ -465,6 +740,45 @@ export type Database = {
           is_new_device?: boolean
           user_agent?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          dedupe_key: string | null
+          id: string
+          kind: string
+          link: string | null
+          read_at: string | null
+          severity: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          id?: string
+          kind: string
+          link?: string | null
+          read_at?: string | null
+          severity?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          id?: string
+          kind?: string
+          link?: string | null
+          read_at?: string | null
+          severity?: string
+          title?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -769,6 +1083,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      archive_old_action_history: { Args: never; Returns: number }
+      dashboard_rows: { Args: never; Returns: Json }
       get_cron_hook_secret: { Args: never; Returns: string }
       has_role: {
         Args: {

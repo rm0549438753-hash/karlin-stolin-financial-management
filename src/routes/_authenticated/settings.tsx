@@ -20,6 +20,8 @@ import { useUserRole, useAuthUser } from "@/hooks/use-auth";
 import { useServerFn } from "@tanstack/react-start";
 import { adminCreateUser, adminDeleteUser, adminSetUserBlocked, adminListUsers } from "@/lib/admin-users.functions";
 import { syncFromGoogleSheet, listSyncIgnores, addSyncIgnores, removeSyncIgnore } from "@/lib/sheets-sync.functions";
+import { ClassificationRulesPanel } from "@/components/ClassificationRulesPanel";
+
 
 
 
@@ -42,13 +44,16 @@ function SettingsPage() {
           <TabsTrigger value="expense_types">סוגי הוצאה</TabsTrigger>
           <TabsTrigger value="categories">קטגוריות</TabsTrigger>
           <TabsTrigger value="subcategories">תת-קטגוריות</TabsTrigger>
+          <TabsTrigger value="rules">כללי סיווג</TabsTrigger>
         </TabsList>
         <TabsContent value="accounts"><LookupCRUD table="accounts" label="חשבונות" hasKind /></TabsContent>
         <TabsContent value="funds"><LookupCRUD table="funds" label="קופות" /></TabsContent>
         <TabsContent value="expense_types"><LookupCRUD table="expense_types" label="סוגי הוצאה" /></TabsContent>
         <TabsContent value="categories"><LookupCRUD table="categories" label="קטגוריות" /></TabsContent>
         <TabsContent value="subcategories"><LookupCRUD table="subcategories" label="תת-קטגוריות" hasCategory /></TabsContent>
+        <TabsContent value="rules"><ClassificationRulesPanel /></TabsContent>
       </Tabs>
+
     </AppShell>
   );
 }
