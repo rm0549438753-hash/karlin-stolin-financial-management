@@ -8,6 +8,8 @@ export type Rule = {
   priority: number;
   match_field: "payee" | "description" | "reference" | "any";
   match_text: string | null;
+  match_whole_word: boolean | null;
+  match_smart: boolean | null;
   account_id: string | null;
   amount_min: number | null;
   amount_max: number | null;
@@ -17,6 +19,7 @@ export type Rule = {
   set_subcategory_id: string | null;
   applied_count: number;
 };
+
 
 export type CandidateTx = {
   id: string;
