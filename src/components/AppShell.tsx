@@ -133,7 +133,7 @@ function UserMenu() {
         <div className="text-[10px] text-white/60">{role?.isAdmin ? "מנהל" : role?.roles?.includes("editor") ? "עורך" : "צופה"}</div>
       </div>
       <div className="px-2 group-data-[collapsible=icon]:hidden">
-        <a href="/download" className="text-xs font-semibold underline hover:text-white/80">להורדת האפליקציה</a>
+        <Link to="/download" className="text-xs font-semibold underline hover:text-white/80">להורדת האפליקציה</Link>
       </div>
       <div className="px-2 flex items-center gap-2 text-[10px] text-white/60 group-data-[collapsible=icon]:hidden">
         <Link to="/privacy" className="underline hover:text-white">מדיניות פרטיות</Link>
