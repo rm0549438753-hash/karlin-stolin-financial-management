@@ -20,6 +20,8 @@ import { useUserRole, useAuthUser } from "@/hooks/use-auth";
 import { useServerFn } from "@tanstack/react-start";
 import { adminCreateUser, adminDeleteUser, adminSetUserBlocked, adminListUsers } from "@/lib/admin-users.functions";
 import { syncFromGoogleSheet, listSyncIgnores, addSyncIgnores, removeSyncIgnore } from "@/lib/sheets-sync.functions";
+import { ClassificationRulesPanel } from "@/components/ClassificationRulesPanel";
+
 
 
 
