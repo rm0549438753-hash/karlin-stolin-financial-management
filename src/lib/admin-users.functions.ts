@@ -20,6 +20,25 @@ async function assertAdmin(context: any) {
   if (!isAdmin) throw new Error("Forbidden");
 }
 
+/**
+ * A plain admin must never be able to act on a superadmin account (delete it,
+ * block it, reset its password) — that would be a path to taking over the
+ * highest-privilege role. Only a superadmin may target another superadmin.
+ */
+async function assertMayTargetUser(context: any, targetUserId: string) {
+  if (await isSuperAdmin(context)) return;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", targetUserId)
+    .eq("role", "superadmin")
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (data) throw new Error("Forbidden: רק מנהל-על יכול לנהל חשבון מנהל-על");
+}
+
+
 export const adminCreateUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(
@@ -126,6 +145,8 @@ export const adminDeleteUser = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     if (data.userId === context.userId) throw new Error("לא ניתן למחוק את עצמך");
+    await assertMayTargetUser(context, data.userId);
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
     if (error) throw new Error(error.message);
@@ -138,6 +159,8 @@ export const adminSetUserBlocked = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     if (data.userId === context.userId) throw new Error("לא ניתן לחסום את עצמך");
+    await assertMayTargetUser(context, data.userId);
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
       ban_duration: data.blocked ? "876600h" : "none",
