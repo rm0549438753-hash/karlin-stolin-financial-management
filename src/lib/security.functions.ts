@@ -24,6 +24,8 @@ export const logLoginEvent = createServerFn({ method: "POST" })
       ip: clientIp(),
       userAgent: getRequestHeader("user-agent") ?? null,
       deviceKey: data.deviceKey,
+      country: getRequestHeader("cf-ipcountry") ?? null,
+      city: getRequestHeader("cf-ipcity") ?? null,
     });
   });
 
@@ -79,3 +81,104 @@ export const checkDownloadCode = createServerFn({ method: "POST" })
     const { verifyDownloadCode } = await import("@/lib/security.server");
     return await verifyDownloadCode(data.code);
   });
+
+async function assertSuper(context: any) {
+  const { data } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "superadmin" });
+  if (!data) throw new Error("Forbidden");
+}
+
+/** Full security/login log with filters + paging (superadmin only). */
+export const listSecurityEvents = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    z.object({
+      from: z.string().nullable().optional(),
+      to: z.string().nullable().optional(),
+      search: z.string().max(120).nullable().optional(),
+      eventType: z.string().max(30).nullable().optional(),
+      page: z.number().int().min(1).optional(),
+      pageSize: z.number().int().min(10).max(500).optional(),
+    }),
+  )
+  .handler(async ({ data, context }) => {
+    await assertSuper(context);
+    const { listSecurityEvents: run } = await import("@/lib/security.server");
+    return await run(data);
+  });
+
+export const securitySummary = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertSuper(context);
+    const { securityEventSummary } = await import("@/lib/security.server");
+    return await securityEventSummary();
+  });
+
+export const purgeSecurityLogs = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertSuper(context);
+    const { purgeOldSecurityLogs } = await import("@/lib/security.server");
+    return await purgeOldSecurityLogs();
+  });
+
+export const listBlockedIps = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertSuper(context);
+    const { listBlockedIps: run } = await import("@/lib/security.server");
+    return await run();
+  });
+
+export const blockIpAddress = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(z.object({ ip: z.string().min(3).max(60), reason: z.string().max(200).nullable().optional() }))
+  .handler(async ({ data, context }) => {
+    await assertSuper(context);
+    const { blockIp } = await import("@/lib/security.server");
+    return await blockIp(data.ip, data.reason ?? null, context.userId);
+  });
+
+export const unblockIpAddress = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(z.object({ id: z.string().uuid() }))
+  .handler(async ({ data, context }) => {
+    await assertSuper(context);
+    const { unblockIp } = await import("@/lib/security.server");
+    return await unblockIp(data.id);
+  });
+
+/** Superadmin: reveal the current app download code. */
+export const revealDownloadCode = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertSuper(context);
+    const { revealDownloadCode: run } = await import("@/lib/security.server");
+    return await run();
+  });
+
+/** Records a logout / idle timeout for the authenticated caller. */
+export const logSessionEvent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    z.object({ deviceKey: z.string().min(4).max(200), eventType: z.enum(["logout", "idle_logout"]) }),
+  )
+  .handler(async ({ data, context }) => {
+    const { recordSessionEvent } = await import("@/lib/security.server");
+    return await recordSessionEvent({
+      userId: context.userId,
+      email: (context.claims as any)?.email ?? null,
+      ip: clientIp(),
+      userAgent: getRequestHeader("user-agent") ?? null,
+      deviceKey: data.deviceKey,
+      eventType: data.eventType,
+      country: getRequestHeader("cf-ipcountry") ?? null,
+      city: getRequestHeader("cf-ipcity") ?? null,
+    });
+  });
+
+/** Public: is the caller's IP blocked? */
+export const checkIpBlocked = createServerFn({ method: "POST" }).handler(async () => {
+  const { isIpBlocked } = await import("@/lib/security.server");
+  return await isIpBlocked(clientIp());
+});

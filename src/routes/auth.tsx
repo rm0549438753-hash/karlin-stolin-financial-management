@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
 import logoAsset from "@/assets/karlin-logo.png.asset.json";
-import { checkLoginLockout, reportFailedLogin, logLoginEvent } from "@/lib/security.functions";
+import { checkLoginLockout, reportFailedLogin, logLoginEvent, checkIpBlocked } from "@/lib/security.functions";
 import { getDeviceKey } from "@/lib/device-key";
 
 export const Route = createFileRoute("/auth")({
@@ -29,6 +29,11 @@ function AuthPage() {
     e.preventDefault();
     setLoading(true);
     try {
+      const ipBlock = await checkIpBlocked().catch(() => null);
+      if (ipBlock?.blocked) {
+        setLoading(false);
+        return toast.error("הגישה מכתובת זו חסומה. יש לפנות למנהל המערכת.");
+      }
       const lock = await checkLoginLockout({ data: { email: email.trim() } });
       if (lock.locked) {
         setLoading(false);

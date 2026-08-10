@@ -88,6 +88,7 @@ export type Database = {
       }
       app_download_settings: {
         Row: {
+          code_cipher: string | null
           code_hash: string | null
           id: string
           singleton: boolean
@@ -95,6 +96,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          code_cipher?: string | null
           code_hash?: string | null
           id?: string
           singleton?: boolean
@@ -102,6 +104,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          code_cipher?: string | null
           code_hash?: string | null
           id?: string
           singleton?: boolean
@@ -161,6 +164,30 @@ export type Database = {
           started_at?: string
           status?: string
           triggered_by?: string
+        }
+        Relationships: []
+      }
+      blocked_ips: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          ip: string
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          ip: string
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          ip?: string
+          reason?: string | null
         }
         Relationships: []
       }
@@ -401,9 +428,12 @@ export type Database = {
       }
       login_events: {
         Row: {
+          city: string | null
+          country: string | null
           created_at: string
           device_key: string | null
           email: string | null
+          event_type: string
           id: string
           ip: string | null
           is_new_device: boolean
@@ -411,9 +441,12 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          city?: string | null
+          country?: string | null
           created_at?: string
           device_key?: string | null
           email?: string | null
+          event_type?: string
           id?: string
           ip?: string | null
           is_new_device?: boolean
@@ -421,9 +454,12 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          city?: string | null
+          country?: string | null
           created_at?: string
           device_key?: string | null
           email?: string | null
+          event_type?: string
           id?: string
           ip?: string | null
           is_new_device?: boolean

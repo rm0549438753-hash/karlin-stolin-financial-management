@@ -150,3 +150,44 @@ export const adminSetUserBlocked = createServerFn({ method: "POST" })
     if (profErr) throw new Error(profErr.message);
     return { ok: true };
   });
+
+export const adminSetUserPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    z.object({
+      userId: z.string().uuid(),
+      password: z.string().min(10, "הסיסמה חייבת להכיל לפחות 10 תווים").max(72),
+    }),
+  )
+  .handler(async ({ data, context }) => {
+    if (!(await isSuperAdmin(context))) throw new Error("Forbidden: רק מנהל-על יכול לשנות סיסמאות");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, { password: data.password });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const adminSendPasswordReset = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(z.object({ email: z.string().email(), redirectTo: z.string().url() }))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.resetPasswordForEmail(data.email, {
+      redirectTo: data.redirectTo,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Superadmin: revoke all active sessions of a user (sign out everywhere). */
+export const adminSignOutUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(z.object({ userId: z.string().uuid() }))
+  .handler(async ({ data, context }) => {
+    if (!(await isSuperAdmin(context))) throw new Error("Forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await (supabaseAdmin.auth.admin as any).signOut(data.userId, "global");
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

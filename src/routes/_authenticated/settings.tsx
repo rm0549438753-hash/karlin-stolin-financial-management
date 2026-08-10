@@ -1,3 +1,4 @@
+import { UserPasswordActions } from "@/components/UserPasswordActions";
 import { createFileRoute } from "@tanstack/react-router";
 import { createContext, useContext, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -299,6 +300,7 @@ export function UsersPanel() {
                       <SelectItem value="viewer">צופה</SelectItem>
                     </SelectContent>
                   </Select>
+                  <UserPasswordActions userId={u.id} email={u.email} canManage={canManageSuperAdmin} />
                   <Button
                     size="sm"
                     variant="outline"
