@@ -15,9 +15,13 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { useAccounts, useCategories, useExpenseTypes, useFunds, useSubcategories } from "@/hooks/use-lookups";
 import { TransactionDialog, type TransactionRow } from "@/components/TransactionDialog";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { CalendarClock, AlertTriangle, Download, Printer, Search, Pencil, X, Trash2, CalendarX, Save, Wallet, Coins } from "lucide-react";
+import { CalendarClock, AlertTriangle, Download, Printer, Search, Pencil, X, Trash2, CalendarX, Save, Wallet, Coins, GitCompare, TrendingUp, Users, AlertOctagon } from "lucide-react";
 import { FundOpeningBalancesReport } from "@/components/FundOpeningBalancesReport";
 import { CashBalanceReport } from "@/components/CashBalanceReport";
+import { PeriodComparisonReport } from "@/components/reports/PeriodComparisonReport";
+import { ForecastReport } from "@/components/reports/ForecastReport";
+import { PayeesReport } from "@/components/reports/PayeesReport";
+import { AnomaliesReport } from "@/components/reports/AnomaliesReport";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { PrintDialog } from "@/components/PrintDialog";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -43,7 +47,7 @@ export const Route = createFileRoute("/_authenticated/reports")({
 const PAGE_SIZE = 1000;
 const TX_SELECT = "id, transaction_date, value_date, amount, account_id, fund_id, expense_type_id, category_id, subcategory_id, description, note, credit, debit, payee, balance, reference, fee, channel, association";
 
-type Tx = {
+export type Tx = {
   id: string;
   transaction_date: string;
   value_date: string | null;
@@ -122,6 +126,18 @@ function ReportsPage() {
           <TabsTrigger value="cash-balance" className="gap-1.5 text-base font-semibold px-4 py-2">
             <Coins className="w-4 h-4" />יתרת מזומן
           </TabsTrigger>
+          <TabsTrigger value="period-comparison" className="gap-1.5 text-base font-semibold px-4 py-2">
+            <GitCompare className="w-4 h-4" />השוואת תקופות
+          </TabsTrigger>
+          <TabsTrigger value="forecast" className="gap-1.5 text-base font-semibold px-4 py-2">
+            <TrendingUp className="w-4 h-4" />תזרים חזוי
+          </TabsTrigger>
+          <TabsTrigger value="payees" className="gap-1.5 text-base font-semibold px-4 py-2">
+            <Users className="w-4 h-4" />דוח מוטבים
+          </TabsTrigger>
+          <TabsTrigger value="anomalies" className="gap-1.5 text-base font-semibold px-4 py-2">
+            <AlertOctagon className="w-4 h-4" />זיהוי חריגות
+          </TabsTrigger>
         </TabsList>
 
         {isLoading && <p className="text-sm text-muted-foreground">טוען…</p>}
@@ -131,6 +147,10 @@ function ReportsPage() {
         <TabsContent value="no-date"><NoDateReport txs={txs} lookups={lookups} /></TabsContent>
         <TabsContent value="fund-opening"><FundOpeningBalancesReport /></TabsContent>
         <TabsContent value="cash-balance"><CashBalanceReport /></TabsContent>
+        <TabsContent value="period-comparison"><PeriodComparisonReport txs={txs} lookups={lookups} /></TabsContent>
+        <TabsContent value="forecast"><ForecastReport txs={txs} lookups={lookups} /></TabsContent>
+        <TabsContent value="payees"><PayeesReport txs={txs} lookups={lookups} /></TabsContent>
+        <TabsContent value="anomalies"><AnomaliesReport txs={txs} lookups={lookups} /></TabsContent>
 
       </Tabs>
     </AppShell>
@@ -139,11 +159,11 @@ function ReportsPage() {
 
 
 /* ===================== Helpers ===================== */
-function nameMap(arr: any[]) {
+export function nameMap(arr: any[]) {
   return new Map<string, string>(arr.map((x) => [x.id, x.name]));
 }
 
-async function exportRowsToExcel(rows: any[], filename: string) {
+export async function exportRowsToExcel(rows: any[], filename: string) {
   if (!rows.length) return;
   const XLSX = await import("xlsx");
   const ws = XLSX.utils.json_to_sheet(rows);
@@ -152,7 +172,7 @@ async function exportRowsToExcel(rows: any[], filename: string) {
   XLSX.writeFile(wb, filename);
 }
 
-function buildTxRows(rows: Tx[], lookups: any) {
+export function buildTxRows(rows: Tx[], lookups: any) {
   const acct = nameMap(lookups.accounts);
   const fund = nameMap(lookups.funds);
   const et = nameMap(lookups.expenseTypes);
@@ -180,17 +200,17 @@ function buildTxRows(rows: Tx[], lookups: any) {
   });
 }
 
-function exportTxs(rows: Tx[], lookups: any, filename: string) {
+export function exportTxs(rows: Tx[], lookups: any, filename: string) {
   exportRowsToExcel(buildTxRows(rows, lookups), filename);
 }
 
-function exportTxsPdf(rows: Tx[], lookups: any, title: string) {
+export function exportTxsPdf(rows: Tx[], lookups: any, title: string) {
   const data = buildTxRows(rows, lookups);
   const { headers, data: matrix } = objectsToTable(data);
   exportRowsAsPdf(title, headers, matrix);
 }
 
-function ReportShell({ title, subtitle, onExport, onExportPdf, onPrint, children }: { title: string; subtitle?: string; onExport?: () => void; onExportPdf?: () => void; onPrint?: () => void; children: React.ReactNode }) {
+export function ReportShell({ title, subtitle, onExport, onExportPdf, onPrint, children }: { title: string; subtitle?: string; onExport?: () => void; onExportPdf?: () => void; onPrint?: () => void; children: React.ReactNode }) {
   return (
     <Card className="print-area">
       <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 bg-muted/40 border-b rounded-t-xl">
@@ -214,7 +234,7 @@ function ReportShell({ title, subtitle, onExport, onExportPdf, onPrint, children
 
 
 /* ===================== Kpi ===================== */
-function Kpi({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "income" | "expense" }) {
+export function Kpi({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "income" | "expense" }) {
   const toneCls = tone === "expense" ? "text-expense" : tone === "income" ? "text-income" : "";
   return (
     <Card>

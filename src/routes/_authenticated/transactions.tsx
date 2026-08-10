@@ -21,6 +21,14 @@ import { toast } from "sonner";
 import { ExportMenu } from "@/components/ExportMenu";
 import { exportRowsAsPdf } from "@/lib/export-pdf";
 import { useUserRole } from "@/hooks/use-auth";
+import { QuickEditCell } from "@/components/transactions/QuickEditCell";
+import { useQuickEditTransaction } from "@/hooks/use-quick-edit";
+import { useRowKeyboardNav } from "@/hooks/use-row-keyboard-nav";
+import { ShortcutsHelp } from "@/components/transactions/ShortcutsHelp";
+import { SavedViewsMenu } from "@/components/transactions/SavedViewsMenu";
+import { TransactionCardList } from "@/components/transactions/TransactionCardList";
+import { TableRowsSkeleton, CardsSkeleton, SummarySkeleton } from "@/components/transactions/TransactionsSkeleton";
+import { loadFilters, saveFilters, EMPTY_FILTERS, type TxFilters } from "@/hooks/use-saved-filters";
 
 export const Route = createFileRoute("/_authenticated/transactions")({
   validateSearch: (s: Record<string, unknown>): { account?: string; uncategorized?: boolean; highlight?: string } => ({
@@ -46,6 +54,12 @@ type RenderCtx = {
   expMap: Map<string, string>;
   catMap: Map<string, string>;
   subMap: Map<string, string>;
+  fundsList: { id: string; name: string }[];
+  expList: { id: string; name: string }[];
+  catList: { id: string; name: string }[];
+  subList: { id: string; name: string; category_id?: string | null }[];
+  canEdit: boolean;
+  onQuickEdit: (id: string, field: "fund_id" | "expense_type_id" | "category_id" | "subcategory_id", value: string | null) => void;
 };
 
 const fmtNum = (v: any) => (v === null || v === undefined || v === "" ? "" : Number(v).toLocaleString("he-IL", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
@@ -54,11 +68,37 @@ function UncatBadge() {
   return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-dashed border-amber-300">לא מסווג</span>;
 }
 
+function lookupColumn(header: string, field: "fund_id" | "expense_type_id" | "category_id" | "subcategory_id"): ColumnDef {
+  const isUncatField = field === "fund_id" || field === "expense_type_id";
+  return {
+    header,
+    render: (r, c) => {
+      const val = (r as any)[field] as string | null;
+      if (!c.canEdit) {
+        const map = field === "fund_id" ? c.fundMap : field === "expense_type_id" ? c.expMap : field === "category_id" ? c.catMap : c.subMap;
+        if (val) return map.get(val);
+        return isUncatField && !r.fund_id && !r.expense_type_id ? <UncatBadge /> : "";
+      }
+      const items = field === "fund_id" ? c.fundsList
+        : field === "expense_type_id" ? c.expList
+        : field === "category_id" ? c.catList
+        : c.subList.filter((s) => !s.category_id || s.category_id === r.category_id);
+      return (
+        <QuickEditCell
+          value={val}
+          items={items}
+          onChange={(v) => c.onQuickEdit(r.id, field, v)}
+        />
+      );
+    },
+  };
+}
+
 const COMMON_LOOKUPS: ColumnDef[] = [
-  { header: "קופה", render: (r, c) => (r.fund_id ? c.fundMap.get(r.fund_id) : (!r.fund_id && !r.expense_type_id) ? <UncatBadge /> : "") },
-  { header: "סוג", render: (r, c) => (r.expense_type_id ? c.expMap.get(r.expense_type_id) : (!r.fund_id && !r.expense_type_id) ? <UncatBadge /> : "") },
-  { header: "קטגוריה", render: (r, c) => (r.category_id ? c.catMap.get(r.category_id) : "") },
-  { header: "תת קטגוריה", render: (r, c) => (r.subcategory_id ? c.subMap.get(r.subcategory_id) : "") },
+  lookupColumn("קופה", "fund_id"),
+  lookupColumn("סוג", "expense_type_id"),
+  lookupColumn("קטגוריה", "category_id"),
+  lookupColumn("תת קטגוריה", "subcategory_id"),
   { header: "הערה", render: (r) => r.note ?? "" },
 ];
 
@@ -101,10 +141,7 @@ const COLUMNS_BY_SCHEMA: Record<SchemaType, ColumnDef[]> = {
     { header: "סכום הכנסה", align: "left", render: (r) => <span className="text-income font-semibold tabular-nums">{fmtNum(r.credit)}</span> },
     { header: "סכום הוצאה", align: "left", render: (r) => <span className="text-expense font-semibold tabular-nums">{fmtNum(r.debit)}</span> },
     { header: "הערה", render: (r) => r.note ?? "" },
-    { header: "קופה", render: (r, c) => (r.fund_id ? c.fundMap.get(r.fund_id) : (!r.fund_id && !r.expense_type_id) ? <UncatBadge /> : "") },
-    { header: "סוג", render: (r, c) => (r.expense_type_id ? c.expMap.get(r.expense_type_id) : (!r.fund_id && !r.expense_type_id) ? <UncatBadge /> : "") },
-    { header: "קטגוריה", render: (r, c) => (r.category_id ? c.catMap.get(r.category_id) : "") },
-    { header: "תת קטגוריה", render: (r, c) => (r.subcategory_id ? c.subMap.get(r.subcategory_id) : "") },
+    ...COMMON_LOOKUPS.slice(0, 4),
   ],
 };
 
@@ -152,12 +189,32 @@ function TransactionsPage() {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [printOpen, setPrintOpen] = useState(false);
 
-  // Reset selection + uncategorized filter when account changes (banner is per-account)
+  // Restore the last-used filters for this account (or reset to blank) when it changes
   useEffect(() => {
     setSelectedIds(new Set());
-    setOnlyUncat(false);
-    setSearchDesc(""); setSearchRef(""); setSearchName(""); setSearchAmount(""); setCategory([]); setSubcategory([]); setFund([]); setExpType([]); setFrom(""); setTo("");
+    const saved = account ? loadFilters(account) : null;
+    const f = saved ?? EMPTY_FILTERS;
+    setOnlyUncat(f.onlyUncat);
+    setSearchDesc(f.searchDesc); setSearchRef(f.searchRef); setSearchName(f.searchName); setSearchAmount(f.searchAmount);
+    setCategory(f.category); setSubcategory(f.subcategory); setFund(f.fund); setExpType(f.expType);
+    setFrom(f.from); setTo(f.to); setDateSort(f.dateSort);
   }, [account]);
+
+  // Persist the current filters for this account whenever they change
+  useEffect(() => {
+    if (!account) return;
+    const t = setTimeout(() => {
+      saveFilters(account, { searchDesc, searchRef, searchName, searchAmount, category, subcategory, fund, expType, from, to, dateSort, onlyUncat });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [account, searchDesc, searchRef, searchName, searchAmount, category, subcategory, fund, expType, from, to, dateSort, onlyUncat]);
+
+  const applySavedView = (f: TxFilters) => {
+    setOnlyUncat(f.onlyUncat);
+    setSearchDesc(f.searchDesc); setSearchRef(f.searchRef); setSearchName(f.searchName); setSearchAmount(f.searchAmount);
+    setCategory(f.category); setSubcategory(f.subcategory); setFund(f.fund); setExpType(f.expType);
+    setFrom(f.from); setTo(f.to); setDateSort(f.dateSort);
+  };
   // When navigating with highlight, also clear filters so the row is visible
   useEffect(() => {
     if (urlSearch.highlight) {
@@ -254,12 +311,19 @@ function TransactionsPage() {
     onError: (e: any) => toast.error(e.message ?? "שגיאה בביטול"),
   });
 
+  const quickEdit = useQuickEditTransaction();
   const ctx: RenderCtx = useMemo(() => ({
     fundMap: new Map(funds.map((f) => [f.id, f.name])),
     expMap: new Map(expTypes.map((e) => [e.id, e.name])),
     catMap: new Map(categories.map((c) => [c.id, c.name])),
     subMap: new Map(subcats.map((s) => [s.id, s.name])),
-  }), [funds, expTypes, categories, subcats]);
+    fundsList: funds,
+    expList: expTypes,
+    catList: categories,
+    subList: subcats,
+    canEdit: !!role?.isEditor,
+    onQuickEdit: (id, field, value) => quickEdit.mutate({ id, field, value }),
+  }), [funds, expTypes, categories, subcats, role?.isEditor, quickEdit]);
 
   const filtered = useMemo(() => {
     let r: any[] = rows;
@@ -365,6 +429,11 @@ function TransactionsPage() {
     setSelectedIds(next);
   };
 
+  const openEdit = (r: any) => { setEditing(r); setDialogOpen(true); };
+  const { highlightId: kbHighlightId, setHighlightId: setKbHighlightId } = useRowKeyboardNav(
+    filtered as any[], openEdit, !dialogOpen && !importOpen && !bulkEditOpen && !printOpen,
+  );
+
   // Scroll to highlighted transaction once it appears in the filtered view
   useEffect(() => {
     const hid = urlSearch.highlight;
@@ -425,6 +494,7 @@ function TransactionsPage() {
       title={title}
       actions={
         <>
+          <ShortcutsHelp />
           <ExportMenu disabled={!selectedAccount} onExcel={exportAllExcel} onPdf={() => setPrintOpen(true)} />
           <Button variant="outline" size="sm" onClick={() => setPrintOpen(true)} disabled={!selectedAccount || filtered.length === 0}>
             <Printer className="w-4 h-4 ml-1" />הדפסה
@@ -544,17 +614,26 @@ function TransactionsPage() {
               <MultiFilter value={fund} onChange={setFund} placeholder="כל הקופות" items={funds} />
               <MultiFilter value={category} onChange={(v) => { setCategory(v); setSubcategory([]); }} placeholder="כל הקטגוריות" items={categories} />
               <MultiFilter value={subcategory} onChange={setSubcategory} placeholder="כל תתי הקטגוריות" items={category.length === 0 ? subcats : subcats.filter((s) => category.includes(s.category_id ?? ""))} />
+              {account && (
+                <SavedViewsMenu
+                  accountId={account}
+                  currentFilters={{ searchDesc, searchRef, searchName, searchAmount, category, subcategory, fund, expType, from, to, dateSort, onlyUncat }}
+                  onApply={applySavedView}
+                />
+              )}
               <Button variant="ghost" size="sm" onClick={() => { setSearchDesc(""); setSearchRef(""); setSearchName(""); setSearchAmount(""); setCategory([]); setSubcategory([]); setFund([]); setExpType([]); setFrom(""); setTo(""); setOnlyUncat(false); }}>איפוס</Button>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 border-b bg-background text-sm">
-              <div>סך תנועות: <b>{totals.count}</b></div>
-              <div className="flex gap-4">
-                <span>הכנסות: <b className="text-income tabular-nums">{fmtNum(totals.inc)} ₪</b></span>
-                <span>הוצאות: <b className="text-expense tabular-nums">{fmtNum(Math.abs(totals.exp))} ₪</b></span>
-                <span>מאזן: <b className={(totals.net >= 0 ? "text-income " : "text-expense ") + "tabular-nums"}>{fmtNum(totals.net)} ₪</b></span>
+            {isLoading ? <SummarySkeleton /> : (
+              <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 border-b bg-background text-sm">
+                <div>סך תנועות: <b>{totals.count}</b></div>
+                <div className="flex gap-4">
+                  <span>הכנסות: <b className="text-income tabular-nums">{fmtNum(totals.inc)} ₪</b></span>
+                  <span>הוצאות: <b className="text-expense tabular-nums">{fmtNum(Math.abs(totals.exp))} ₪</b></span>
+                  <span>מאזן: <b className={(totals.net >= 0 ? "text-income " : "text-expense ") + "tabular-nums"}>{fmtNum(totals.net)} ₪</b></span>
+                </div>
               </div>
-            </div>
+            )}
 
 
 
@@ -585,10 +664,30 @@ function TransactionsPage() {
               </div>
             )}
 
+              {/* Mobile: stacked cards */}
+              <div className="md:hidden">
+                {isLoading ? (
+                  <CardsSkeleton />
+                ) : (
+                  <TransactionCardList
+                    rows={filtered}
+                    ctx={ctx}
+                    selectedIds={selectedIds}
+                    onToggle={toggleOne}
+                    onEdit={(r) => { setEditing(r); setDialogOpen(true); }}
+                    onDelete={role?.isAdmin ? (id) => setDeleteId(id) : undefined}
+                    canEdit={role?.isEditor}
+                    canDelete={role?.isAdmin}
+                    highlightId={urlSearch.highlight ?? kbHighlightId}
+                  />
+                )}
+              </div>
+
               <Table
-                className="border-collapse w-full table-auto text-[11px]"
-                containerClassName="max-h-[calc(100vh-8rem)] overflow-auto overscroll-contain"
+                className="border-collapse w-full table-auto text-[11px] hidden md:table"
+                containerClassName="max-h-[calc(100vh-8rem)] overflow-auto overscroll-contain hidden md:block"
               >
+
                 <TableHeader className="bg-primary/95">
                   <TableRow className="bg-primary hover:bg-primary border-b-2 border-primary">
                     <TableHead className="sticky top-0 z-20 w-7 px-0.5 border-l border-primary-foreground/20 text-center bg-primary text-primary-foreground shadow-[0_1px_0_hsl(var(--border))]">
@@ -623,16 +722,15 @@ function TransactionsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isLoading && (
-                    <TableRow><TableCell colSpan={columns.length + 2} className="text-center py-10 text-muted-foreground">טוען…</TableCell></TableRow>
-                  )}
+                  {isLoading && <TableRowsSkeleton columnCount={columns.length} />}
                   {!isLoading && filtered.length === 0 && (
                     <TableRow><TableCell colSpan={columns.length + 2} className="text-center py-12 text-muted-foreground">אין תנועות להצגה</TableCell></TableRow>
                   )}
                   {filtered.map((r, idx) => {
                     const isUncat = !r.fund_id && !r.expense_type_id;
                     const isChecked = selectedIds.has(r.id);
-                    const isHighlighted = urlSearch.highlight === r.id;
+                    const isHighlighted = urlSearch.highlight === r.id || kbHighlightId === r.id;
+
                     return (
                       <TableRow
                         key={r.id}

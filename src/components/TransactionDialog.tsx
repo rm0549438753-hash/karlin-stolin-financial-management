@@ -91,6 +91,9 @@ export function TransactionDialog({
     if (open) reset(getDefaults(initial, activeAccountId));
   }, [open, initial, activeAccountId, reset]);
 
+
+
+
   const direction = watch("direction");
   const catId = watch("category_id");
   const filteredSubs = subs.filter((s) => !s.category_id || s.category_id === catId);
@@ -163,6 +166,20 @@ export function TransactionDialog({
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאה"),
   });
+
+  // Ctrl/Cmd+S saves the dialog while it is open
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        handleSubmit((v) => mutation.mutate(v))();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, handleSubmit, mutation]);
+
 
   const schemaLabel = ({ mercantile: "מרכנתיל", pagi: "פאגי", checks: "צ׳קים", cash: "מזומן" } as const)[schema];
 

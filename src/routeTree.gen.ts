@@ -23,6 +23,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin-settings'
 import { Route as AuthenticatedActionHistoryRouteImport } from './routes/_authenticated/action-history'
 import { Route as ApiPublicApkRouteImport } from './routes/api/public/apk'
+import { Route as ApiPublicHooksHourlyAlertsRouteImport } from './routes/api/public/hooks/hourly-alerts'
 import { Route as ApiPublicHooksDailySecurityAuditRouteImport } from './routes/api/public/hooks/daily-security-audit'
 import { Route as ApiPublicHooksDailyChecksEmailRouteImport } from './routes/api/public/hooks/daily-checks-email'
 import { Route as ApiPublicHooksDailyBackupRouteImport } from './routes/api/public/hooks/daily-backup'
@@ -100,6 +101,12 @@ const ApiPublicApkRoute = ApiPublicApkRouteImport.update({
   path: '/api/public/apk',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksHourlyAlertsRoute =
+  ApiPublicHooksHourlyAlertsRouteImport.update({
+    id: '/api/public/hooks/hourly-alerts',
+    path: '/api/public/hooks/hourly-alerts',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksDailySecurityAuditRoute =
   ApiPublicHooksDailySecurityAuditRouteImport.update({
     id: '/api/public/hooks/daily-security-audit',
@@ -136,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
   '/api/public/hooks/daily-checks-email': typeof ApiPublicHooksDailyChecksEmailRoute
   '/api/public/hooks/daily-security-audit': typeof ApiPublicHooksDailySecurityAuditRoute
+  '/api/public/hooks/hourly-alerts': typeof ApiPublicHooksHourlyAlertsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -154,6 +162,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
   '/api/public/hooks/daily-checks-email': typeof ApiPublicHooksDailyChecksEmailRoute
   '/api/public/hooks/daily-security-audit': typeof ApiPublicHooksDailySecurityAuditRoute
+  '/api/public/hooks/hourly-alerts': typeof ApiPublicHooksHourlyAlertsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -174,6 +183,7 @@ export interface FileRoutesById {
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
   '/api/public/hooks/daily-checks-email': typeof ApiPublicHooksDailyChecksEmailRoute
   '/api/public/hooks/daily-security-audit': typeof ApiPublicHooksDailySecurityAuditRoute
+  '/api/public/hooks/hourly-alerts': typeof ApiPublicHooksHourlyAlertsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -194,6 +204,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/daily-backup'
     | '/api/public/hooks/daily-checks-email'
     | '/api/public/hooks/daily-security-audit'
+    | '/api/public/hooks/hourly-alerts'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -212,6 +223,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/daily-backup'
     | '/api/public/hooks/daily-checks-email'
     | '/api/public/hooks/daily-security-audit'
+    | '/api/public/hooks/hourly-alerts'
   id:
     | '__root__'
     | '/'
@@ -231,6 +243,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/daily-backup'
     | '/api/public/hooks/daily-checks-email'
     | '/api/public/hooks/daily-security-audit'
+    | '/api/public/hooks/hourly-alerts'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -244,6 +257,7 @@ export interface RootRouteChildren {
   ApiPublicHooksDailyBackupRoute: typeof ApiPublicHooksDailyBackupRoute
   ApiPublicHooksDailyChecksEmailRoute: typeof ApiPublicHooksDailyChecksEmailRoute
   ApiPublicHooksDailySecurityAuditRoute: typeof ApiPublicHooksDailySecurityAuditRoute
+  ApiPublicHooksHourlyAlertsRoute: typeof ApiPublicHooksHourlyAlertsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -346,6 +360,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicApkRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/hourly-alerts': {
+      id: '/api/public/hooks/hourly-alerts'
+      path: '/api/public/hooks/hourly-alerts'
+      fullPath: '/api/public/hooks/hourly-alerts'
+      preLoaderRoute: typeof ApiPublicHooksHourlyAlertsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/daily-security-audit': {
       id: '/api/public/hooks/daily-security-audit'
       path: '/api/public/hooks/daily-security-audit'
@@ -404,6 +425,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksDailyBackupRoute: ApiPublicHooksDailyBackupRoute,
   ApiPublicHooksDailyChecksEmailRoute: ApiPublicHooksDailyChecksEmailRoute,
   ApiPublicHooksDailySecurityAuditRoute: ApiPublicHooksDailySecurityAuditRoute,
+  ApiPublicHooksHourlyAlertsRoute: ApiPublicHooksHourlyAlertsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
