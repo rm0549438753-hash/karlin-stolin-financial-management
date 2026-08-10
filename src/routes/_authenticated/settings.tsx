@@ -290,10 +290,10 @@ export function UsersPanel() {
                   <div className="text-xs text-muted-foreground truncate">{u.email}</div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Select value={current} onValueChange={(v) => setRole.mutate({ userId: u.id, role: v as any })} disabled={isMe}>
+                  <Select value={current} onValueChange={(v) => setRole.mutate({ userId: u.id, role: v as any })} disabled={isMe || (current === "superadmin" && !canManageSuperAdmin)}>
                     <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="superadmin">מנהל-על</SelectItem>
+                      {canManageSuperAdmin && <SelectItem value="superadmin">מנהל-על</SelectItem>}
                       <SelectItem value="admin">מנהל</SelectItem>
                       <SelectItem value="editor">עורך</SelectItem>
                       <SelectItem value="viewer">צופה</SelectItem>
