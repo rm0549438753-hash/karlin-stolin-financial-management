@@ -1,3 +1,4 @@
+import { UserPasswordActions } from "@/components/UserPasswordActions";
 import { createFileRoute } from "@tanstack/react-router";
 import { createContext, useContext, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
