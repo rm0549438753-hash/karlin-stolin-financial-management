@@ -2,12 +2,16 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-async function assertAdmin(context: any) {
-  const { data: isSuper } = await context.supabase.rpc("has_role", {
+async function isSuperAdmin(context: any) {
+  const { data } = await context.supabase.rpc("has_role", {
     _user_id: context.userId,
     _role: "superadmin",
   });
-  if (isSuper) return;
+  return !!data;
+}
+
+async function assertAdmin(context: any) {
+  if (await isSuperAdmin(context)) return;
   const { data: isAdmin, error } = await context.supabase.rpc("has_role", {
     _user_id: context.userId,
     _role: "admin",
