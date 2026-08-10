@@ -74,8 +74,9 @@ export const resolveSuggestion = createServerFn({ method: "POST" })
       if (Object.keys(patch).length > 0) {
         const { error: upErr } = await supabase
           .from("transactions")
-          .update(patch)
+          .update(patch as never)
           .eq("id", (row as any).transaction_id);
+
         if (upErr) throw new Error(upErr.message);
       }
     }
