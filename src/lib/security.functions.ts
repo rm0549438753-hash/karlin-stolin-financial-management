@@ -24,6 +24,8 @@ export const logLoginEvent = createServerFn({ method: "POST" })
       ip: clientIp(),
       userAgent: getRequestHeader("user-agent") ?? null,
       deviceKey: data.deviceKey,
+      country: getRequestHeader("cf-ipcountry") ?? null,
+      city: getRequestHeader("cf-ipcity") ?? null,
     });
   });
 

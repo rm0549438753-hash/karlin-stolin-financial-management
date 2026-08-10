@@ -299,6 +299,7 @@ export function UsersPanel() {
                       <SelectItem value="viewer">צופה</SelectItem>
                     </SelectContent>
                   </Select>
+                  <UserPasswordActions userId={u.id} email={u.email} canManage={canManageSuperAdmin} />
                   <Button
                     size="sm"
                     variant="outline"
