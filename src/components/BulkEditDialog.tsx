@@ -62,6 +62,20 @@ export function BulkEditDialog({
     onError: (e: any) => toast.error(e.message ?? "שגיאה"),
   });
 
+  // Ctrl/Cmd+S applies the bulk edit while the dialog is open
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        apply.mutate();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, apply]);
+
+
   const Field = ({ label, value, onChange, items }: { label: string; value: string; onChange: (v: string) => void; items: { id: string; name: string }[] }) => (
     <div className="space-y-1.5">
       <Label className="text-sm font-medium">{label}</Label>
