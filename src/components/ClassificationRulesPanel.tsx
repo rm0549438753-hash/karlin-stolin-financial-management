@@ -197,6 +197,9 @@ export function ClassificationRulesPanel() {
       priority: rule.priority,
       match_field: rule.match_field,
       match_text: rule.match_text ?? "",
+      match_whole_word: rule.match_whole_word ?? true,
+      match_smart: rule.match_smart ?? false,
+
       account_id: rule.account_id ?? NONE,
       amount_min: rule.amount_min ?? "",
       amount_max: rule.amount_max ?? "",
