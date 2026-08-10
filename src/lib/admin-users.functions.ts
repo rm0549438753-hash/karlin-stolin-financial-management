@@ -32,6 +32,9 @@ export const adminCreateUser = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
+    if (data.role === "superadmin" && !(await isSuperAdmin(context))) {
+      throw new Error("Forbidden: רק מנהל-על יכול להעניק תפקיד מנהל-על");
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
