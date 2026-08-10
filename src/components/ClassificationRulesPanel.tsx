@@ -118,6 +118,9 @@ export function ClassificationRulesPanel() {
         priority: Number(f.priority) || 100,
         match_field: f.match_field,
         match_text: f.match_text.trim() || null,
+        match_whole_word: f.match_whole_word,
+        match_smart: f.match_smart,
+
         account_id: nullable(f.account_id),
         amount_min: f.amount_min === "" ? null : Number(f.amount_min),
         amount_max: f.amount_max === "" ? null : Number(f.amount_max),
