@@ -351,10 +351,45 @@ export function ClassificationRulesPanel() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>מכיל את הטקסט</Label>
-              <Input value={form.match_text} onChange={(e) => setForm({ ...form, match_text: e.target.value })} />
+            <div className="space-y-2 sm:col-span-2">
+              <Label>מילים להתאמה</Label>
+              <Textarea
+                rows={2}
+                value={form.match_text}
+                onChange={(e) => setForm({ ...form, match_text: e.target.value })}
+                placeholder="עמלה, עמלת, עמלות"
+              />
+              <p className="text-xs text-muted-foreground">
+                אפשר להזין כמה מילים מופרדות בפסיק — הכלל יתפוס תנועה שמכילה לפחות אחת מהן.
+              </p>
             </div>
+            <div className="space-y-3 sm:col-span-2 rounded-md border p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-0.5">
+                  <Label className="font-medium">מילה שלמה בלבד</Label>
+                  <p className="text-xs text-muted-foreground">
+                    תופס את המילה רק כשהיא עומדת בפני עצמה, ולא כשהיא מודבקת לאותיות אחרות.
+                  </p>
+                </div>
+                <Switch
+                  checked={form.match_whole_word}
+                  onCheckedChange={(v) => setForm({ ...form, match_whole_word: v })}
+                />
+              </div>
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-0.5">
+                  <Label className="font-medium">התאמה חכמה (הטיות)</Label>
+                  <p className="text-xs text-muted-foreground">
+                    יתפוס גם הטיות של המילה — "עמלה" יתפוס גם "עמלת", "עמלות" ו"העמלה".
+                  </p>
+                </div>
+                <Switch
+                  checked={form.match_smart}
+                  onCheckedChange={(v) => setForm({ ...form, match_smart: v })}
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label>חשבון (אופציונלי)</Label>
               <Select value={form.account_id} onValueChange={(v) => setForm({ ...form, account_id: v })}>
