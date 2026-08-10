@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { splitTerms, termMatchesField } from "@/lib/classification-match";
 
 export type Rule = {
   id: string;
