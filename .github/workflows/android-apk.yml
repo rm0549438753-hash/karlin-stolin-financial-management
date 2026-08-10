@@ -77,14 +77,8 @@ jobs:
             --data-binary @android/app/build/outputs/apk/debug/app-debug.apk \
             https://karlin-stolin-financial-management.lovable.app/api/public/apk
 
-      - name: Publish APK to Release (direct download link)
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: latest-apk
-          name: מרכז קארלין סטאלין - אפליקציה
-          body: |
-            הורדה ישירה לטלפון: לחץ על app-debug.apk למטה.
-          files: android/app/build/outputs/apk/debug/app-debug.apk
-
+      # NOTE: the APK is intentionally NOT published to a public GitHub Release.
+      # Distribution goes only through the access-code protected download page
+      # (/api/public/apk); a public release would bypass that control.
 
 # build trigger: 2026-08-09T10:25:00Z
