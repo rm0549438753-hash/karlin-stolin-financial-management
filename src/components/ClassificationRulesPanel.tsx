@@ -32,6 +32,8 @@ type RuleForm = {
   priority: number;
   match_field: "payee" | "description" | "reference" | "any";
   match_text: string;
+  match_whole_word: boolean;
+  match_smart: boolean;
   account_id: string;
   amount_min: string;
   amount_max: string;
@@ -47,6 +49,8 @@ const EMPTY: RuleForm = {
   priority: 100,
   match_field: "payee",
   match_text: "",
+  match_whole_word: true,
+  match_smart: false,
   account_id: NONE,
   amount_min: "",
   amount_max: "",
