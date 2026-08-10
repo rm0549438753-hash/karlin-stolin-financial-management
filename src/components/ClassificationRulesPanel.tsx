@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { splitTerms } from "@/lib/classification-match";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -32,6 +34,8 @@ type RuleForm = {
   priority: number;
   match_field: "payee" | "description" | "reference" | "any";
   match_text: string;
+  match_whole_word: boolean;
+  match_smart: boolean;
   account_id: string;
   amount_min: string;
   amount_max: string;
@@ -47,6 +51,8 @@ const EMPTY: RuleForm = {
   priority: 100,
   match_field: "payee",
   match_text: "",
+  match_whole_word: true,
+  match_smart: false,
   account_id: NONE,
   amount_min: "",
   amount_max: "",
@@ -114,6 +120,9 @@ export function ClassificationRulesPanel() {
         priority: Number(f.priority) || 100,
         match_field: f.match_field,
         match_text: f.match_text.trim() || null,
+        match_whole_word: f.match_whole_word,
+        match_smart: f.match_smart,
+
         account_id: nullable(f.account_id),
         amount_min: f.amount_min === "" ? null : Number(f.amount_min),
         amount_max: f.amount_max === "" ? null : Number(f.amount_max),
@@ -190,6 +199,9 @@ export function ClassificationRulesPanel() {
       priority: rule.priority,
       match_field: rule.match_field,
       match_text: rule.match_text ?? "",
+      match_whole_word: rule.match_whole_word ?? true,
+      match_smart: rule.match_smart ?? false,
+
       account_id: rule.account_id ?? NONE,
       amount_min: rule.amount_min ?? "",
       amount_max: rule.amount_max ?? "",
@@ -271,7 +283,11 @@ export function ClassificationRulesPanel() {
                         </TableCell>
                         <TableCell className="font-medium">{r.name}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {r.match_text ? `${FIELD_LABELS[r.match_field]} מכיל "${r.match_text}"` : "כל התנועות"}
+                          {r.match_text
+                            ? `${FIELD_LABELS[r.match_field]}: ${splitTerms(r.match_text).join(" / ")}`
+                            : "כל התנועות"}
+                          {r.match_text && r.match_whole_word ? " · מילה שלמה" : ""}
+                          {r.match_text && r.match_smart ? " · התאמה חכמה" : ""}
                           {r.account_id ? ` · ${nameOf.get(r.account_id) ?? ""}` : ""}
                           {r.amount_min != null || r.amount_max != null
                             ? ` · סכום ${r.amount_min ?? "0"}–${r.amount_max ?? "∞"}`
@@ -341,10 +357,45 @@ export function ClassificationRulesPanel() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>מכיל את הטקסט</Label>
-              <Input value={form.match_text} onChange={(e) => setForm({ ...form, match_text: e.target.value })} />
+            <div className="space-y-2 sm:col-span-2">
+              <Label>מילים להתאמה</Label>
+              <Textarea
+                rows={2}
+                value={form.match_text}
+                onChange={(e) => setForm({ ...form, match_text: e.target.value })}
+                placeholder="עמלה, עמלת, עמלות"
+              />
+              <p className="text-xs text-muted-foreground">
+                אפשר להזין כמה מילים מופרדות בפסיק — הכלל יתפוס תנועה שמכילה לפחות אחת מהן.
+              </p>
             </div>
+            <div className="space-y-3 sm:col-span-2 rounded-md border p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-0.5">
+                  <Label className="font-medium">מילה שלמה בלבד</Label>
+                  <p className="text-xs text-muted-foreground">
+                    תופס את המילה רק כשהיא עומדת בפני עצמה, ולא כשהיא מודבקת לאותיות אחרות.
+                  </p>
+                </div>
+                <Switch
+                  checked={form.match_whole_word}
+                  onCheckedChange={(v) => setForm({ ...form, match_whole_word: v })}
+                />
+              </div>
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-0.5">
+                  <Label className="font-medium">התאמה חכמה (הטיות)</Label>
+                  <p className="text-xs text-muted-foreground">
+                    יתפוס גם הטיות של המילה — "עמלה" יתפוס גם "עמלת", "עמלות" ו"העמלה".
+                  </p>
+                </div>
+                <Switch
+                  checked={form.match_smart}
+                  onCheckedChange={(v) => setForm({ ...form, match_smart: v })}
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label>חשבון (אופציונלי)</Label>
               <Select value={form.account_id} onValueChange={(v) => setForm({ ...form, account_id: v })}>

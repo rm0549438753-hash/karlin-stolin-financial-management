@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { splitTerms, termMatchesField } from "@/lib/classification-match";
 
 export type Rule = {
   id: string;
@@ -8,6 +9,8 @@ export type Rule = {
   priority: number;
   match_field: "payee" | "description" | "reference" | "any";
   match_text: string | null;
+  match_whole_word: boolean | null;
+  match_smart: boolean | null;
   account_id: string | null;
   amount_min: number | null;
   amount_max: number | null;
@@ -17,6 +20,7 @@ export type Rule = {
   set_subcategory_id: string | null;
   applied_count: number;
 };
+
 
 export type CandidateTx = {
   id: string;
@@ -38,6 +42,7 @@ const TARGETS = [
   ["set_subcategory_id", "subcategory_id"],
 ] as const;
 
+
 export function ruleMatches(rule: Rule, tx: CandidateTx): boolean {
   if (rule.account_id && rule.account_id !== tx.account_id) return false;
 
@@ -45,16 +50,20 @@ export function ruleMatches(rule: Rule, tx: CandidateTx): boolean {
   if (rule.amount_min != null && (amount == null || amount < Number(rule.amount_min))) return false;
   if (rule.amount_max != null && (amount == null || amount > Number(rule.amount_max))) return false;
 
-  const needle = (rule.match_text ?? "").trim().toLowerCase();
-  if (needle) {
+  const terms = splitTerms(rule.match_text);
+  if (terms.length > 0) {
     const fields =
       rule.match_field === "any"
         ? [tx.payee, tx.description, tx.reference]
         : [tx[rule.match_field]];
-    if (!fields.some((f) => (f ?? "").toLowerCase().includes(needle))) return false;
+    const wholeWord = rule.match_whole_word ?? true;
+    const smart = rule.match_smart ?? false;
+    const hit = terms.some((term) => fields.some((f) => termMatchesField(term, f ?? "", wholeWord, smart)));
+    if (!hit) return false;
   }
   return true;
 }
+
 
 /** Fields the rule would fill in that are still empty on the transaction. */
 export function pendingChanges(rule: Rule, tx: CandidateTx): Record<string, string> {

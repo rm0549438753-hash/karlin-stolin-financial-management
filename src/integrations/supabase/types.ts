@@ -337,7 +337,9 @@ export type Database = {
           id: string
           is_active: boolean
           match_field: string
+          match_smart: boolean
           match_text: string | null
+          match_whole_word: boolean
           mode: string
           name: string
           priority: number
@@ -357,7 +359,9 @@ export type Database = {
           id?: string
           is_active?: boolean
           match_field?: string
+          match_smart?: boolean
           match_text?: string | null
+          match_whole_word?: boolean
           mode?: string
           name: string
           priority?: number
@@ -377,7 +381,9 @@ export type Database = {
           id?: string
           is_active?: boolean
           match_field?: string
+          match_smart?: boolean
           match_text?: string | null
+          match_whole_word?: boolean
           mode?: string
           name?: string
           priority?: number
