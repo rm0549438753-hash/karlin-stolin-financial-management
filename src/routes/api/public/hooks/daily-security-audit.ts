@@ -31,7 +31,9 @@ export const Route = createFileRoute("/api/public/hooks/daily-security-audit")({
         try {
           const { runSecurityAudit } = await import("@/lib/security-audit.server");
           const result = await runSecurityAudit("cron");
-          return Response.json(result);
+          const { purgeOldSecurityLogs } = await import("@/lib/security.server");
+          const purged = await purgeOldSecurityLogs().catch(() => null);
+          return Response.json({ ...result, purged });
         } catch (err: any) {
           console.error("[daily-security-audit] failed:", err);
           const { recordAuditFailure } = await import("@/lib/security-audit.server");
