@@ -722,16 +722,15 @@ function TransactionsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isLoading && (
-                    <TableRow><TableCell colSpan={columns.length + 2} className="text-center py-10 text-muted-foreground">טוען…</TableCell></TableRow>
-                  )}
+                  {isLoading && <TableRowsSkeleton columnCount={columns.length} />}
                   {!isLoading && filtered.length === 0 && (
                     <TableRow><TableCell colSpan={columns.length + 2} className="text-center py-12 text-muted-foreground">אין תנועות להצגה</TableCell></TableRow>
                   )}
                   {filtered.map((r, idx) => {
                     const isUncat = !r.fund_id && !r.expense_type_id;
                     const isChecked = selectedIds.has(r.id);
-                    const isHighlighted = urlSearch.highlight === r.id;
+                    const isHighlighted = urlSearch.highlight === r.id || kbHighlightId === r.id;
+
                     return (
                       <TableRow
                         key={r.id}
