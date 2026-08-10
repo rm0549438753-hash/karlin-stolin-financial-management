@@ -15,6 +15,8 @@ import {
 import logoAsset from "@/assets/karlin-logo.png.asset.json";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { GlobalSearch } from "@/components/GlobalSearch";
+import { NotificationBell } from "@/components/NotificationBell";
+
 import { useIdleLogout } from "@/hooks/use-idle-logout";
 
 const GOLD = "#D4AF37";
