@@ -172,9 +172,11 @@ export function AppShell({ children, title, actions }: { children: ReactNode; ti
             </div>
             <div className="mr-auto flex items-center gap-2 flex-wrap justify-end">
               <GlobalSearch />
+              <NotificationBell />
               <ThemeToggle />
               {actions}
             </div>
+
           </header>
           <main className="flex-1 p-4 md:p-6 overflow-x-hidden">{children}</main>
         </div>
