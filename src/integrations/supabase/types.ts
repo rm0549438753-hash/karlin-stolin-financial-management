@@ -1093,8 +1093,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      show_limit: { Args: never; Returns: number }
-      show_trgm: { Args: { "": string }; Returns: string[] }
       undo_action_history: {
         Args: { p_history_id: string }
         Returns: undefined
