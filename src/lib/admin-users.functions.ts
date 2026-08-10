@@ -3,6 +3,11 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 async function assertAdmin(context: any) {
+  const { data: isSuper } = await context.supabase.rpc("has_role", {
+    _user_id: context.userId,
+    _role: "superadmin",
+  });
+  if (isSuper) return;
   const { data: isAdmin, error } = await context.supabase.rpc("has_role", {
     _user_id: context.userId,
     _role: "admin",
@@ -16,9 +21,9 @@ export const adminCreateUser = createServerFn({ method: "POST" })
   .inputValidator(
     z.object({
       email: z.string().email(),
-      password: z.string().min(6),
+      password: z.string().min(10, "הסיסמה חייבת להכיל לפחות 10 תווים"),
       fullName: z.string().optional().default(""),
-      role: z.enum(["admin", "editor", "viewer"]).default("editor"),
+      role: z.enum(["superadmin", "admin", "editor", "viewer"]).default("editor"),
     }),
   )
   .handler(async ({ data, context }) => {
@@ -35,9 +40,13 @@ export const adminCreateUser = createServerFn({ method: "POST" })
 
     const userId = created.user!.id;
     await supabaseAdmin.from("user_roles").delete().eq("user_id", userId);
+    const roleRows =
+      data.role === "superadmin"
+        ? [{ user_id: userId, role: "superadmin" }, { user_id: userId, role: "admin" }]
+        : [{ user_id: userId, role: data.role }];
     const { error: roleInsertErr } = await supabaseAdmin
       .from("user_roles")
-      .insert({ user_id: userId, role: data.role });
+      .insert(roleRows as any);
     if (roleInsertErr) throw new Error(roleInsertErr.message);
 
     // Ensure a profile row exists (no DB trigger on auth.users in this project)

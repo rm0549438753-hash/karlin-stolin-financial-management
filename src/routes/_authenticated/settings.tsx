@@ -19,9 +19,6 @@ import { useUserRole, useAuthUser } from "@/hooks/use-auth";
 import { useServerFn } from "@tanstack/react-start";
 import { adminCreateUser, adminDeleteUser, adminSetUserBlocked, adminListUsers } from "@/lib/admin-users.functions";
 import { syncFromGoogleSheet, listSyncIgnores, addSyncIgnores, removeSyncIgnore } from "@/lib/sheets-sync.functions";
-import { BackupPanel } from "@/components/BackupPanel";
-import { UpcomingChecksEmailPanel } from "@/components/UpcomingChecksEmailPanel";
-import { SecurityAuditPanel } from "@/components/SecurityAuditPanel";
 
 
 
@@ -31,12 +28,12 @@ export const Route = createFileRoute("/_authenticated/settings")({
 
 function SettingsPage() {
   const { data: role, isLoading } = useUserRole();
-  if (isLoading) return <AppShell title="הגדרות"><div className="p-8 text-center text-muted-foreground">טוען…</div></AppShell>;
+  if (isLoading) return <AppShell title="הגדרות מערכת"><div className="p-8 text-center text-muted-foreground">טוען…</div></AppShell>;
   if (!role?.isAdmin && !role?.isEditor) {
-    return <AppShell title="הגדרות"><Card><CardContent className="p-8 text-center">אין הרשאה לגשת לדף זה.</CardContent></Card></AppShell>;
+    return <AppShell title="הגדרות מערכת"><Card><CardContent className="p-8 text-center">אין הרשאה לגשת לדף זה.</CardContent></Card></AppShell>;
   }
   return (
-    <AppShell title="הגדרות">
+    <AppShell title="הגדרות מערכת">
       <Tabs defaultValue="accounts" className="space-y-4">
         <TabsList className="flex-wrap">
           <TabsTrigger value="accounts">חשבונות</TabsTrigger>
@@ -44,22 +41,12 @@ function SettingsPage() {
           <TabsTrigger value="expense_types">סוגי הוצאה</TabsTrigger>
           <TabsTrigger value="categories">קטגוריות</TabsTrigger>
           <TabsTrigger value="subcategories">תת-קטגוריות</TabsTrigger>
-          {role?.isAdmin && <TabsTrigger value="sheets">סנכרון גוגל שיטס</TabsTrigger>}
-          {role?.isAdmin && <TabsTrigger value="backup">גיבוי יומי</TabsTrigger>}
-          {role?.isAdmin && <TabsTrigger value="checks_email">מייל צ'קים</TabsTrigger>}
-          {role?.isAdmin && <TabsTrigger value="security_audit">סריקת אבטחה</TabsTrigger>}
-          {role?.isAdmin && <TabsTrigger value="users">משתמשים והרשאות</TabsTrigger>}
         </TabsList>
         <TabsContent value="accounts"><LookupCRUD table="accounts" label="חשבונות" hasKind /></TabsContent>
         <TabsContent value="funds"><LookupCRUD table="funds" label="קופות" /></TabsContent>
         <TabsContent value="expense_types"><LookupCRUD table="expense_types" label="סוגי הוצאה" /></TabsContent>
         <TabsContent value="categories"><LookupCRUD table="categories" label="קטגוריות" /></TabsContent>
         <TabsContent value="subcategories"><LookupCRUD table="subcategories" label="תת-קטגוריות" hasCategory /></TabsContent>
-        {role?.isAdmin && <TabsContent value="sheets"><SheetsSyncPanel /></TabsContent>}
-        {role?.isAdmin && <TabsContent value="backup"><BackupPanel /></TabsContent>}
-        {role?.isAdmin && <TabsContent value="checks_email"><UpcomingChecksEmailPanel /></TabsContent>}
-        {role?.isAdmin && <TabsContent value="security_audit"><SecurityAuditPanel /></TabsContent>}
-        {role?.isAdmin && <TabsContent value="users"><UsersPanel /></TabsContent>}
       </Tabs>
     </AppShell>
   );
@@ -200,7 +187,7 @@ function LookupCRUD({ table, label, hasKind, hasCategory }: { table: string; lab
   );
 }
 
-function UsersPanel() {
+export function UsersPanel() {
   const qc = useQueryClient();
   const { user: me } = useAuthUser();
   const createUser = useServerFn(adminCreateUser);
@@ -210,7 +197,7 @@ function UsersPanel() {
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newName, setNewName] = useState("");
-  const [newRole, setNewRole] = useState<"admin" | "editor" | "viewer">("editor");
+  const [newRole, setNewRole] = useState<"superadmin" | "admin" | "editor" | "viewer">("editor");
 
   const { data = [] } = useQuery({
     queryKey: ["users-with-roles"],
@@ -220,7 +207,7 @@ function UsersPanel() {
 
   const add = useMutation({
     mutationFn: async () => {
-      if (!newEmail.trim() || newPassword.length < 6) throw new Error("יש למלא אימייל וסיסמה (6 תווים לפחות)");
+      if (!newEmail.trim() || newPassword.length < 10) throw new Error("יש למלא אימייל וסיסמה (10 תווים לפחות)");
       await createUser({ data: { email: newEmail.trim(), password: newPassword, fullName: newName.trim(), role: newRole } });
     },
     onSuccess: () => {
@@ -232,9 +219,13 @@ function UsersPanel() {
   });
 
   const setRole = useMutation({
-    mutationFn: async ({ userId, role }: { userId: string; role: "admin" | "editor" | "viewer" }) => {
+    mutationFn: async ({ userId, role }: { userId: string; role: "superadmin" | "admin" | "editor" | "viewer" }) => {
       await supabase.from("user_roles").delete().eq("user_id", userId);
-      const { error } = await supabase.from("user_roles").insert({ user_id: userId, role });
+      const rows: { user_id: string; role: "superadmin" | "admin" | "editor" | "viewer" }[] =
+        role === "superadmin"
+          ? [{ user_id: userId, role: "superadmin" }, { user_id: userId, role: "admin" }]
+          : [{ user_id: userId, role }];
+      const { error } = await supabase.from("user_roles").insert(rows as any);
       if (error) throw error;
     },
     onSuccess: () => { toast.success("התפקיד עודכן"); qc.invalidateQueries({ queryKey: ["users-with-roles"] }); },
@@ -264,13 +255,14 @@ function UsersPanel() {
           <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
             <Input placeholder="שם מלא" value={newName} onChange={(e) => setNewName(e.target.value)} />
             <Input placeholder="אימייל" type="email" dir="ltr" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
-            <Input placeholder="סיסמה (6+)" type="text" dir="ltr" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+            <Input placeholder="סיסמה (10+)" type="text" dir="ltr" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
             <Select value={newRole} onValueChange={(v) => setNewRole(v as any)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="editor">עורך</SelectItem>
                 <SelectItem value="viewer">צופה (קריאה בלבד)</SelectItem>
                 <SelectItem value="admin">מנהל</SelectItem>
+                <SelectItem value="superadmin">מנהל-על</SelectItem>
               </SelectContent>
             </Select>
             <Button onClick={() => add.mutate()} disabled={add.isPending}>
@@ -283,7 +275,7 @@ function UsersPanel() {
 
         <div className="border rounded-lg divide-y">
           {data.map((u: any) => {
-            const current = u.roles.includes("admin") ? "admin" : u.roles.includes("editor") ? "editor" : "viewer";
+            const current = u.roles.includes("superadmin") ? "superadmin" : u.roles.includes("admin") ? "admin" : u.roles.includes("editor") ? "editor" : "viewer";
             const isMe = me?.id === u.id;
             return (
               <div key={u.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
@@ -299,6 +291,7 @@ function UsersPanel() {
                   <Select value={current} onValueChange={(v) => setRole.mutate({ userId: u.id, role: v as any })} disabled={isMe}>
                     <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="superadmin">מנהל-על</SelectItem>
                       <SelectItem value="admin">מנהל</SelectItem>
                       <SelectItem value="editor">עורך</SelectItem>
                       <SelectItem value="viewer">צופה</SelectItem>
@@ -360,7 +353,7 @@ const useExcl = () => useContext(ExclusionContext)!;
 const eKey = (a: string, k: Kind, id: string): ExclKey => `${a}::${k}::${id}`;
 
 
-function SheetsSyncPanel() {
+export function SheetsSyncPanel() {
   const qc = useQueryClient();
   const [sheetUrl, setSheetUrl] = useState("https://docs.google.com/spreadsheets/d/1dJUbkiRRwVbEozEwpD_KCgh8ur9BclFoxmYjRP2q8fs/edit");
   const [preview, setPreview] = useState<any>(null);

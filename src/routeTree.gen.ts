@@ -20,6 +20,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedSecurityAuditRouteImport } from './routes/_authenticated/security-audit'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin-settings'
 import { Route as AuthenticatedActionHistoryRouteImport } from './routes/_authenticated/action-history'
 import { Route as ApiPublicApkRouteImport } from './routes/api/public/apk'
 import { Route as ApiPublicHooksDailySecurityAuditRouteImport } from './routes/api/public/hooks/daily-security-audit'
@@ -82,6 +83,12 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminSettingsRoute =
+  AuthenticatedAdminSettingsRouteImport.update({
+    id: '/admin-settings',
+    path: '/admin-settings',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedActionHistoryRoute =
   AuthenticatedActionHistoryRouteImport.update({
     id: '/action-history',
@@ -119,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/action-history': typeof AuthenticatedActionHistoryRoute
+  '/admin-settings': typeof AuthenticatedAdminSettingsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/security-audit': typeof AuthenticatedSecurityAuditRoute
@@ -136,6 +144,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/action-history': typeof AuthenticatedActionHistoryRoute
+  '/admin-settings': typeof AuthenticatedAdminSettingsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/security-audit': typeof AuthenticatedSecurityAuditRoute
@@ -155,6 +164,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/_authenticated/action-history': typeof AuthenticatedActionHistoryRoute
+  '/_authenticated/admin-settings': typeof AuthenticatedAdminSettingsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/security-audit': typeof AuthenticatedSecurityAuditRoute
@@ -174,6 +184,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/action-history'
+    | '/admin-settings'
     | '/dashboard'
     | '/reports'
     | '/security-audit'
@@ -191,6 +202,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/action-history'
+    | '/admin-settings'
     | '/dashboard'
     | '/reports'
     | '/security-audit'
@@ -209,6 +221,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/_authenticated/action-history'
+    | '/_authenticated/admin-settings'
     | '/_authenticated/dashboard'
     | '/_authenticated/reports'
     | '/_authenticated/security-audit'
@@ -312,6 +325,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin-settings': {
+      id: '/_authenticated/admin-settings'
+      path: '/admin-settings'
+      fullPath: '/admin-settings'
+      preLoaderRoute: typeof AuthenticatedAdminSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/action-history': {
       id: '/_authenticated/action-history'
       path: '/action-history'
@@ -352,6 +372,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedActionHistoryRoute: typeof AuthenticatedActionHistoryRoute
+  AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedSecurityAuditRoute: typeof AuthenticatedSecurityAuditRoute
@@ -361,6 +382,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedActionHistoryRoute: AuthenticatedActionHistoryRoute,
+  AuthenticatedAdminSettingsRoute: AuthenticatedAdminSettingsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedSecurityAuditRoute: AuthenticatedSecurityAuditRoute,
@@ -386,13 +408,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

@@ -7,7 +7,13 @@ export const Route = createFileRoute("/api/public/apk")({
   server: {
     handlers: {
       // Direct download link for the Android app.
-      GET: async () => {
+      GET: async ({ request }) => {
+        const url = new URL(request.url);
+        const { verifyDownloadCode } = await import("@/lib/security.server");
+        const check = await verifyDownloadCode(url.searchParams.get("code") ?? "");
+        if (!check.ok) {
+          return new Response("קוד הורדה שגוי", { status: 401 });
+        }
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { data, error } = await supabaseAdmin.storage.from(BUCKET).download(OBJECT);
         if (error || !data) {

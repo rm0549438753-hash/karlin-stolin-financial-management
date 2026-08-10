@@ -86,6 +86,30 @@ export type Database = {
         }
         Relationships: []
       }
+      app_download_settings: {
+        Row: {
+          code_hash: string | null
+          id: string
+          singleton: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          code_hash?: string | null
+          id?: string
+          singleton?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          code_hash?: string | null
+          id?: string
+          singleton?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       backup_runs: {
         Row: {
           created_at: string
@@ -257,6 +281,27 @@ export type Database = {
         }
         Relationships: []
       }
+      failed_login_attempts: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          ip: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          ip?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          ip?: string | null
+        }
+        Relationships: []
+      }
       fund_opening_balances: {
         Row: {
           amount: number
@@ -353,6 +398,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      login_events: {
+        Row: {
+          created_at: string
+          device_key: string | null
+          email: string | null
+          id: string
+          ip: string | null
+          is_new_device: boolean
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_key?: string | null
+          email?: string | null
+          id?: string
+          ip?: string | null
+          is_new_device?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_key?: string | null
+          email?: string | null
+          id?: string
+          ip?: string | null
+          is_new_device?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -669,7 +747,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "editor" | "viewer"
+      app_role: "admin" | "editor" | "viewer" | "superadmin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -797,7 +875,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "editor", "viewer"],
+      app_role: ["admin", "editor", "viewer", "superadmin"],
     },
   },
 } as const

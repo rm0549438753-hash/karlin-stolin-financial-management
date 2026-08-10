@@ -30,11 +30,13 @@ export function useUserRole() {
         .select("role")
         .eq("user_id", user!.id);
       if (error) throw error;
-      const roles = data.map((r) => r.role);
-      const isAdmin = roles.includes("admin");
+      const roles = data.map((r) => r.role as string);
+      const isSuperAdmin = roles.includes("superadmin");
+      const isAdmin = roles.includes("admin") || isSuperAdmin;
       const isEditor = roles.includes("editor") || isAdmin;
       const isViewer = roles.includes("viewer") || (!isAdmin && !isEditor);
       return {
+        isSuperAdmin,
         isAdmin,
         isEditor,
         isViewer,
