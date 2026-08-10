@@ -54,12 +54,14 @@ function AdminSettingsPage() {
           <TabsTrigger value="backup">גיבוי יומי</TabsTrigger>
           <TabsTrigger value="checks_email">מייל צ'קים</TabsTrigger>
           <TabsTrigger value="security_audit">סריקת אבטחה</TabsTrigger>
+          <TabsTrigger value="access">אבטחה וגישה</TabsTrigger>
         </TabsList>
         <TabsContent value="users"><UsersPanel /></TabsContent>
         <TabsContent value="sheets"><SheetsSyncPanel /></TabsContent>
         <TabsContent value="backup"><BackupPanel /></TabsContent>
         <TabsContent value="checks_email"><UpcomingChecksEmailPanel /></TabsContent>
         <TabsContent value="security_audit"><SecurityAuditPanel /></TabsContent>
+        <TabsContent value="access"><SecurityAccessPanel /></TabsContent>
       </Tabs>
     </AppShell>
   );
