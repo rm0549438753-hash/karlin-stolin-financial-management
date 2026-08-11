@@ -509,8 +509,10 @@ export function ClassificationRulesPanel() {
           {preview && (
             <div className="space-y-4">
               <div className="flex flex-wrap gap-3 text-sm">
+                <Badge variant="outline">נסרקו: {preview.scanned ?? 0}</Badge>
                 <Badge variant="default">יסווגו אוטומטית: {preview.applied}</Badge>
                 <Badge variant="secondary">יוצעו לאישור: {preview.suggested}</Badge>
+                <Badge variant="outline">דולגו (השדה כבר מלא): {preview.skipped ?? 0}</Badge>
               </div>
               {preview.sample.length > 0 && (
                 <div className="overflow-x-auto">
