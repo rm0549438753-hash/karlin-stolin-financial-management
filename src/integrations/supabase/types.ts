@@ -1152,6 +1152,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      actor_names: {
+        Args: { _ids: string[] }
+        Returns: {
+          full_name: string
+          id: string
+        }[]
+      }
       archive_old_action_history: { Args: never; Returns: number }
       dashboard_rows: { Args: never; Returns: Json }
       get_cron_hook_secret: { Args: never; Returns: string }
