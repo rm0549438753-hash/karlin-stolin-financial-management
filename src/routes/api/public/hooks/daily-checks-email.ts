@@ -28,17 +28,10 @@ export const Route = createFileRoute("/api/public/hooks/daily-checks-email")({
             headers: { "Content-Type": "application/json" },
           });
         }
-        try {
-          const { runDailyChecksEmail } = await import("@/lib/checks-email.server");
-          const result = await runDailyChecksEmail("cron");
-          return Response.json(result);
-        } catch (err: any) {
-          console.error("[daily-checks-email] failed:", err);
-          return new Response(
-            JSON.stringify({ ok: false, error: err?.message ?? String(err) }),
-            { status: 500, headers: { "Content-Type": "application/json" } }
-          );
-        }
+        // The daily checks email is now an ordinary row in email_automations
+        // and is dispatched by the hourly-alerts job. This endpoint stays for
+        // the existing cron schedule but no longer sends anything itself.
+        return Response.json({ ok: true, skipped: "moved-to-email-automations" });
       },
     },
   },

@@ -20,20 +20,82 @@ function normalizePayee(name: string) {
 
 type SortKey = "payee" | "total" | "count" | "avg" | "first" | "last";
 
-/**
- * Where the beneficiary name comes from. Many imported rows have no `payee`
- * column at all (bank statements put the name in the description/reference),
- * so we fall back through the available text fields instead of lumping
- * everything under "ללא מוטב".
- */
-function payeeOf(t: any): string {
-  const candidates = [t.payee, t.payer_name, t.association, t.description, t.reference];
-  for (const c of candidates) {
-    const v = typeof c === "string" ? c.trim() : "";
-    if (v) return v;
-  }
-  return "ללא מוטב";
+export const TECHNICAL_LABEL = "תנועות טכניות – ללא מוטב";
+
+/** Prefixes that introduce a real name: "העברה ל<שם>", "זיכוי מ<שם>" … */
+const NAME_PREFIXES = [
+  "העברה לטובת", "העברה ל", "העברה מ", "העברת כספים ל", "זיכוי מ", "זיכוי ל",
+  "חיוב מ", "תשלום ל", "תשלום מ", "לפקודת", "לטובת", "ע\"ש", "עש",
+  "הפקדה מ", "הפקדת", "מאת", "עבור",
+];
+
+/** Words that mean the row is a bank/technical operation, not a beneficiary. */
+const TECHNICAL_WORDS = [
+  "משיכת צק", "משיכת שיק", "משיכת צ'ק", "משיכה", "עמלה", "עמלות", "עמלת",
+  "ריבית", "מס", "מסי", "ניכוי", "החזר", "הפקדה", "הפקדת מזומן", "מזומן",
+  "כספומט", "העברה בנקאית", "העברה עצמית", "העברה", "זיכוי", "חיוב",
+  "הוראת קבע", "הו\"ק", "הקצאה", "יתרה", "תשלום", "שער", "דמי ניהול",
+  "כרטיס אשראי", "אשראי", "שיק", "צק", "צ'ק", "צ׳ק", "בנק", "פרעון", "פירעון",
+];
+
+function cleanupName(raw: string): string {
+  return raw
+    .replace(/^[\s\-–—:,.·|/\\]+/, "")
+    .replace(/[\s\-–—:,.·|/\\]+$/, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 }
+
+function looksLikeName(s: string): boolean {
+  if (s.length < 2) return false;
+  // Must contain letters, not just digits / reference numbers.
+  if (!/[\u0590-\u05FFa-zA-Z]{2,}/.test(s)) return false;
+  if (/^\d+$/.test(s.replace(/\D/g, "") ) && !/[\u0590-\u05FFa-zA-Z]/.test(s)) return false;
+  const bare = s.replace(/["'׳״.\-]/g, "").trim();
+  if (TECHNICAL_WORDS.some((w) => bare === w.replace(/["'׳״.\-]/g, ""))) return false;
+  return true;
+}
+
+/**
+ * Extracts a person/company name for the report. A real `payee` value always
+ * wins. Otherwise we try to pull a name out of the description
+ * ("העברה לישראל כהן" -> "ישראל כהן"); technical rows such as "משיכת צ'ק"
+ * or "עמלה" are grouped under a single technical bucket instead of polluting
+ * the beneficiary list.
+ */
+export function extractPayee(t: any): string {
+  const direct = typeof t.payee === "string" ? t.payee.trim() : "";
+  if (direct) return direct;
+  const payer = typeof t.payer_name === "string" ? t.payer_name.trim() : "";
+  if (payer) return payer;
+
+  for (const src of [t.description, t.reference, t.note]) {
+    const text = typeof src === "string" ? cleanupName(src) : "";
+    if (!text) continue;
+
+    for (const p of NAME_PREFIXES) {
+      if (text.startsWith(p)) {
+        const rest = cleanupName(text.slice(p.length));
+        if (looksLikeName(rest)) return rest;
+      }
+    }
+
+    // No prefix: accept the text only when it does not start with a
+    // technical operation word.
+    const firstWord = text.split(/\s+/)[0].replace(/["'׳״.\-]/g, "");
+    const isTechnical = TECHNICAL_WORDS.some(
+      (w) => firstWord === w.replace(/["'׳״.\-]/g, "") || text.startsWith(w),
+    );
+    if (!isTechnical && looksLikeName(text)) return text;
+  }
+
+  return TECHNICAL_LABEL;
+}
+
+function payeeOf(t: any): string {
+  return extractPayee(t);
+}
+
 
 export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const [search, setSearch] = useState("");
@@ -76,7 +138,7 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const dupSets = useMemo(() => {
     const byNorm = new Map<string, string[]>();
     groups.forEach((_, payee) => {
-      if (payee === "ללא מוטב") return;
+      if (payee === TECHNICAL_LABEL) return;
       const norm = normalizePayee(payee);
       if (!norm) return;
       if (!byNorm.has(norm)) byNorm.set(norm, []);
@@ -105,6 +167,9 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     const q = search.trim().toLowerCase();
     const filtered = q ? arr.filter((r) => r.payee.toLowerCase().includes(q)) : arr;
     filtered.sort((a, b) => {
+      // The technical bucket always stays at the bottom.
+      if (a.payee === TECHNICAL_LABEL) return 1;
+      if (b.payee === TECHNICAL_LABEL) return -1;
       let cmp = 0;
       switch (sortKey) {
         case "payee": cmp = a.payee.localeCompare(b.payee, "he"); break;
@@ -145,7 +210,7 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   return (
     <ReportShell
       title="דוח מוטבים"
-      subtitle="ריכוז תנועות לפי מוטב, עם זיהוי שמות דומים/כפולים"
+      subtitle="שמות אנשים וחברות בלבד — תנועות בנקאיות טכניות מרוכזות בשורה נפרדת"
       onExport={() => exportRowsToExcel(exportRows(), "דוח מוטבים.xlsx")}
       onExportPdf={() => {
         const { headers, data } = objectsToTable(exportRows());
@@ -153,7 +218,7 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       }}
     >
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Kpi label="מס׳ מוטבים" value={String(rows.length)} />
+        <Kpi label="מס׳ מוטבים" value={String(rows.filter((r) => r.payee !== TECHNICAL_LABEL).length)} />
         <Kpi label="סה״כ שולם" value={formatCurrency(totalPaid)} />
         <Kpi label="שמות אפשריים כפולים" value={String(dupCount)} />
         <Kpi label="מס׳ תנועות" value={String(scoped.length)} />

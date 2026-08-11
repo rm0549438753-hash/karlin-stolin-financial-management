@@ -134,8 +134,39 @@ function renderTable(columns: string[], rows: string[][]): string {
   </table>`;
 }
 
-function renderShell(subtitle: string, intro: string, content: string, outro: string): string {
-  const html = (s: string) => escapeHtml(s).replace(/\n/g, "<br>");
+/**
+ * Rich text for the intro/outro fields. Everything is escaped first, then a
+ * small, safe markup subset is re-enabled: [טקסט](https://…) links, **bold**,
+ * and bare URLs.
+ */
+function richText(s: string): string {
+  let out = escapeHtml(s);
+  out = out.replace(
+    /\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g,
+    (_m, label, url) =>
+      `<a href="${url}" style="color:#0b1e3f;font-weight:600;text-decoration:underline;">${label}</a>`,
+  );
+  out = out.replace(/(^|[\s>])(https?:\/\/[^\s<]+)/g, (_m, pre, url) =>
+    `${pre}<a href="${url}" style="color:#0b1e3f;text-decoration:underline;">${url}</a>`,
+  );
+  out = out.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>");
+  return out.replace(/\n/g, "<br>");
+}
+
+function renderButton(text?: string | null, url?: string | null): string {
+  if (!text || !url || !/^https?:\/\//.test(url)) return "";
+  return `<div dir="rtl" style="text-align:right;margin:20px 0 4px;">
+    <a href="${escapeHtml(url)}" style="display:inline-block;background:#0b1e3f;color:#f5c243;padding:12px 26px;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;">${escapeHtml(text)}</a>
+  </div>`;
+}
+
+function renderShell(
+  subtitle: string,
+  intro: string,
+  content: string,
+  outro: string,
+  button = "",
+): string {
   return `<!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -146,9 +177,10 @@ function renderShell(subtitle: string, intro: string, content: string, outro: st
       <div style="font-size:14px;opacity:0.9;margin-top:4px;">${escapeHtml(subtitle)}</div>
     </div>
     <div dir="rtl" style="background:#ffffff;padding:24px;border-radius:0 0 12px 12px;border:1px solid #e2e8f0;border-top:none;text-align:right;">
-      <p dir="rtl" style="font-size:15px;margin:0 0 12px;line-height:1.6;">${html(intro)}</p>
+      <p dir="rtl" style="font-size:15px;margin:0 0 12px;line-height:1.6;">${richText(intro)}</p>
       ${content}
-      <p dir="rtl" style="font-size:15px;margin:16px 0 0;line-height:1.6;">${html(outro)}</p>
+      <p dir="rtl" style="font-size:15px;margin:16px 0 0;line-height:1.6;">${richText(outro)}</p>
+      ${button}
       <p dir="rtl" style="font-size:12px;color:#64748b;margin-top:20px;border-top:1px solid #e2e8f0;padding-top:12px;">
         הודעה זו נשלחה אוטומטית ממערכת הניהול הפיננסי של ${escapeHtml(ORG_NAME)}.
       </p>
@@ -157,6 +189,7 @@ function renderShell(subtitle: string, intro: string, content: string, outro: st
 </body>
 </html>`;
 }
+
 
 /* ------------------------------------------------------------------ */
 /* Trigger evaluation                                                  */
@@ -199,17 +232,29 @@ async function evaluate(db: any, a: any): Promise<Evaluated> {
         : [];
       due.sort((x, y) => String(x.value_date).localeCompare(String(y.value_date)));
       const total = due.reduce((s, r) => s + Math.abs(Number(r.amount) || 0), 0);
+      const withAssoc = a.include_association !== false;
+      const withNote = a.include_note === true;
+      const cols = ["תאריך פירעון", "שם"];
+      if (withAssoc) cols.push("עמותה");
+      cols.push("סכום");
+      if (withNote) cols.push("הערה");
+      const body = due.map((r) => {
+        const cells = [fmtIL(r.value_date), escapeHtml(r.payee || r.description || "—")];
+        if (withAssoc) cells.push(escapeHtml(r.association || "—"));
+        cells.push(fmtAmount(Math.abs(Number(r.amount) || 0)));
+        if (withNote) cells.push(escapeHtml(r.note || r.reference || ""));
+        return cells;
+      });
+      if (body.length) {
+        const totalRow = ["סה\"כ", ""];
+        if (withAssoc) totalRow.push("");
+        totalRow.push(fmtAmount(total));
+        if (withNote) totalRow.push("");
+        body.push(totalRow);
+      }
       return {
         count: due.length,
-        content: renderTable(
-          ["תאריך פירעון", "שם", "עמותה", "סכום"],
-          due.map((r) => [
-            fmtIL(r.value_date),
-            escapeHtml(r.payee || r.description || "—"),
-            escapeHtml(r.association || "—"),
-            fmtAmount(Math.abs(Number(r.amount) || 0)),
-          ]),
-        ),
+        content: renderTable(cols, body),
         vars: { ...baseVars, count: String(due.length), total: fmtAmount(total), days: String(days) },
         summary: `${due.length} צ'קים · ${fmtAmount(total)}`,
       };
@@ -330,6 +375,7 @@ export async function previewAutomation(automationId: string) {
     applyPlaceholders(a.body_intro, ev.vars),
     ev.content,
     applyPlaceholders(a.body_outro, ev.vars),
+    renderButton(applyPlaceholders(a.button_text ?? "", ev.vars), a.button_url),
   );
   return { subject, html, recipients: a.recipients ?? [], count: ev.count, summary: ev.summary };
 }
@@ -367,6 +413,7 @@ async function sendOne(db: any, a: any, triggeredBy: string) {
     applyPlaceholders(a.body_intro, ev.vars),
     ev.content,
     applyPlaceholders(a.body_outro, ev.vars),
+    renderButton(applyPlaceholders(a.button_text ?? "", ev.vars), a.button_url),
   );
 
   const lovableKey = process.env.LOVABLE_API_KEY;
