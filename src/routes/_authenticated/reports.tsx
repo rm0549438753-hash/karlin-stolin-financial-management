@@ -15,7 +15,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { useAccounts, useCategories, useExpenseTypes, useFunds, useSubcategories } from "@/hooks/use-lookups";
 import { TransactionDialog, type TransactionRow } from "@/components/TransactionDialog";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { CalendarClock, AlertTriangle, Download, Printer, Search, Pencil, X, Trash2, CalendarX, Save, Wallet, Coins, GitCompare, TrendingUp, Users, AlertOctagon } from "lucide-react";
+import { CalendarClock, AlertTriangle, Download, Printer, Search, Pencil, X, Trash2, CalendarX, Save, Wallet, Coins, Users } from "lucide-react";
 import { FundOpeningBalancesReport } from "@/components/FundOpeningBalancesReport";
 import { CashBalanceReport } from "@/components/CashBalanceReport";
 import { PayeesReport } from "@/components/reports/PayeesReport";
