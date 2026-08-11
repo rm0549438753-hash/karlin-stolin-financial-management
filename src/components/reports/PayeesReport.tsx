@@ -154,13 +154,35 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
         <Kpi label="מס׳ מוטבים" value={String(rows.length)} />
         <Kpi label="סה״כ שולם" value={formatCurrency(totalPaid)} />
         <Kpi label="שמות אפשריים כפולים" value={String(dupCount)} />
-        <Kpi label="מס׳ תנועות" value={String(txs.length)} />
+        <Kpi label="מס׳ תנועות" value={String(scoped.length)} />
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="חיפוש מוטב" className="pr-9" />
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="relative max-w-sm flex-1 min-w-[200px]">
+          <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="חיפוש מוטב" className="pr-9" />
+        </div>
+        <Select value={accountId} onValueChange={setAccountId}>
+          <SelectTrigger className="w-[190px]"><SelectValue placeholder="חשבון" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">כל החשבונות</SelectItem>
+            {lookups.accounts.map((a: any) => (
+              <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={direction} onValueChange={(v) => setDirection(v as any)}>
+          <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="expense">הוצאות בלבד</SelectItem>
+            <SelectItem value="income">הכנסות בלבד</SelectItem>
+            <SelectItem value="all">הכל</SelectItem>
+          </SelectContent>
+        </Select>
+        <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-[150px]" />
+        <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-[150px]" />
       </div>
+
 
       <div className="rounded-lg border overflow-hidden overflow-x-auto">
         <Table className="border-collapse">
