@@ -191,6 +191,7 @@ function ActionHistoryPage() {
                   <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border px-2 py-2 whitespace-nowrap">פעולה</TableHead>
                   <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border px-2 py-2 whitespace-nowrap">אזור</TableHead>
                   <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border px-2 py-2 whitespace-nowrap">פרטים</TableHead>
+                  <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border px-2 py-2 whitespace-nowrap">מבצע</TableHead>
                   <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border px-2 py-2 whitespace-nowrap">סטטוס</TableHead>
                   <TableHead className="text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2 py-2 whitespace-nowrap">פעולות</TableHead>
                 </TableRow>
