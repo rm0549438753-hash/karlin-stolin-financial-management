@@ -129,8 +129,9 @@ function ActionHistoryPage() {
       describeRecord(row),
       row.created_at,
       row.record_id,
+      row.actor_id ? actorNames?.get(row.actor_id) : "",
     ].some((v) => String(v ?? "").toLowerCase().includes(q)));
-  }, [rows, search]);
+  }, [rows, search, actorNames]);
 
   const undoMutation = useMutation({
     mutationFn: async (row: ActionHistoryRow) => {
