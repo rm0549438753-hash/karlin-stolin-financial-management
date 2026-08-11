@@ -253,6 +253,7 @@ export function ClassificationRulesPanel() {
                   כלל חדש
                 </Button>
               </div>
+            )}
           </CardHeader>
           <CardContent>
             {canEdit && (
