@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { ReportShell, Kpi, nameMap, exportRowsToExcel, type Tx } from "@/routes/_authenticated/reports";
@@ -18,23 +20,57 @@ function normalizePayee(name: string) {
 
 type SortKey = "payee" | "total" | "count" | "avg" | "first" | "last";
 
+/**
+ * Where the beneficiary name comes from. Many imported rows have no `payee`
+ * column at all (bank statements put the name in the description/reference),
+ * so we fall back through the available text fields instead of lumping
+ * everything under "ללא מוטב".
+ */
+function payeeOf(t: any): string {
+  const candidates = [t.payee, t.payer_name, t.association, t.description, t.reference];
+  for (const c of candidates) {
+    const v = typeof c === "string" ? c.trim() : "";
+    if (v) return v;
+  }
+  return "ללא מוטב";
+}
+
 export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("total");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [accountId, setAccountId] = useState("all");
+  const [direction, setDirection] = useState<"all" | "expense" | "income">("expense");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
 
   const acctMap = nameMap(lookups.accounts);
 
+  const scoped = useMemo(() => {
+    return txs.filter((t: any) => {
+      if (accountId !== "all" && t.account_id !== accountId) return false;
+      const amt = Number(t.amount) || 0;
+      if (direction === "expense" && amt >= 0) return false;
+      if (direction === "income" && amt <= 0) return false;
+      const d = t.transaction_date;
+      if (!d) return false;
+      if (from && d < from) return false;
+      if (to && d > to) return false;
+      return true;
+    });
+  }, [txs, accountId, direction, from, to]);
+
   const groups = useMemo(() => {
     const map = new Map<string, Tx[]>();
-    txs.forEach((t) => {
-      const p = t.payee?.trim() || "ללא מוטב";
+    scoped.forEach((t) => {
+      const p = payeeOf(t);
       if (!map.has(p)) map.set(p, []);
       map.get(p)!.push(t);
     });
     return map;
-  }, [txs]);
+  }, [scoped]);
+
 
   // Detect near-duplicate payee names via normalized key.
   const dupSets = useMemo(() => {
@@ -120,13 +156,35 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
         <Kpi label="מס׳ מוטבים" value={String(rows.length)} />
         <Kpi label="סה״כ שולם" value={formatCurrency(totalPaid)} />
         <Kpi label="שמות אפשריים כפולים" value={String(dupCount)} />
-        <Kpi label="מס׳ תנועות" value={String(txs.length)} />
+        <Kpi label="מס׳ תנועות" value={String(scoped.length)} />
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="חיפוש מוטב" className="pr-9" />
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="relative max-w-sm flex-1 min-w-[200px]">
+          <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="חיפוש מוטב" className="pr-9" />
+        </div>
+        <Select value={accountId} onValueChange={setAccountId}>
+          <SelectTrigger className="w-[190px]"><SelectValue placeholder="חשבון" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">כל החשבונות</SelectItem>
+            {lookups.accounts.map((a: any) => (
+              <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={direction} onValueChange={(v) => setDirection(v as any)}>
+          <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="expense">הוצאות בלבד</SelectItem>
+            <SelectItem value="income">הכנסות בלבד</SelectItem>
+            <SelectItem value="all">הכל</SelectItem>
+          </SelectContent>
+        </Select>
+        <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-[150px]" />
+        <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-[150px]" />
       </div>
+
 
       <div className="rounded-lg border overflow-hidden overflow-x-auto">
         <Table className="border-collapse">
