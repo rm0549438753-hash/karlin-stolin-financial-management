@@ -186,7 +186,7 @@ export async function runSecurityAudit(triggeredBy: "cron" | "manual") {
       high_count: counts.high,
       critical_count: counts.critical,
       total_dependencies: entries.length,
-      report_json: { vulnerabilities: vulns } as any,
+      report_json: { vulnerabilities: vulns, config_findings: configFindings } as any,
       triggered_by: triggeredBy,
     })
     .select("id")
@@ -198,6 +198,7 @@ export async function runSecurityAudit(triggeredBy: "cron" | "manual") {
     runId: data.id,
     totalDependencies: entries.length,
     vulnerabilities: vulns.length,
+    configFindings: configFindings.length,
     counts,
   };
 }
