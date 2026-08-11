@@ -18,23 +18,57 @@ function normalizePayee(name: string) {
 
 type SortKey = "payee" | "total" | "count" | "avg" | "first" | "last";
 
+/**
+ * Where the beneficiary name comes from. Many imported rows have no `payee`
+ * column at all (bank statements put the name in the description/reference),
+ * so we fall back through the available text fields instead of lumping
+ * everything under "ללא מוטב".
+ */
+function payeeOf(t: any): string {
+  const candidates = [t.payee, t.payer_name, t.association, t.description, t.reference];
+  for (const c of candidates) {
+    const v = typeof c === "string" ? c.trim() : "";
+    if (v) return v;
+  }
+  return "ללא מוטב";
+}
+
 export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("total");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [accountId, setAccountId] = useState("all");
+  const [direction, setDirection] = useState<"all" | "expense" | "income">("expense");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
 
   const acctMap = nameMap(lookups.accounts);
 
+  const scoped = useMemo(() => {
+    return txs.filter((t: any) => {
+      if (accountId !== "all" && t.account_id !== accountId) return false;
+      const amt = Number(t.amount) || 0;
+      if (direction === "expense" && amt >= 0) return false;
+      if (direction === "income" && amt <= 0) return false;
+      const d = t.transaction_date;
+      if (!d) return false;
+      if (from && d < from) return false;
+      if (to && d > to) return false;
+      return true;
+    });
+  }, [txs, accountId, direction, from, to]);
+
   const groups = useMemo(() => {
     const map = new Map<string, Tx[]>();
-    txs.forEach((t) => {
-      const p = t.payee?.trim() || "ללא מוטב";
+    scoped.forEach((t) => {
+      const p = payeeOf(t);
       if (!map.has(p)) map.set(p, []);
       map.get(p)!.push(t);
     });
     return map;
-  }, [txs]);
+  }, [scoped]);
+
 
   // Detect near-duplicate payee names via normalized key.
   const dupSets = useMemo(() => {
