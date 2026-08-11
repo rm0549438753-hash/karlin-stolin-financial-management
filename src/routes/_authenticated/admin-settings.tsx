@@ -64,7 +64,12 @@ function AdminSettingsPage() {
           <EmailAutomationsPanel />
         </TabsContent>
 
-        <TabsContent value="security_audit"><SecurityAuditPanel /></TabsContent>
+        <TabsContent value="security_audit" className="space-y-6">
+          <SecurityAuditPanel />
+          <AcceptedFindingsCard />
+          <SecurityMemoryCard />
+        </TabsContent>
+
         <TabsContent value="access"><SecurityAccessPanel /></TabsContent>
       </Tabs>
     </AppShell>
