@@ -111,6 +111,7 @@ export function ClassificationRulesPanel() {
   const [preview, setPreview] = useState<any | null>(null);
   const [allTx, setAllTx] = useState(false);
   const [overwrite, setOverwrite] = useState(false);
+  const [logRule, setLogRule] = useState<{ id: string; name: string } | null>(null);
 
   const runPreview = useServerFn(previewClassificationRules);
   const runApply = useServerFn(applyClassificationRules);
@@ -326,19 +327,24 @@ export function ClassificationRulesPanel() {
                         <TableCell>{r.priority}</TableCell>
                         <TableCell>{r.applied_count}</TableCell>
                         <TableCell className="whitespace-nowrap">
-                          {canEdit && (
-                            <div className="flex gap-1">
-                              <Button size="icon" variant="ghost" onClick={() => previewMut.mutate(r.id)} title="תצוגה מקדימה">
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                              <Button size="icon" variant="ghost" onClick={() => edit(r)} title="עריכה">
-                                <Pencil className="w-4 h-4" />
-                              </Button>
-                              <Button size="icon" variant="ghost" onClick={() => remove.mutate(r.id)} title="מחיקה">
-                                <Trash2 className="w-4 h-4 text-destructive" />
-                              </Button>
-                            </div>
-                          )}
+                          <div className="flex gap-1">
+                            <Button size="icon" variant="ghost" onClick={() => setLogRule({ id: r.id, name: r.name })} title="סיווגים שבוצעו">
+                              <History className="w-4 h-4" />
+                            </Button>
+                            {canEdit && (
+                              <>
+                                <Button size="icon" variant="ghost" onClick={() => previewMut.mutate(r.id)} title="תצוגה מקדימה">
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                                <Button size="icon" variant="ghost" onClick={() => edit(r)} title="עריכה">
+                                  <Pencil className="w-4 h-4" />
+                                </Button>
+                                <Button size="icon" variant="ghost" onClick={() => remove.mutate(r.id)} title="מחיקה">
+                                  <Trash2 className="w-4 h-4 text-destructive" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
