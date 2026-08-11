@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useTransactionsRealtime } from "@/hooks/use-tx-realtime";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAllTransactionsShared } from "@/lib/tx-fetch";
@@ -82,15 +83,9 @@ function ReportsPage() {
     gcTime: 30 * 60_000,
     refetchOnWindowFocus: false,
   });
-  useEffect(() => {
-    const channel = supabase
-      .channel("reports-tx")
-      .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, () => {
-        qc.invalidateQueries({ queryKey: ["tx-all"] });
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [qc]);
+  useTransactionsRealtime("reports-tx", () => {
+    qc.invalidateQueries({ queryKey: ["tx-all"] });
+  });
   const { data: accounts = [] } = useAccounts();
   const { data: funds = [] } = useFunds();
   const { data: expenseTypes = [] } = useExpenseTypes();

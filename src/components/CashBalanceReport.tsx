@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
+import { useTransactionsRealtime } from "@/hooks/use-tx-realtime";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,16 +61,10 @@ export function useCashBalance() {
   });
 
   // Keep in sync when transactions change
-  useEffect(() => {
+  useTransactionsRealtime("cash-balance-tx", () => {
     if (!cashAccount?.id) return;
-    const ch = supabase
-      .channel("cash-balance-tx")
-      .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, () => {
-        qc.invalidateQueries({ queryKey: ["cash-transactions", cashAccount.id] });
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [cashAccount?.id, qc]);
+    qc.invalidateQueries({ queryKey: ["cash-transactions", cashAccount.id] });
+  });
 
   return { cashAccount, transactions: q.data ?? [], isLoading: q.isLoading };
 }
