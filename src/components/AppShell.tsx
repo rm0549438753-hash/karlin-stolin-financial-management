@@ -132,7 +132,7 @@ function UserMenu() {
     <div className="flex flex-col gap-2 text-white">
       <div className="px-2 py-1 group-data-[collapsible=icon]:hidden">
         <div className="text-xs font-bold truncate">{user?.email}</div>
-        <div className="text-[10px] text-white/60">{role?.isAdmin ? "מנהל" : role?.roles?.includes("editor") ? "עורך" : "צופה"}</div>
+        <div className="text-[10px] text-white/60">{role?.isFullViewer ? "אורח · צפייה בלבד" : role?.isAdmin ? "מנהל" : role?.roles?.includes("editor") ? "עורך" : "צופה"}</div>
       </div>
       <div className="px-2 group-data-[collapsible=icon]:hidden">
         <Link to="/download" className="text-xs font-semibold underline hover:text-white/80">להורדת האפליקציה</Link>
