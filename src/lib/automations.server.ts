@@ -363,6 +363,7 @@ export async function previewAutomation(automationId: string) {
     applyPlaceholders(a.body_intro, ev.vars),
     ev.content,
     applyPlaceholders(a.body_outro, ev.vars),
+    renderButton(applyPlaceholders(a.button_text ?? "", ev.vars), a.button_url),
   );
   return { subject, html, recipients: a.recipients ?? [], count: ev.count, summary: ev.summary };
 }
