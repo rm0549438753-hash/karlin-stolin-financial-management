@@ -515,11 +515,16 @@ export type Database = {
         Row: {
           body_intro: string
           body_outro: string
+          button_text: string | null
+          button_url: string | null
           created_at: string
           days_ahead: number | null
           frequency: string
           id: string
+          include_association: boolean
+          include_note: boolean
           is_active: boolean
+          is_builtin: boolean
           last_run_at: string | null
           name: string
           recipients: string[]
@@ -533,11 +538,16 @@ export type Database = {
         Insert: {
           body_intro?: string
           body_outro?: string
+          button_text?: string | null
+          button_url?: string | null
           created_at?: string
           days_ahead?: number | null
           frequency?: string
           id?: string
+          include_association?: boolean
+          include_note?: boolean
           is_active?: boolean
+          is_builtin?: boolean
           last_run_at?: string | null
           name: string
           recipients?: string[]
@@ -551,11 +561,16 @@ export type Database = {
         Update: {
           body_intro?: string
           body_outro?: string
+          button_text?: string | null
+          button_url?: string | null
           created_at?: string
           days_ahead?: number | null
           frequency?: string
           id?: string
+          include_association?: boolean
+          include_note?: boolean
           is_active?: boolean
+          is_builtin?: boolean
           last_run_at?: string | null
           name?: string
           recipients?: string[]
