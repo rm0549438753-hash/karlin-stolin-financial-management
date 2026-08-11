@@ -133,7 +133,7 @@ function ReportsPage() {
 
         <TabsContent value="future-checks"><FutureChecksReport txs={txs} lookups={lookups} /></TabsContent>
         <TabsContent value="uncategorized"><UncategorizedReport txs={txs} lookups={lookups} /></TabsContent>
-        <TabsContent value="no-date"><NoDateReport txs={txs} lookups={lookups} /></TabsContent>
+        <TabsContent value="no-date"><NoDateReport txs={allTxs as Tx[]} lookups={lookups} /></TabsContent>
         <TabsContent value="fund-opening"><FundOpeningBalancesReport /></TabsContent>
         <TabsContent value="cash-balance"><CashBalanceReport /></TabsContent>
         <TabsContent value="payees"><PayeesReport txs={txs} lookups={lookups} /></TabsContent>
