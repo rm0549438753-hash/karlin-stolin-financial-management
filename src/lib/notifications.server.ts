@@ -102,7 +102,6 @@ export async function collectSignals(admin: any): Promise<Signal[]> {
   /* Balance-level signals (negative balance / low cash) are intentionally not
      raised in the bell — managers asked for task and failure alerts only. */
 
-  }
 
   /* --- 5. Recent imports ------------------------------------------------- */
   const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
