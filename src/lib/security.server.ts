@@ -273,7 +273,7 @@ export async function recordLoginEvent(params: {
   let recentlyAlerted = false;
   if (isNewDevice) {
     const dayAgo = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
-    const dayAgoUnused = null; void dayAgoUnused;
+    
     const { count } = await admin
       .from("login_events")
       .select("id", { count: "exact", head: true })
