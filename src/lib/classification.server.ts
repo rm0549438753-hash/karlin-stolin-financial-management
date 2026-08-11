@@ -149,6 +149,12 @@ export async function runRules(
   const perRule = new Map<string, number>();
   const sample: RunResult["sample"] = [];
   const updates: { id: string; patch: Record<string, string>; ruleId: string }[] = [];
+  const applications: {
+    rule_id: string;
+    transaction_id: string;
+    changed: Record<string, string>;
+    previous: Record<string, string | null>;
+  }[] = [];
   const suggestions: { transaction_id: string; rule_id: string }[] = [];
   let skipped = 0;
 
@@ -174,6 +180,16 @@ export async function runRules(
         suggestions.push({ transaction_id: tx.id, rule_id: rule.id });
         continue;
       }
+      const previous: Record<string, string | null> = {};
+      for (const key of Object.keys(changes)) {
+        previous[key] = (working as any)[key] ?? null;
+      }
+      applications.push({
+        rule_id: rule.id,
+        transaction_id: tx.id,
+        changed: { ...changes },
+        previous,
+      });
       Object.assign(patch, changes);
       Object.assign(working, changes);
       if (!firstRule) firstRule = rule;
@@ -192,6 +208,12 @@ export async function runRules(
   if (!dryRun) {
     for (const u of updates) {
       const { error } = await supabase.from("transactions").update(u.patch).eq("id", u.id);
+      if (error) throw new Error(error.message);
+    }
+    for (let i = 0; i < applications.length; i += 500) {
+      const { error } = await supabase
+        .from("classification_applications")
+        .insert(applications.slice(i, i + 500));
       if (error) throw new Error(error.message);
     }
     if (suggestions.length > 0) {
