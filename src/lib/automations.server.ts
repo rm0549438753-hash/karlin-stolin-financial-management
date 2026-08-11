@@ -232,17 +232,29 @@ async function evaluate(db: any, a: any): Promise<Evaluated> {
         : [];
       due.sort((x, y) => String(x.value_date).localeCompare(String(y.value_date)));
       const total = due.reduce((s, r) => s + Math.abs(Number(r.amount) || 0), 0);
+      const withAssoc = a.include_association !== false;
+      const withNote = a.include_note === true;
+      const cols = ["תאריך פירעון", "שם"];
+      if (withAssoc) cols.push("עמותה");
+      cols.push("סכום");
+      if (withNote) cols.push("הערה");
+      const body = due.map((r) => {
+        const cells = [fmtIL(r.value_date), escapeHtml(r.payee || r.description || "—")];
+        if (withAssoc) cells.push(escapeHtml(r.association || "—"));
+        cells.push(fmtAmount(Math.abs(Number(r.amount) || 0)));
+        if (withNote) cells.push(escapeHtml(r.note || r.reference || ""));
+        return cells;
+      });
+      if (body.length) {
+        const totalRow = ["סה\"כ", ""];
+        if (withAssoc) totalRow.push("");
+        totalRow.push(fmtAmount(total));
+        if (withNote) totalRow.push("");
+        body.push(totalRow);
+      }
       return {
         count: due.length,
-        content: renderTable(
-          ["תאריך פירעון", "שם", "עמותה", "סכום"],
-          due.map((r) => [
-            fmtIL(r.value_date),
-            escapeHtml(r.payee || r.description || "—"),
-            escapeHtml(r.association || "—"),
-            fmtAmount(Math.abs(Number(r.amount) || 0)),
-          ]),
-        ),
+        content: renderTable(cols, body),
         vars: { ...baseVars, count: String(due.length), total: fmtAmount(total), days: String(days) },
         summary: `${due.length} צ'קים · ${fmtAmount(total)}`,
       };
