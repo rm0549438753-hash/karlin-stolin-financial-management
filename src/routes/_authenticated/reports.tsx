@@ -31,6 +31,7 @@ import { exportRowsAsPdf, objectsToTable } from "@/lib/export-pdf";
 import { useUserRole } from "@/hooks/use-auth";
 
 import {
+import { useTransactionsRealtime } from "@/hooks/use-tx-realtime";
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LabelList,
 } from "recharts";
 
@@ -82,15 +83,9 @@ function ReportsPage() {
     gcTime: 30 * 60_000,
     refetchOnWindowFocus: false,
   });
-  useEffect(() => {
-    const channel = supabase
-      .channel("reports-tx")
-      .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, () => {
-        qc.invalidateQueries({ queryKey: ["tx-all"] });
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [qc]);
+  useTransactionsRealtime("reports-tx", () => {
+    qc.invalidateQueries({ queryKey: ["tx-all"] });
+  });
   const { data: accounts = [] } = useAccounts();
   const { data: funds = [] } = useFunds();
   const { data: expenseTypes = [] } = useExpenseTypes();

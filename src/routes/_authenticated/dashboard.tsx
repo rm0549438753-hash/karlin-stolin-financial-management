@@ -27,6 +27,7 @@ import { exportRowsAsPdf, objectsToTable } from "@/lib/export-pdf";
 import { useFundOpeningBalances } from "@/components/FundOpeningBalancesReport";
 import { CashBalanceCard } from "@/components/CashBalanceReport";
 import { TX_ALL_KEY, fetchAllTransactionsShared } from "@/lib/tx-fetch";
+import { useTransactionsRealtime } from "@/hooks/use-tx-realtime";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -75,16 +76,9 @@ function DashboardPage() {
 
 
   // Realtime: keep dashboard fresh when transactions change anywhere
-  useEffect(() => {
-    const channel = supabase
-      .channel("dashboard-tx")
-      .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, () => {
-        qc.invalidateQueries({ queryKey: ["tx-all"] });
-        qc.invalidateQueries({ queryKey: ["tx-all"] });
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [qc]);
+  useTransactionsRealtime("dashboard-tx", () => {
+    qc.invalidateQueries({ queryKey: TX_ALL_KEY });
+  });
 
   const { data: accounts = [] } = useAccounts();
   const { data: categories = [] } = useCategories();

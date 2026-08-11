@@ -12,6 +12,7 @@ import { Wallet, TrendingUp, TrendingDown, Printer } from "lucide-react";
 import { ExportMenu } from "@/components/ExportMenu";
 import { exportRowsAsPdf, objectsToTable } from "@/lib/export-pdf";
 import {
+import { useTransactionsRealtime } from "@/hooks/use-tx-realtime";
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, LabelList,
   ComposedChart, Line,
 } from "recharts";
@@ -60,16 +61,10 @@ export function useCashBalance() {
   });
 
   // Keep in sync when transactions change
-  useEffect(() => {
+  useTransactionsRealtime("cash-balance-tx", () => {
     if (!cashAccount?.id) return;
-    const ch = supabase
-      .channel("cash-balance-tx")
-      .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, () => {
-        qc.invalidateQueries({ queryKey: ["cash-transactions", cashAccount.id] });
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [cashAccount?.id, qc]);
+    qc.invalidateQueries({ queryKey: ["cash-transactions", cashAccount.id] });
+  });
 
   return { cashAccount, transactions: q.data ?? [], isLoading: q.isLoading };
 }
