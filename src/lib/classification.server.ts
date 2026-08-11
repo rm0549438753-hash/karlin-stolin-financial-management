@@ -65,14 +65,28 @@ export function ruleMatches(rule: Rule, tx: CandidateTx): boolean {
 }
 
 
-/** Fields the rule would fill in that are still empty on the transaction. */
-export function pendingChanges(rule: Rule, tx: CandidateTx): Record<string, string> {
+/**
+ * Fields the rule would fill in. By default only empty fields are filled;
+ * with `overwrite` the rule also replaces values that already exist.
+ */
+export function pendingChanges(rule: Rule, tx: CandidateTx, overwrite = false): Record<string, string> {
   const patch: Record<string, string> = {};
   for (const [ruleField, txField] of TARGETS) {
     const value = rule[ruleField];
-    if (value && !tx[txField]) patch[txField] = value;
+    if (!value) continue;
+    if (!tx[txField]) patch[txField] = value;
+    else if (overwrite && tx[txField] !== value) patch[txField] = value;
   }
   return patch;
+}
+
+/** Fields the rule sets that are already filled on the transaction (and were skipped). */
+export function skippedFields(rule: Rule, tx: CandidateTx): number {
+  let n = 0;
+  for (const [ruleField, txField] of TARGETS) {
+    if (rule[ruleField] && tx[txField]) n += 1;
+  }
+  return n;
 }
 
 export function isUnclassified(tx: CandidateTx): boolean {
