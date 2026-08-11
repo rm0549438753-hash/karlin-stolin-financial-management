@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as GuestRouteImport } from './routes/guest'
 import { Route as DownloadRouteImport } from './routes/download'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
@@ -37,11 +36,6 @@ const TermsRoute = TermsRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GuestRoute = GuestRouteImport.update({
-  id: '/guest',
-  path: '/guest',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DownloadRoute = DownloadRouteImport.update({
@@ -136,7 +130,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/download': typeof DownloadRoute
-  '/guest': typeof GuestRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/action-history': typeof AuthenticatedActionHistoryRoute
@@ -156,7 +149,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/download': typeof DownloadRoute
-  '/guest': typeof GuestRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/action-history': typeof AuthenticatedActionHistoryRoute
@@ -178,7 +170,6 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/download': typeof DownloadRoute
-  '/guest': typeof GuestRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/_authenticated/action-history': typeof AuthenticatedActionHistoryRoute
@@ -200,7 +191,6 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/download'
-    | '/guest'
     | '/privacy'
     | '/terms'
     | '/action-history'
@@ -220,7 +210,6 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/download'
-    | '/guest'
     | '/privacy'
     | '/terms'
     | '/action-history'
@@ -241,7 +230,6 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/download'
-    | '/guest'
     | '/privacy'
     | '/terms'
     | '/_authenticated/action-history'
@@ -263,7 +251,6 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   DownloadRoute: typeof DownloadRoute
-  GuestRoute: typeof GuestRoute
   PrivacyRoute: typeof PrivacyRoute
   TermsRoute: typeof TermsRoute
   ApiPublicApkRoute: typeof ApiPublicApkRoute
@@ -287,13 +274,6 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/guest': {
-      id: '/guest'
-      path: '/guest'
-      fullPath: '/guest'
-      preLoaderRoute: typeof GuestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/download': {
@@ -439,7 +419,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   DownloadRoute: DownloadRoute,
-  GuestRoute: GuestRoute,
   PrivacyRoute: PrivacyRoute,
   TermsRoute: TermsRoute,
   ApiPublicApkRoute: ApiPublicApkRoute,
