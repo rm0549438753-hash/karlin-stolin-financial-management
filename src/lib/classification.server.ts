@@ -65,14 +65,28 @@ export function ruleMatches(rule: Rule, tx: CandidateTx): boolean {
 }
 
 
-/** Fields the rule would fill in that are still empty on the transaction. */
-export function pendingChanges(rule: Rule, tx: CandidateTx): Record<string, string> {
+/**
+ * Fields the rule would fill in. By default only empty fields are filled;
+ * with `overwrite` the rule also replaces values that already exist.
+ */
+export function pendingChanges(rule: Rule, tx: CandidateTx, overwrite = false): Record<string, string> {
   const patch: Record<string, string> = {};
   for (const [ruleField, txField] of TARGETS) {
     const value = rule[ruleField];
-    if (value && !tx[txField]) patch[txField] = value;
+    if (!value) continue;
+    if (!tx[txField]) patch[txField] = value;
+    else if (overwrite && tx[txField] !== value) patch[txField] = value;
   }
   return patch;
+}
+
+/** Fields the rule sets that are already filled on the transaction (and were skipped). */
+export function skippedFields(rule: Rule, tx: CandidateTx): number {
+  let n = 0;
+  for (const [ruleField, txField] of TARGETS) {
+    if (rule[ruleField] && tx[txField]) n += 1;
+  }
+  return n;
 }
 
 export function isUnclassified(tx: CandidateTx): boolean {
@@ -104,6 +118,9 @@ export type RunResult = {
   matched: number;
   applied: number;
   suggested: number;
+  /** Transactions a rule matched but nothing was written because the fields were already filled. */
+  skipped: number;
+  scanned: number;
   perRule: { ruleId: string; name: string; mode: string; matched: number }[];
   sample: { id: string; payee: string | null; description: string | null; rule: string; patch: Record<string, string> }[];
 };
@@ -114,9 +131,9 @@ export type RunResult = {
  */
 export async function runRules(
   supabase: SupabaseClient<any>,
-  opts: { ruleId?: string; onlyUnclassified?: boolean; dryRun?: boolean },
+  opts: { ruleId?: string; onlyUnclassified?: boolean; overwrite?: boolean; dryRun?: boolean },
 ): Promise<RunResult> {
-  const { ruleId, onlyUnclassified = true, dryRun = false } = opts;
+  const { ruleId, onlyUnclassified = true, overwrite = false, dryRun = false } = opts;
 
   let rq = supabase.from("classification_rules").select("*").eq("is_active", true).order("priority");
   if (ruleId) rq = rq.eq("id", ruleId);
@@ -124,7 +141,7 @@ export async function runRules(
   if (ruleErr) throw new Error(ruleErr.message);
   const rules = (ruleRows ?? []) as unknown as Rule[];
   if (rules.length === 0) {
-    return { matched: 0, applied: 0, suggested: 0, perRule: [], sample: [] };
+    return { matched: 0, applied: 0, suggested: 0, skipped: 0, scanned: 0, perRule: [], sample: [] };
   }
 
   const candidates = await fetchCandidates(supabase, onlyUnclassified);
@@ -133,6 +150,7 @@ export async function runRules(
   const sample: RunResult["sample"] = [];
   const updates: { id: string; patch: Record<string, string>; ruleId: string }[] = [];
   const suggestions: { transaction_id: string; rule_id: string }[] = [];
+  let skipped = 0;
 
   for (const tx of candidates) {
     // Highest priority (lowest number) rule wins per field; a later rule may
@@ -140,11 +158,16 @@ export async function runRules(
     const working: CandidateTx = { ...tx };
     const patch: Record<string, string> = {};
     let firstRule: Rule | null = null;
+    let matchedButNothingToDo = false;
 
     for (const rule of rules) {
       if (!ruleMatches(rule, working)) continue;
-      const changes = pendingChanges(rule, working);
-      if (Object.keys(changes).length === 0) continue;
+      const changes = pendingChanges(rule, working, overwrite);
+      if (Object.keys(changes).length === 0) {
+        if (skippedFields(rule, working) > 0) matchedButNothingToDo = true;
+        continue;
+      }
+
       perRule.set(rule.id, (perRule.get(rule.id) ?? 0) + 1);
 
       if (rule.mode === "suggest") {
@@ -161,6 +184,8 @@ export async function runRules(
       if (sample.length < 25) {
         sample.push({ id: tx.id, payee: tx.payee, description: tx.description, rule: firstRule.name, patch });
       }
+    } else if (matchedButNothingToDo) {
+      skipped += 1;
     }
   }
 
@@ -189,6 +214,8 @@ export async function runRules(
     matched: updates.length + suggestions.length,
     applied: updates.length,
     suggested: suggestions.length,
+    skipped,
+    scanned: candidates.length,
     perRule: rules.map((r) => ({ ruleId: r.id, name: r.name, mode: r.mode, matched: perRule.get(r.id) ?? 0 })),
     sample,
   };

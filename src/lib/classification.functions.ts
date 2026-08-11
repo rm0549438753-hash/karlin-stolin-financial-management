@@ -11,7 +11,7 @@ async function assertEditor(ctx: any) {
 
 export const previewClassificationRules = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { ruleId?: string; onlyUnclassified?: boolean }) => d)
+  .inputValidator((d: { ruleId?: string; onlyUnclassified?: boolean; overwrite?: boolean }) => d)
   .handler(async ({ context, data }) => {
     await assertEditor(context);
     const { runRules } = await import("@/lib/classification.server");
@@ -20,7 +20,7 @@ export const previewClassificationRules = createServerFn({ method: "POST" })
 
 export const applyClassificationRules = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { ruleId?: string; onlyUnclassified?: boolean }) => d)
+  .inputValidator((d: { ruleId?: string; onlyUnclassified?: boolean; overwrite?: boolean }) => d)
   .handler(async ({ context, data }) => {
     await assertEditor(context);
     const { runRules } = await import("@/lib/classification.server");

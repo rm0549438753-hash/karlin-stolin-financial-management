@@ -108,6 +108,8 @@ export function ClassificationRulesPanel() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<RuleForm>(EMPTY);
   const [preview, setPreview] = useState<any | null>(null);
+  const [allTx, setAllTx] = useState(false);
+  const [overwrite, setOverwrite] = useState(false);
 
   const runPreview = useServerFn(previewClassificationRules);
   const runApply = useServerFn(applyClassificationRules);
@@ -174,15 +176,19 @@ export function ClassificationRulesPanel() {
   });
 
   const previewMut = useMutation({
-    mutationFn: async (ruleId?: string) => runPreview({ data: { ruleId, onlyUnclassified: true } }),
+    mutationFn: async (ruleId?: string) =>
+      runPreview({ data: { ruleId, onlyUnclassified: !allTx, overwrite } }),
     onSuccess: (res) => setPreview(res),
     onError: (e: any) => toast.error(e?.message ?? "התצוגה המקדימה נכשלה"),
   });
 
   const applyMut = useMutation({
-    mutationFn: async (ruleId?: string) => runApply({ data: { ruleId, onlyUnclassified: true } }),
+    mutationFn: async (ruleId?: string) =>
+      runApply({ data: { ruleId, onlyUnclassified: !allTx, overwrite } }),
     onSuccess: (res: any) => {
-      toast.success(`סווגו ${res.applied} תנועות, נוצרו ${res.suggested} הצעות לאישור`);
+      toast.success(
+        `סווגו ${res.applied} תנועות, נוצרו ${res.suggested} הצעות, ${res.skipped ?? 0} דולגו (השדה כבר מלא)`,
+      );
       setPreview(null);
       qc.invalidateQueries({ queryKey: ["classification-rules"] });
       qc.invalidateQueries({ queryKey: ["tx-all"] });
@@ -250,6 +256,18 @@ export function ClassificationRulesPanel() {
             )}
           </CardHeader>
           <CardContent>
+            {canEdit && (
+              <div className="mb-4 flex flex-wrap items-center gap-6 rounded-md border bg-muted/40 p-3">
+                <div className="flex items-center gap-2">
+                  <Switch id="cls-all" checked={allTx} onCheckedChange={setAllTx} />
+                  <Label htmlFor="cls-all" className="text-sm">החל על כל התנועות (לא רק לא-מסווגות)</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch id="cls-ovr" checked={overwrite} onCheckedChange={setOverwrite} />
+                  <Label htmlFor="cls-ovr" className="text-sm">דרוס ערך קיים</Label>
+                </div>
+              </div>
+            )}
             {isLoading ? (
               <div className="p-6 text-center text-muted-foreground">טוען…</div>
             ) : rules.length === 0 ? (
@@ -491,8 +509,10 @@ export function ClassificationRulesPanel() {
           {preview && (
             <div className="space-y-4">
               <div className="flex flex-wrap gap-3 text-sm">
+                <Badge variant="outline">נסרקו: {preview.scanned ?? 0}</Badge>
                 <Badge variant="default">יסווגו אוטומטית: {preview.applied}</Badge>
                 <Badge variant="secondary">יוצעו לאישור: {preview.suggested}</Badge>
+                <Badge variant="outline">דולגו (השדה כבר מלא): {preview.skipped ?? 0}</Badge>
               </div>
               {preview.sample.length > 0 && (
                 <div className="overflow-x-auto">
