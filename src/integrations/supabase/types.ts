@@ -326,6 +326,54 @@ export type Database = {
         }
         Relationships: []
       }
+      classification_applications: {
+        Row: {
+          applied_by: string | null
+          changed: Json
+          created_at: string
+          id: string
+          previous: Json
+          reverted_at: string | null
+          rule_id: string
+          transaction_id: string
+        }
+        Insert: {
+          applied_by?: string | null
+          changed?: Json
+          created_at?: string
+          id?: string
+          previous?: Json
+          reverted_at?: string | null
+          rule_id: string
+          transaction_id: string
+        }
+        Update: {
+          applied_by?: string | null
+          changed?: Json
+          created_at?: string
+          id?: string
+          previous?: Json
+          reverted_at?: string | null
+          rule_id?: string
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classification_applications_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "classification_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "classification_applications_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       classification_rules: {
         Row: {
           account_id: string | null
