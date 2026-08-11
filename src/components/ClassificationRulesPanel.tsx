@@ -108,6 +108,8 @@ export function ClassificationRulesPanel() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<RuleForm>(EMPTY);
   const [preview, setPreview] = useState<any | null>(null);
+  const [allTx, setAllTx] = useState(false);
+  const [overwrite, setOverwrite] = useState(false);
 
   const runPreview = useServerFn(previewClassificationRules);
   const runApply = useServerFn(applyClassificationRules);
