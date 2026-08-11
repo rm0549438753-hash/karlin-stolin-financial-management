@@ -209,6 +209,24 @@ export async function unblockIp(id: string) {
 /* Security events                                                     */
 /* ------------------------------------------------------------------ */
 
+/** Coarse browser/OS signature — stable across cache clears and private mode. */
+function uaSignature(ua: string | null): string | null {
+  if (!ua) return null;
+  const os =
+    /Windows/i.test(ua) ? "Windows" :
+    /Android/i.test(ua) ? "Android" :
+    /iPhone|iPad|iPod/i.test(ua) ? "iOS" :
+    /Mac OS X/i.test(ua) ? "macOS" :
+    /Linux/i.test(ua) ? "Linux" : "Other";
+  const browser =
+    /Edg\//i.test(ua) ? "Edge" :
+    /OPR\//i.test(ua) ? "Opera" :
+    /Chrome\//i.test(ua) ? "Chrome" :
+    /Firefox\//i.test(ua) ? "Firefox" :
+    /Safari\//i.test(ua) ? "Safari" : "Other";
+  return `${os}/${browser}`;
+}
+
 export async function recordLoginEvent(params: {
   userId: string;
   email: string | null;
@@ -219,12 +237,24 @@ export async function recordLoginEvent(params: {
   city?: string | null;
 }) {
   const admin = adminClient();
-  const { count } = await admin
+
+  // A device counts as familiar when the stored key was seen before OR when
+  // this user already signed in from the same browser/OS combination. Without
+  // the second check every cleared cookie jar or private window looked new and
+  // triggered another alert email.
+  const { data: history } = await admin
     .from("login_events")
-    .select("id", { count: "exact", head: true })
+    .select("device_key,user_agent,created_at")
     .eq("user_id", params.userId)
-    .eq("device_key", params.deviceKey);
-  const isNewDevice = (count ?? 0) === 0;
+    .eq("event_type", "login")
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  const rows = history ?? [];
+  const sig = uaSignature(params.userAgent);
+  const knownByKey = rows.some((r: any) => r.device_key === params.deviceKey);
+  const knownBySignature = sig ? rows.some((r: any) => uaSignature(r.user_agent) === sig) : false;
+  const isNewDevice = !knownByKey && !knownBySignature;
 
   await admin.from("login_events").insert({
     user_id: params.userId,
@@ -239,7 +269,22 @@ export async function recordLoginEvent(params: {
   });
   await clearFailedLogins(params.email ?? "");
 
-  if (isNewDevice && params.email) {
+  // Throttle: at most one new-device email per user per day.
+  let recentlyAlerted = false;
+  if (isNewDevice) {
+    const dayAgo = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    recentlyAlerted = rows.some((r: any) => r.created_at >= dayAgo && (r as any).device_key !== params.deviceKey && false);
+    const { count } = await admin
+      .from("login_events")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", params.userId)
+      .eq("is_new_device", true)
+      .eq("event_type", "login")
+      .gte("created_at", dayAgo);
+    recentlyAlerted = (count ?? 0) > 1; // the row we just inserted counts as 1
+  }
+
+  if (isNewDevice && !recentlyAlerted && params.email) {
     const html = `<div dir="rtl" style="font-family:Arial,sans-serif;text-align:right">
       <h2>התחברות ממכשיר חדש</h2>
       <p>זוהתה כניסה למערכת מרכז קארלין סטולין ממכשיר או דפדפן שלא נראו קודם.</p>
@@ -257,6 +302,7 @@ export async function recordLoginEvent(params: {
 
   return { ok: true, isNewDevice };
 }
+
 
 /** Records logout / idle-timeout events. */
 export async function recordSessionEvent(params: {
