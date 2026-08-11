@@ -1,3 +1,4 @@
+import { isFullViewer } from "@/lib/read-access";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -38,6 +39,11 @@ async function assertMayTargetUser(context: any, targetUserId: string) {
   if (data) throw new Error("Forbidden: רק מנהל-על יכול לנהל חשבון מנהל-על");
 }
 
+
+async function assertAdminRead(context: any) {
+  try { await assertAdmin(context); return; } catch { /* fall through */ }
+  if (!(await isFullViewer(context))) throw new Error("Forbidden");
+}
 
 export const adminCreateUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -87,7 +93,7 @@ export const adminCreateUser = createServerFn({ method: "POST" })
 export const adminListUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdmin(context);
+    await assertAdminRead(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const all: any[] = [];

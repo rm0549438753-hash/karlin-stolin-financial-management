@@ -1,3 +1,4 @@
+import { isFullViewer } from "@/lib/read-access";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
@@ -50,7 +51,7 @@ export const listLoginEvents = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
     const { data: isSuper } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "superadmin" });
-    if (!isAdmin && !isSuper) throw new Error("Forbidden");
+    if (!isAdmin && !isSuper && !(await isFullViewer(context))) throw new Error("Forbidden");
     const { data, error } = await context.supabase
       .from("login_events")
       .select("id,email,ip,user_agent,is_new_device,created_at")
@@ -87,6 +88,12 @@ async function assertSuper(context: any) {
   if (!data) throw new Error("Forbidden");
 }
 
+/** Read-only gate: superadmin, or a full-viewer (guest) account. */
+async function assertSuperRead(context: any) {
+  const { data } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "superadmin" });
+  if (!data && !(await isFullViewer(context))) throw new Error("Forbidden");
+}
+
 /** Full security/login log with filters + paging (superadmin only). */
 export const listSecurityEvents = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -101,7 +108,7 @@ export const listSecurityEvents = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data, context }) => {
-    await assertSuper(context);
+    await assertSuperRead(context);
     const { listSecurityEvents: run } = await import("@/lib/security.server");
     return await run(data);
   });
@@ -109,7 +116,7 @@ export const listSecurityEvents = createServerFn({ method: "POST" })
 export const securitySummary = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertSuper(context);
+    await assertSuperRead(context);
     const { securityEventSummary } = await import("@/lib/security.server");
     return await securityEventSummary();
   });
@@ -125,7 +132,7 @@ export const purgeSecurityLogs = createServerFn({ method: "POST" })
 export const listBlockedIps = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertSuper(context);
+    await assertSuperRead(context);
     const { listBlockedIps: run } = await import("@/lib/security.server");
     return await run();
   });

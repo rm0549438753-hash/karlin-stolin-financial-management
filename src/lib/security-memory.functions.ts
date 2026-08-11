@@ -1,3 +1,4 @@
+import { isFullViewer } from "@/lib/read-access";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -13,10 +14,15 @@ async function assertAdmin(ctx: any) {
   if (!isAdmin && !isSuper) throw new Error("Forbidden");
 }
 
+async function assertAdminRead(ctx: any) {
+  try { await assertAdmin(ctx); return; } catch { /* fall through to full-viewer */ }
+  if (!(await isFullViewer(ctx))) throw new Error("Forbidden");
+}
+
 export const getSecurityMemory = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdmin(context);
+    await assertAdminRead(context);
     const { data, error } = await (context.supabase as any)
       .from("security_memory")
       .select("*")
@@ -51,7 +57,7 @@ export const saveSecurityMemory = createServerFn({ method: "POST" })
 export const listAcceptedFindings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdmin(context);
+    await assertAdminRead(context);
     const { data, error } = await (context.supabase as any)
       .from("security_accepted_findings")
       .select("*")
