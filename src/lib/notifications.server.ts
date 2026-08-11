@@ -99,40 +99,9 @@ export async function collectSignals(admin: any): Promise<Signal[]> {
     }
   }
 
-  /* --- 3. Negative account balances ------------------------------------- */
-  const byAccount = new Map<string, number>();
-  for (const r of rows) {
-    byAccount.set(r.account_id, (byAccount.get(r.account_id) ?? 0) + (Number(r.amount) || 0));
-  }
-  for (const [accId, balance] of byAccount) {
-    const acc = accById.get(accId);
-    if (!acc || acc.is_active === false || acc.schema_type === "checks") continue;
-    if (balance < 0) {
-      signals.push({
-        kind: "negative_balance",
-        title: `יתרה שלילית בחשבון ${acc.name}`,
-        body: `היתרה המחושבת היא ${fmtAmount(balance)}.`,
-        link: "/dashboard",
-        severity: "critical",
-        dedupeKey: `negative-${accId}-${today}`,
-      });
-    }
-  }
+  /* Balance-level signals (negative balance / low cash) are intentionally not
+     raised in the bell — managers asked for task and failure alerts only. */
 
-  /* --- 4. Cash below threshold ------------------------------------------ */
-  const cashAcc = accList.find((a) => a.kind === "cash" || a.schema_type === "cash");
-  if (cashAcc) {
-    const cash = byAccount.get(cashAcc.id) ?? 0;
-    if (cash < 1000) {
-      signals.push({
-        kind: "low_cash",
-        title: "יתרת המזומן נמוכה",
-        body: `יתרת המזומן הנוכחית היא ${fmtAmount(cash)}.`,
-        link: "/reports?tab=cash-balance",
-        severity: "warning",
-        dedupeKey: `low-cash-${today}`,
-      });
-    }
   }
 
   /* --- 5. Recent imports ------------------------------------------------- */
