@@ -23,8 +23,6 @@ import { exportRowsAsPdf } from "@/lib/export-pdf";
 import { useUserRole } from "@/hooks/use-auth";
 import { QuickEditCell } from "@/components/transactions/QuickEditCell";
 import { useQuickEditTransaction } from "@/hooks/use-quick-edit";
-import { useRowKeyboardNav } from "@/hooks/use-row-keyboard-nav";
-import { ShortcutsHelp } from "@/components/transactions/ShortcutsHelp";
 import { SavedViewsMenu } from "@/components/transactions/SavedViewsMenu";
 import { TransactionCardList } from "@/components/transactions/TransactionCardList";
 import { TableRowsSkeleton, CardsSkeleton, SummarySkeleton } from "@/components/transactions/TransactionsSkeleton";
@@ -430,9 +428,8 @@ function TransactionsPage() {
   };
 
   const openEdit = (r: any) => { setEditing(r); setDialogOpen(true); };
-  const { highlightId: kbHighlightId, setHighlightId: setKbHighlightId } = useRowKeyboardNav(
-    filtered as any[], openEdit, !dialogOpen && !importOpen && !bulkEditOpen && !printOpen,
-  );
+  const kbHighlightId: string | null = null;
+  const setKbHighlightId = (_id: string | null) => {};
 
   // Scroll to highlighted transaction once it appears in the filtered view
   useEffect(() => {
@@ -494,7 +491,6 @@ function TransactionsPage() {
       title={title}
       actions={
         <>
-          <ShortcutsHelp />
           <ExportMenu disabled={!selectedAccount} onExcel={exportAllExcel} onPdf={() => setPrintOpen(true)} />
           <Button variant="outline" size="sm" onClick={() => setPrintOpen(true)} disabled={!selectedAccount || filtered.length === 0}>
             <Printer className="w-4 h-4 ml-1" />הדפסה
