@@ -89,8 +89,7 @@ export function EmailAutomationsPanel() {
         .select("*")
         .order("created_at", { ascending: true });
       if (error) throw error;
-      const list = (data ?? []) as Automation[];
-      return [...list].sort((x, y) => Number(!!y.is_builtin) - Number(!!x.is_builtin));
+      return (data ?? []) as Automation[];
     },
   });
 
@@ -262,10 +261,7 @@ export function EmailAutomationsPanel() {
                           />
                         </TableCell>
                         <TableCell className="font-semibold">
-                          <div className="flex items-center gap-2">
-                            {a.name}
-                            {a.is_builtin && <Badge variant="secondary">מובנה</Badge>}
-                          </div>
+                          <div className="flex items-center gap-2">{a.name}</div>
                         </TableCell>
                         <TableCell className="text-sm">{triggerLabel(a.trigger_type)}</TableCell>
                         <TableCell className="text-sm">
@@ -290,11 +286,9 @@ export function EmailAutomationsPanel() {
                             <Button variant="ghost" size="icon" className="h-8 w-8" title="שלח עכשיו" disabled={busyId === a.id} onClick={() => doSend(a.id)}>
                               <Send className="w-4 h-4" />
                             </Button>
-                            {!a.is_builtin && (
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" title="מחיקה" onClick={() => remove.mutate(a.id)}>
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            )}
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" title="מחיקה" onClick={() => remove.mutate(a.id)}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
