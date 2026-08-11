@@ -214,6 +214,8 @@ export async function runRules(
     matched: updates.length + suggestions.length,
     applied: updates.length,
     suggested: suggestions.length,
+    skipped,
+    scanned: candidates.length,
     perRule: rules.map((r) => ({ ruleId: r.id, name: r.name, mode: r.mode, matched: perRule.get(r.id) ?? 0 })),
     sample,
   };
