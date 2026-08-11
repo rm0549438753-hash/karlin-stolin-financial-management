@@ -38,8 +38,10 @@ export function SecurityAuditPanel() {
   const list = useServerFn(listSecurityAuditRuns);
   const trigger = useServerFn(triggerSecurityAuditNow);
   const del = useServerFn(deleteSecurityAuditRun);
+  const autofix = useServerFn(autofixSecurityConfig);
   const [openId, setOpenId] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
+  const [fixing, setFixing] = useState(false);
 
   const { data: runs, isLoading } = useQuery({
     queryKey: ["security_audit_runs"],
