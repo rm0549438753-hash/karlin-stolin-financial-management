@@ -401,6 +401,7 @@ async function sendOne(db: any, a: any, triggeredBy: string) {
     applyPlaceholders(a.body_intro, ev.vars),
     ev.content,
     applyPlaceholders(a.body_outro, ev.vars),
+    renderButton(applyPlaceholders(a.button_text ?? "", ev.vars), a.button_url),
   );
 
   const lovableKey = process.env.LOVABLE_API_KEY;
