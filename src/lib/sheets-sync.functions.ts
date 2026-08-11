@@ -1,3 +1,4 @@
+import { isFullViewer } from "@/lib/read-access";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -263,6 +264,11 @@ function hashSheetRow(r: any): string {
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
   return h.toString(16);
+}
+
+async function ensureAdminRead(context: any) {
+  try { await ensureAdmin(context); return; } catch { /* fall through */ }
+  if (!(await isFullViewer(context))) throw new Error("Forbidden");
 }
 
 async function ensureAdmin(context: any) {
@@ -658,7 +664,7 @@ type IgnoreItem = { kind: "account" | "insert" | "review"; accountId: string; re
 export const listSyncIgnores = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await ensureAdmin(context);
+    await ensureAdminRead(context);
     const { data, error } = await context.supabase
       .from("sync_ignores")
       .select("id,kind,account_id,ref_key,note,created_at")

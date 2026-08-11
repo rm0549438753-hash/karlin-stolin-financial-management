@@ -1,3 +1,4 @@
+import { isFullViewer } from "@/lib/read-access";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -48,7 +49,7 @@ export const listBackupRuns = createServerFn({ method: "GET" })
       _user_id: context.userId,
       _role: "admin",
     });
-    if (!isAdmin) throw new Error("Forbidden");
+    if (!isAdmin && !(await isFullViewer(context))) throw new Error("Forbidden");
     const { data, error } = await context.supabase
       .from("backup_runs")
       .select("*")

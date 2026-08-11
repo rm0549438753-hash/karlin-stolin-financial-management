@@ -857,6 +857,7 @@ export type Database = {
           created_at: string
           email: string | null
           full_name: string | null
+          full_view: boolean
           id: string
           updated_at: string
         }
@@ -865,6 +866,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           full_name?: string | null
+          full_view?: boolean
           id: string
           updated_at?: string
         }
@@ -873,6 +875,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           full_name?: string | null
+          full_view?: boolean
           id?: string
           updated_at?: string
         }
@@ -1226,6 +1229,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_full_viewer: { Args: { _uid: string }; Returns: boolean }
       security_config_autofix: { Args: never; Returns: Json }
       security_config_findings: { Args: never; Returns: Json }
       undo_action_history: {

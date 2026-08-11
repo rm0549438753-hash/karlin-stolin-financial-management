@@ -32,7 +32,7 @@ export const Route = createFileRoute("/_authenticated/settings")({
 function SettingsPage() {
   const { data: role, isLoading } = useUserRole();
   if (isLoading) return <AppShell title="הגדרות מערכת"><div className="p-8 text-center text-muted-foreground">טוען…</div></AppShell>;
-  if (!role?.isAdmin && !role?.isEditor) {
+  if (!role?.isAdmin && !role?.isEditor && !role?.isFullViewer) {
     return <AppShell title="הגדרות מערכת"><Card><CardContent className="p-8 text-center">אין הרשאה לגשת לדף זה.</CardContent></Card></AppShell>;
   }
   return (

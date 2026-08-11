@@ -1,3 +1,4 @@
+import { isFullViewer } from "@/lib/read-access";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -7,6 +8,11 @@ async function ensureAdmin(context: any) {
     _role: "admin",
   });
   if (!isAdmin) throw new Error("Forbidden");
+}
+
+async function ensureAdminRead(context: any) {
+  try { await ensureAdmin(context); return; } catch { /* fall through */ }
+  if (!(await isFullViewer(context))) throw new Error("Forbidden");
 }
 
 export const triggerChecksEmailNow = createServerFn({ method: "POST" })
@@ -26,7 +32,7 @@ export const triggerChecksEmailNow = createServerFn({ method: "POST" })
 export const listChecksEmailRuns = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await ensureAdmin(context);
+    await ensureAdminRead(context);
     const { data, error } = await context.supabase
       .from("check_email_runs")
       .select("*")
@@ -63,7 +69,7 @@ export const rerunChecksEmail = createServerFn({ method: "POST" })
 export const getChecksEmailSettings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await ensureAdmin(context);
+    await ensureAdminRead(context);
     const { data, error } = await context.supabase
       .from("check_email_settings")
       .select("*")

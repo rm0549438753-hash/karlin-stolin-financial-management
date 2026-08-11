@@ -1,3 +1,4 @@
+import { isFullViewer } from "@/lib/read-access";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -7,6 +8,11 @@ async function assertAdmin(ctx: any) {
     _role: "admin",
   });
   if (!isAdmin) throw new Error("Forbidden");
+}
+
+async function assertAdminRead(ctx: any) {
+  try { await assertAdmin(ctx); return; } catch { /* fall through to full-viewer */ }
+  if (!(await isFullViewer(ctx))) throw new Error("Forbidden");
 }
 
 export const triggerSecurityAuditNow = createServerFn({ method: "POST" })
@@ -40,7 +46,7 @@ export const autofixSecurityConfig = createServerFn({ method: "POST" })
 export const listSecurityAuditRuns = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdmin(context);
+    await assertAdminRead(context);
     const { data, error } = await context.supabase
       .from("security_audit_runs")
       .select("*")
