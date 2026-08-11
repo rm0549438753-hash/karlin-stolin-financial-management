@@ -134,8 +134,39 @@ function renderTable(columns: string[], rows: string[][]): string {
   </table>`;
 }
 
-function renderShell(subtitle: string, intro: string, content: string, outro: string): string {
-  const html = (s: string) => escapeHtml(s).replace(/\n/g, "<br>");
+/**
+ * Rich text for the intro/outro fields. Everything is escaped first, then a
+ * small, safe markup subset is re-enabled: [טקסט](https://…) links, **bold**,
+ * and bare URLs.
+ */
+function richText(s: string): string {
+  let out = escapeHtml(s);
+  out = out.replace(
+    /\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g,
+    (_m, label, url) =>
+      `<a href="${url}" style="color:#0b1e3f;font-weight:600;text-decoration:underline;">${label}</a>`,
+  );
+  out = out.replace(/(^|[\s>])(https?:\/\/[^\s<]+)/g, (_m, pre, url) =>
+    `${pre}<a href="${url}" style="color:#0b1e3f;text-decoration:underline;">${url}</a>`,
+  );
+  out = out.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>");
+  return out.replace(/\n/g, "<br>");
+}
+
+function renderButton(text?: string | null, url?: string | null): string {
+  if (!text || !url || !/^https?:\/\//.test(url)) return "";
+  return `<div dir="rtl" style="text-align:right;margin:20px 0 4px;">
+    <a href="${escapeHtml(url)}" style="display:inline-block;background:#0b1e3f;color:#f5c243;padding:12px 26px;border-radius:10px;font-size:15px;font-weight:700;text-decoration:none;">${escapeHtml(text)}</a>
+  </div>`;
+}
+
+function renderShell(
+  subtitle: string,
+  intro: string,
+  content: string,
+  outro: string,
+  button = "",
+): string {
   return `<!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -146,9 +177,10 @@ function renderShell(subtitle: string, intro: string, content: string, outro: st
       <div style="font-size:14px;opacity:0.9;margin-top:4px;">${escapeHtml(subtitle)}</div>
     </div>
     <div dir="rtl" style="background:#ffffff;padding:24px;border-radius:0 0 12px 12px;border:1px solid #e2e8f0;border-top:none;text-align:right;">
-      <p dir="rtl" style="font-size:15px;margin:0 0 12px;line-height:1.6;">${html(intro)}</p>
+      <p dir="rtl" style="font-size:15px;margin:0 0 12px;line-height:1.6;">${richText(intro)}</p>
       ${content}
-      <p dir="rtl" style="font-size:15px;margin:16px 0 0;line-height:1.6;">${html(outro)}</p>
+      <p dir="rtl" style="font-size:15px;margin:16px 0 0;line-height:1.6;">${richText(outro)}</p>
+      ${button}
       <p dir="rtl" style="font-size:12px;color:#64748b;margin-top:20px;border-top:1px solid #e2e8f0;padding-top:12px;">
         הודעה זו נשלחה אוטומטית ממערכת הניהול הפיננסי של ${escapeHtml(ORG_NAME)}.
       </p>
@@ -157,6 +189,7 @@ function renderShell(subtitle: string, intro: string, content: string, outro: st
 </body>
 </html>`;
 }
+
 
 /* ------------------------------------------------------------------ */
 /* Trigger evaluation                                                  */
