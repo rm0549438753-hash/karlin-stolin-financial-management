@@ -54,9 +54,10 @@ export function SecurityAuditPanel() {
       return await trigger();
     },
     onSuccess: (r: any) => {
+      const total = (r?.vulnerabilities ?? 0) + (r?.configFindings ?? 0);
       if (r?.ok === false) toast.error(`הסריקה נכשלה: ${r.error}`);
-      else if (r?.vulnerabilities > 0) toast.warning(`נמצאו ${r.vulnerabilities} פגיעויות`);
-      else toast.success("לא נמצאו פגיעויות");
+      else if (total > 0) toast.warning(`נמצאו ${total} ממצאי אבטחה`);
+      else toast.success("לא נמצאו ממצאי אבטחה");
       qc.invalidateQueries({ queryKey: ["security_audit_runs"] });
     },
     onError: (e: any) => toast.error(e?.message ?? "שגיאה"),
@@ -72,8 +73,25 @@ export function SecurityAuditPanel() {
     onError: (e: any) => toast.error(e?.message ?? "שגיאה"),
   });
 
+  const autofixMut = useMutation({
+    mutationFn: async () => {
+      setFixing(true);
+      return await autofix();
+    },
+    onSuccess: (r: any) => {
+      const applied: string[] = r?.applied ?? [];
+      if (!applied.length) toast.info("אין ממצאים שניתן לתקן אוטומטית");
+      else toast.success(`תוקנו ${applied.length} ממצאים אוטומטית`);
+      qc.invalidateQueries({ queryKey: ["security_audit_runs"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "שגיאה"),
+    onSettled: () => setFixing(false),
+  });
+
   const latest = runs?.[0] as any | undefined;
   const latestVulns: any[] = latest?.report_json?.vulnerabilities ?? [];
+  const latestConfig: any[] = latest?.report_json?.config_findings ?? [];
+  const autoFixable = latestConfig.filter((f) => f.auto_fixable);
 
   function buildFixPrompt(vulns: any[]) {
     const lines = vulns.map((v: any, i: number) =>
