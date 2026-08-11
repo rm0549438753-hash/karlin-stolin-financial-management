@@ -44,6 +44,11 @@ type Automation = {
   body_outro: string;
   send_when_empty: boolean;
   last_run_at: string | null;
+  button_text: string | null;
+  button_url: string | null;
+  include_association: boolean;
+  include_note: boolean;
+  is_builtin: boolean;
 };
 
 const EMPTY: Partial<Automation> = {
@@ -59,6 +64,10 @@ const EMPTY: Partial<Automation> = {
   body_intro: "שלום,\nלהלן העדכון ליום {{date}}:",
   body_outro: "בברכה,\n{{org_name}}",
   send_when_empty: false,
+  button_text: "",
+  button_url: "",
+  include_association: true,
+  include_note: false,
 };
 
 function triggerLabel(v: string) {
@@ -80,7 +89,8 @@ export function EmailAutomationsPanel() {
         .select("*")
         .order("created_at", { ascending: true });
       if (error) throw error;
-      return (data ?? []) as Automation[];
+      const list = (data ?? []) as Automation[];
+      return [...list].sort((x, y) => Number(!!y.is_builtin) - Number(!!x.is_builtin));
     },
   });
 
@@ -122,6 +132,10 @@ export function EmailAutomationsPanel() {
         body_intro: a.body_intro ?? "",
         body_outro: a.body_outro ?? "",
         send_when_empty: a.send_when_empty ?? false,
+        button_text: a.button_text?.trim() || null,
+        button_url: a.button_url?.trim() || null,
+        include_association: a.include_association ?? true,
+        include_note: a.include_note ?? false,
       };
       const q = a.id
         ? supabase.from("email_automations").update(payload).eq("id", a.id)
@@ -203,6 +217,7 @@ export function EmailAutomationsPanel() {
             כל אוטומציה נבדקת מדי שעה ונשלחת בשעה שהוגדרה. אפשר להשתמש בתגיות{" "}
             <code className="text-xs">{"{{date}}"}</code>, <code className="text-xs">{"{{count}}"}</code>,{" "}
             <code className="text-xs">{"{{total}}"}</code>, <code className="text-xs">{"{{org_name}}"}</code>.
+            בגוף המייל אפשר להוסיף קישור בכתיב <code className="text-xs">{"[טקסט](https://...)"}</code> והדגשה בכתיב <code className="text-xs">**טקסט**</code>.
           </p>
           {isLoading ? (
             <div className="py-8 text-center text-muted-foreground">טוען…</div>
@@ -246,7 +261,12 @@ export function EmailAutomationsPanel() {
                             onCheckedChange={(v) => toggle.mutate({ id: a.id, is_active: v })}
                           />
                         </TableCell>
-                        <TableCell className="font-semibold">{a.name}</TableCell>
+                        <TableCell className="font-semibold">
+                          <div className="flex items-center gap-2">
+                            {a.name}
+                            {a.is_builtin && <Badge variant="secondary">מובנה</Badge>}
+                          </div>
+                        </TableCell>
                         <TableCell className="text-sm">{triggerLabel(a.trigger_type)}</TableCell>
                         <TableCell className="text-sm">
                           {FREQUENCIES.find((f) => f.value === a.frequency)?.label ?? a.frequency}
@@ -270,9 +290,11 @@ export function EmailAutomationsPanel() {
                             <Button variant="ghost" size="icon" className="h-8 w-8" title="שלח עכשיו" disabled={busyId === a.id} onClick={() => doSend(a.id)}>
                               <Send className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" title="מחיקה" onClick={() => remove.mutate(a.id)}>
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            {!a.is_builtin && (
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" title="מחיקה" onClick={() => remove.mutate(a.id)}>
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -425,6 +447,45 @@ export function EmailAutomationsPanel() {
                 <Label>סיום</Label>
                 <Textarea rows={2} value={editing.body_outro ?? ""} onChange={(e) => setEditing({ ...editing, body_outro: e.target.value })} />
               </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label>טקסט כפתור (אופציונלי)</Label>
+                  <Input
+                    value={editing.button_text ?? ""}
+                    onChange={(e) => setEditing({ ...editing, button_text: e.target.value })}
+                    placeholder="למעבר למערכת"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>קישור הכפתור</Label>
+                  <Input
+                    dir="ltr"
+                    value={editing.button_url ?? ""}
+                    onChange={(e) => setEditing({ ...editing, button_url: e.target.value })}
+                    placeholder="https://..."
+                  />
+                </div>
+              </div>
+
+              {editing.trigger_type === "checks_due" && (
+                <div className="flex flex-wrap items-center gap-6">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={editing.include_association ?? true}
+                      onCheckedChange={(v) => setEditing({ ...editing, include_association: v })}
+                    />
+                    <Label>עמודת עמותה</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={editing.include_note ?? false}
+                      onCheckedChange={(v) => setEditing({ ...editing, include_note: v })}
+                    />
+                    <Label>עמודת הערה</Label>
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center gap-2">
                 <Switch
