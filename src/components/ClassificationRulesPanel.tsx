@@ -360,6 +360,14 @@ export function ClassificationRulesPanel() {
         <SuggestionsList nameOf={nameOf} canEdit={canEdit} />
       </TabsContent>
 
+      <RuleApplicationsDialog
+        ruleId={logRule?.id ?? null}
+        ruleName={logRule?.name}
+        nameOf={nameOf}
+        canEdit={canEdit}
+        onClose={() => setLogRule(null)}
+      />
+
       {/* Rule editor */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
