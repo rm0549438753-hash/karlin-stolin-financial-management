@@ -284,7 +284,7 @@ export function EmailAutomationsPanel() {
                             <Button variant="ghost" size="icon" className="h-8 w-8" title="תצוגה מקדימה" disabled={busyId === a.id} onClick={() => doPreview(a.id)}>
                               {busyId === a.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" title="שכפול" onClick={() => setEditing({ ...a, id: undefined, name: `${a.name} - עותק`, is_active: false })}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" title="שכפול" onClick={() => setEditing({ ...a, id: undefined, is_builtin: false, name: `${a.name} - עותק`, is_active: false })}>
                               <Copy className="w-4 h-4" />
                             </Button>
                             <Button variant="ghost" size="icon" className="h-8 w-8" title="שלח עכשיו" disabled={busyId === a.id} onClick={() => doSend(a.id)}>
