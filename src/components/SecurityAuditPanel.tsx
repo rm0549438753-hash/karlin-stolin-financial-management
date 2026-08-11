@@ -130,8 +130,9 @@ export function SecurityAuditPanel() {
           <CardTitle>סריקת אבטחה יומית</CardTitle>
           <p className="text-sm text-muted-foreground mt-1">
             סריקה אוטומטית כל יום בשעה 09:00: פגיעויות בחבילות npm (OSV.dev) + בדיקת תצורת האבטחה של בסיס הנתונים (הגנת שורות, הרשאות, פונקציות רגישות).
+            בכל סריקה מתבצע תיקון אוטומטי לכל ממצא שניתן לתקן, ולאחריו סריקה חוזרת.
           </p>
-        </div>
+
         <div className="flex gap-2">
           {autoFixable.length > 0 && (
             <Button onClick={() => autofixMut.mutate()} disabled={fixing} className="bg-emerald-600 hover:bg-emerald-700">
