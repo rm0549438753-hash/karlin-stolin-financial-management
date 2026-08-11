@@ -5,6 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUserRole } from "@/hooks/use-auth";
 import { BackupPanel } from "@/components/BackupPanel";
 import { SecurityAuditPanel } from "@/components/SecurityAuditPanel";
+import { SecurityMemoryCard, AcceptedFindingsCard } from "@/components/SecurityMemoryPanel";
+
 import { UsersPanel } from "@/routes/_authenticated/settings";
 import { SecurityAccessPanel } from "@/components/SecurityAccessPanel";
 import { EmailAutomationsPanel } from "@/components/EmailAutomationsPanel";
