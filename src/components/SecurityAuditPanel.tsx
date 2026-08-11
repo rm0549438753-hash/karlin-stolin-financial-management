@@ -55,11 +55,14 @@ export function SecurityAuditPanel() {
     },
     onSuccess: (r: any) => {
       const total = (r?.vulnerabilities ?? 0) + (r?.configFindings ?? 0);
+      const fixed = (r?.autofixed ?? []).length;
       if (r?.ok === false) toast.error(`הסריקה נכשלה: ${r.error}`);
+      else if (fixed > 0) toast.success(`תוקנו אוטומטית ${fixed} ממצאים${total > 0 ? ` — נותרו ${total} ממצאים` : " — הסריקה נקייה"}`);
       else if (total > 0) toast.warning(`נמצאו ${total} ממצאי אבטחה`);
       else toast.success("לא נמצאו ממצאי אבטחה");
       qc.invalidateQueries({ queryKey: ["security_audit_runs"] });
     },
+
     onError: (e: any) => toast.error(e?.message ?? "שגיאה"),
     onSettled: () => setRunning(false),
   });
@@ -127,8 +130,11 @@ export function SecurityAuditPanel() {
           <CardTitle>סריקת אבטחה יומית</CardTitle>
           <p className="text-sm text-muted-foreground mt-1">
             סריקה אוטומטית כל יום בשעה 09:00: פגיעויות בחבילות npm (OSV.dev) + בדיקת תצורת האבטחה של בסיס הנתונים (הגנת שורות, הרשאות, פונקציות רגישות).
+            בכל סריקה מתבצע תיקון אוטומטי לכל ממצא שניתן לתקן, ולאחריו סריקה חוזרת.
           </p>
         </div>
+
+
         <div className="flex gap-2">
           {autoFixable.length > 0 && (
             <Button onClick={() => autofixMut.mutate()} disabled={fixing} className="bg-emerald-600 hover:bg-emerald-700">
@@ -215,6 +221,27 @@ export function SecurityAuditPanel() {
                     <TableRow>
                       <TableCell colSpan={9} className="bg-muted/30">
                         {r.error_message && <div className="p-3 text-red-700">{r.error_message}</div>}
+                        {r.report_json?.autofixed?.length ? (
+                          <div className="p-3">
+                            <div className="font-semibold text-sm mb-1 text-emerald-700">תוקן אוטומטית בסריקה זו</div>
+                            <ul className="list-disc pr-5 text-xs space-y-1">
+                              {r.report_json.autofixed.map((a: string, i: number) => (
+                                <li key={i}>{a}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null}
+                        {r.report_json?.accepted_findings?.length ? (
+                          <div className="p-3">
+                            <div className="font-semibold text-sm mb-1">ממצאים מאושרים במכוון</div>
+                            <ul className="list-disc pr-5 text-xs space-y-1 text-muted-foreground">
+                              {r.report_json.accepted_findings.map((f: any) => (
+                                <li key={f.id}>{f.title} — {f.detail}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null}
+
                         {r.report_json?.config_findings?.length ? (
                           <div className="p-3 space-y-2">
                             <div className="font-semibold text-sm">ממצאי תצורת בסיס נתונים</div>

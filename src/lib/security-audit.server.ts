@@ -165,13 +165,41 @@ export async function runSecurityAudit(triggeredBy: "cron" | "manual") {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
   // Database configuration checks (RLS, grants, function privileges)
-  let configFindings: ConfigFinding[] = [];
-  try {
-    const { data: cfg } = await supabaseAdmin.rpc("security_config_findings" as any);
-    configFindings = (cfg as ConfigFinding[]) ?? [];
-  } catch (e) {
-    console.error("[security-audit] config check failed:", e);
+  async function loadConfigFindings(): Promise<ConfigFinding[]> {
+    try {
+      const { data: cfg } = await supabaseAdmin.rpc("security_config_findings" as any);
+      return (cfg as ConfigFinding[]) ?? [];
+    } catch (e) {
+      console.error("[security-audit] config check failed:", e);
+      return [];
+    }
   }
+
+  let configFindings = await loadConfigFindings();
+
+  // Auto-fix: every scan repairs whatever can be repaired safely, then rescans.
+  let autofixed: string[] = [];
+  if (configFindings.some((f) => f.auto_fixable)) {
+    try {
+      const { data: applied } = await supabaseAdmin.rpc("security_config_autofix" as any);
+      autofixed = (applied as string[]) ?? [];
+      if (autofixed.length) configFindings = await loadConfigFindings();
+    } catch (e) {
+      console.error("[security-audit] autofix failed:", e);
+    }
+  }
+
+  // Findings the admin already reviewed and accepted on purpose are listed apart.
+  let acceptedKeys: string[] = [];
+  try {
+    const { data: acc } = await supabaseAdmin.from("security_accepted_findings" as any).select("finding_key");
+    acceptedKeys = ((acc as any[]) ?? []).map((a) => a.finding_key);
+  } catch (e) {
+    console.error("[security-audit] accepted findings load failed:", e);
+  }
+  const acceptedFindings = configFindings.filter((f) => acceptedKeys.includes(f.id));
+  configFindings = configFindings.filter((f) => !acceptedKeys.includes(f.id));
+
   for (const f of configFindings) {
     if (f.severity in counts) counts[f.severity as Severity]++;
   }
@@ -186,7 +214,12 @@ export async function runSecurityAudit(triggeredBy: "cron" | "manual") {
       high_count: counts.high,
       critical_count: counts.critical,
       total_dependencies: entries.length,
-      report_json: { vulnerabilities: vulns, config_findings: configFindings } as any,
+      report_json: {
+        vulnerabilities: vulns,
+        config_findings: configFindings,
+        accepted_findings: acceptedFindings,
+        autofixed,
+      } as any,
       triggered_by: triggeredBy,
     })
     .select("id")
@@ -199,9 +232,11 @@ export async function runSecurityAudit(triggeredBy: "cron" | "manual") {
     totalDependencies: entries.length,
     vulnerabilities: vulns.length,
     configFindings: configFindings.length,
+    autofixed,
     counts,
   };
 }
+
 
 export async function recordAuditFailure(triggeredBy: "cron" | "manual", err: unknown) {
   try {
