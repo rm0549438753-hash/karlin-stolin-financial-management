@@ -226,29 +226,8 @@ export function EmailAutomationsPanel() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {/* Pinned: the checks email keeps its own engine, shown first */}
-                <TableRow className="bg-muted/40">
-                  <TableCell className="px-1">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setOpenId(openId === "checks" ? null : "checks")}>
-                      {openId === "checks" ? <ChevronDown className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-                    </Button>
-                  </TableCell>
-                  <TableCell><Badge variant="secondary">מובנה</Badge></TableCell>
-                  <TableCell className="font-semibold">מייל יומי · צ'קים שיוצאים מחר</TableCell>
-                  <TableCell className="text-sm">צ'קים לפירעון</TableCell>
-                  <TableCell className="text-sm">יומי</TableCell>
-                  <TableCell>—</TableCell>
-                  <TableCell className="text-xs">לפי ההגדרות</TableCell>
-                  <TableCell className="text-xs">—</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">פתח לפרטים</TableCell>
-                </TableRow>
-                {openId === "checks" && (
-                  <TableRow>
-                    <TableCell colSpan={9} className="bg-muted/20 p-4">
-                      <UpcomingChecksEmailPanel />
-                    </TableCell>
-                  </TableRow>
-                )}
+
+
 
                 {items.map((a) => {
                   const aRuns = runsByAutomation.get(a.id) ?? [];
