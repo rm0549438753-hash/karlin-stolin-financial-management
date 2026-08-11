@@ -55,11 +55,14 @@ export function SecurityAuditPanel() {
     },
     onSuccess: (r: any) => {
       const total = (r?.vulnerabilities ?? 0) + (r?.configFindings ?? 0);
+      const fixed = (r?.autofixed ?? []).length;
       if (r?.ok === false) toast.error(`הסריקה נכשלה: ${r.error}`);
+      else if (fixed > 0) toast.success(`תוקנו אוטומטית ${fixed} ממצאים${total > 0 ? ` — נותרו ${total} ממצאים` : " — הסריקה נקייה"}`);
       else if (total > 0) toast.warning(`נמצאו ${total} ממצאי אבטחה`);
       else toast.success("לא נמצאו ממצאי אבטחה");
       qc.invalidateQueries({ queryKey: ["security_audit_runs"] });
     },
+
     onError: (e: any) => toast.error(e?.message ?? "שגיאה"),
     onSettled: () => setRunning(false),
   });
