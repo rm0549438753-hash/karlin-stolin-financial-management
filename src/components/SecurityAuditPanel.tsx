@@ -221,6 +221,27 @@ export function SecurityAuditPanel() {
                     <TableRow>
                       <TableCell colSpan={9} className="bg-muted/30">
                         {r.error_message && <div className="p-3 text-red-700">{r.error_message}</div>}
+                        {r.report_json?.autofixed?.length ? (
+                          <div className="p-3">
+                            <div className="font-semibold text-sm mb-1 text-emerald-700">תוקן אוטומטית בסריקה זו</div>
+                            <ul className="list-disc pr-5 text-xs space-y-1">
+                              {r.report_json.autofixed.map((a: string, i: number) => (
+                                <li key={i}>{a}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null}
+                        {r.report_json?.accepted_findings?.length ? (
+                          <div className="p-3">
+                            <div className="font-semibold text-sm mb-1">ממצאים מאושרים במכוון</div>
+                            <ul className="list-disc pr-5 text-xs space-y-1 text-muted-foreground">
+                              {r.report_json.accepted_findings.map((f: any) => (
+                                <li key={f.id}>{f.title} — {f.detail}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null}
+
                         {r.report_json?.config_findings?.length ? (
                           <div className="p-3 space-y-2">
                             <div className="font-semibold text-sm">ממצאי תצורת בסיס נתונים</div>
