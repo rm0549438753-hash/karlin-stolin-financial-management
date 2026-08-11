@@ -1169,6 +1169,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      security_config_autofix: { Args: never; Returns: Json }
+      security_config_findings: { Args: never; Returns: Json }
       undo_action_history: {
         Args: { p_history_id: string }
         Returns: undefined

@@ -24,6 +24,19 @@ export const triggerSecurityAuditNow = createServerFn({ method: "POST" })
     }
   });
 
+export const autofixSecurityConfig = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin.rpc("security_config_autofix" as any);
+    if (error) throw new Error(error.message);
+    const applied = (data as string[]) ?? [];
+    const { runSecurityAudit } = await import("@/lib/security-audit.server");
+    const rescan = await runSecurityAudit("manual").catch(() => null);
+    return { ok: true, applied, rescan };
+  });
+
 export const listSecurityAuditRuns = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

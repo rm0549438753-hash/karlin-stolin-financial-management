@@ -4,6 +4,15 @@
 
 type Severity = "low" | "moderate" | "high" | "critical";
 
+export type ConfigFinding = {
+  id: string;
+  severity: Severity;
+  auto_fixable: boolean;
+  title: string;
+  detail: string;
+  remediation: string;
+};
+
 type Vuln = {
   package: string;
   version: string;
@@ -154,16 +163,30 @@ export async function runSecurityAudit(triggeredBy: "cron" | "manual") {
   for (const v of vulns) counts[v.severity]++;
 
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  // Database configuration checks (RLS, grants, function privileges)
+  let configFindings: ConfigFinding[] = [];
+  try {
+    const { data: cfg } = await supabaseAdmin.rpc("security_config_findings" as any);
+    configFindings = (cfg as ConfigFinding[]) ?? [];
+  } catch (e) {
+    console.error("[security-audit] config check failed:", e);
+  }
+  for (const f of configFindings) {
+    if (f.severity in counts) counts[f.severity as Severity]++;
+  }
+
+  const totalIssues = vulns.length + configFindings.length;
   const { data, error } = await supabaseAdmin
     .from("security_audit_runs")
     .insert({
-      status: vulns.length > 0 ? "vulnerabilities" : "ok",
+      status: totalIssues > 0 ? "vulnerabilities" : "ok",
       low_count: counts.low,
       moderate_count: counts.moderate,
       high_count: counts.high,
       critical_count: counts.critical,
       total_dependencies: entries.length,
-      report_json: { vulnerabilities: vulns } as any,
+      report_json: { vulnerabilities: vulns, config_findings: configFindings } as any,
       triggered_by: triggeredBy,
     })
     .select("id")
@@ -175,6 +198,7 @@ export async function runSecurityAudit(triggeredBy: "cron" | "manual") {
     runId: data.id,
     totalDependencies: entries.length,
     vulnerabilities: vulns.length,
+    configFindings: configFindings.length,
     counts,
   };
 }

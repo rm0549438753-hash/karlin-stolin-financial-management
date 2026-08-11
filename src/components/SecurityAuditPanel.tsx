@@ -11,6 +11,7 @@ import {
   triggerSecurityAuditNow,
   listSecurityAuditRuns,
   deleteSecurityAuditRun,
+  autofixSecurityConfig,
 } from "@/lib/security-audit.functions";
 
 function fmt(v: string | null) {
@@ -37,8 +38,10 @@ export function SecurityAuditPanel() {
   const list = useServerFn(listSecurityAuditRuns);
   const trigger = useServerFn(triggerSecurityAuditNow);
   const del = useServerFn(deleteSecurityAuditRun);
+  const autofix = useServerFn(autofixSecurityConfig);
   const [openId, setOpenId] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
+  const [fixing, setFixing] = useState(false);
 
   const { data: runs, isLoading } = useQuery({
     queryKey: ["security_audit_runs"],
@@ -51,9 +54,10 @@ export function SecurityAuditPanel() {
       return await trigger();
     },
     onSuccess: (r: any) => {
+      const total = (r?.vulnerabilities ?? 0) + (r?.configFindings ?? 0);
       if (r?.ok === false) toast.error(`הסריקה נכשלה: ${r.error}`);
-      else if (r?.vulnerabilities > 0) toast.warning(`נמצאו ${r.vulnerabilities} פגיעויות`);
-      else toast.success("לא נמצאו פגיעויות");
+      else if (total > 0) toast.warning(`נמצאו ${total} ממצאי אבטחה`);
+      else toast.success("לא נמצאו ממצאי אבטחה");
       qc.invalidateQueries({ queryKey: ["security_audit_runs"] });
     },
     onError: (e: any) => toast.error(e?.message ?? "שגיאה"),
@@ -69,8 +73,25 @@ export function SecurityAuditPanel() {
     onError: (e: any) => toast.error(e?.message ?? "שגיאה"),
   });
 
+  const autofixMut = useMutation({
+    mutationFn: async () => {
+      setFixing(true);
+      return await autofix();
+    },
+    onSuccess: (r: any) => {
+      const applied: string[] = r?.applied ?? [];
+      if (!applied.length) toast.info("אין ממצאים שניתן לתקן אוטומטית");
+      else toast.success(`תוקנו ${applied.length} ממצאים אוטומטית`);
+      qc.invalidateQueries({ queryKey: ["security_audit_runs"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "שגיאה"),
+    onSettled: () => setFixing(false),
+  });
+
   const latest = runs?.[0] as any | undefined;
   const latestVulns: any[] = latest?.report_json?.vulnerabilities ?? [];
+  const latestConfig: any[] = latest?.report_json?.config_findings ?? [];
+  const autoFixable = latestConfig.filter((f) => f.auto_fixable);
 
   function buildFixPrompt(vulns: any[]) {
     const lines = vulns.map((v: any, i: number) =>
@@ -105,14 +126,20 @@ export function SecurityAuditPanel() {
         <div>
           <CardTitle>סריקת אבטחה יומית</CardTitle>
           <p className="text-sm text-muted-foreground mt-1">
-            סריקה אוטומטית של תלויות npm כל יום בשעה 09:00. בודקת פגיעויות ידועות מול מאגר OSV.dev.
+            סריקה אוטומטית כל יום בשעה 09:00: פגיעויות בחבילות npm (OSV.dev) + בדיקת תצורת האבטחה של בסיס הנתונים (הגנת שורות, הרשאות, פונקציות רגישות).
           </p>
         </div>
         <div className="flex gap-2">
+          {autoFixable.length > 0 && (
+            <Button onClick={() => autofixMut.mutate()} disabled={fixing} className="bg-emerald-600 hover:bg-emerald-700">
+              {fixing ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Wrench className="w-4 h-4 ml-2" />}
+              תקן אוטומטית ({autoFixable.length})
+            </Button>
+          )}
           {latestVulns.length > 0 && (
             <Button variant="default" onClick={copyFixPrompt} className="bg-orange-600 hover:bg-orange-700">
-              <Wrench className="w-4 h-4 ml-2" />
-              תקן דרך Lovable ({latestVulns.length})
+              <Copy className="w-4 h-4 ml-2" />
+              תקן חבילות דרך Lovable ({latestVulns.length})
             </Button>
           )}
           <Button onClick={() => runNow.mutate()} disabled={running} variant="outline">
@@ -187,9 +214,42 @@ export function SecurityAuditPanel() {
                   {openId === r.id && (
                     <TableRow>
                       <TableCell colSpan={9} className="bg-muted/30">
-                        {r.error_message ? (
-                          <div className="p-3 text-red-700">{r.error_message}</div>
-                        ) : r.report_json?.vulnerabilities?.length ? (
+                        {r.error_message && <div className="p-3 text-red-700">{r.error_message}</div>}
+                        {r.report_json?.config_findings?.length ? (
+                          <div className="p-3 space-y-2">
+                            <div className="font-semibold text-sm">ממצאי תצורת בסיס נתונים</div>
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>ממצא</TableHead>
+                                  <TableHead>חומרה</TableHead>
+                                  <TableHead>פירוט</TableHead>
+                                  <TableHead>תיקון</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {r.report_json.config_findings.map((f: any) => (
+                                  <TableRow key={f.id}>
+                                    <TableCell className="text-xs">{f.title}</TableCell>
+                                    <TableCell>
+                                      <Badge className={SEV_COLORS[f.severity] || ""}>
+                                        {SEV_LABELS[f.severity] || f.severity}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-xs max-w-md">{f.detail}</TableCell>
+                                    <TableCell className="text-xs">
+                                      {f.remediation}
+                                      {f.auto_fixable && (
+                                        <Badge className="bg-emerald-600 text-white mr-2">תיקון אוטומטי</Badge>
+                                      )}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        ) : null}
+                        {r.report_json?.vulnerabilities?.length ? (
                           <div className="p-3 space-y-2">
                             <div className="text-sm text-muted-foreground">
                               נסרקו {r.total_dependencies} חבילות
@@ -229,9 +289,12 @@ export function SecurityAuditPanel() {
                               </TableBody>
                             </Table>
                           </div>
-                        ) : (
-                          <div className="p-3 text-green-700">לא נמצאו פגיעויות בסריקה זו ✓</div>
-                        )}
+                        ) : null}
+                        {!r.error_message &&
+                          !r.report_json?.vulnerabilities?.length &&
+                          !r.report_json?.config_findings?.length && (
+                            <div className="p-3 text-green-700">לא נמצאו ממצאי אבטחה בסריקה זו ✓</div>
+                          )}
                       </TableCell>
                     </TableRow>
                   )}
