@@ -197,16 +197,17 @@ function ActionHistoryPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading && <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">טוען…</TableCell></TableRow>}
-                {!isLoading && filtered.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-12 text-muted-foreground">אין פעולות להצגה</TableCell></TableRow>}
+                {isLoading && <TableRow><TableCell colSpan={7} className="text-center py-10 text-muted-foreground">טוען…</TableCell></TableRow>}
+                {!isLoading && filtered.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground">אין פעולות להצגה</TableCell></TableRow>}
                 {filtered.map((row, idx) => (
                   <TableRow key={row.id} className={(idx % 2 ? "bg-muted/20 " : "") + "border-b border-border hover:bg-primary/5"}>
                     <TableCell className="whitespace-nowrap tabular-nums border-l border-border/60 px-2 py-1.5 text-xs align-middle">{new Date(row.created_at).toLocaleString("he-IL")}</TableCell>
                     <TableCell className="whitespace-nowrap border-l border-border/60 px-2 py-1.5 text-xs font-bold align-middle">{ACTION_LABELS[row.action]}</TableCell>
                     <TableCell className="whitespace-nowrap border-l border-border/60 px-2 py-1.5 text-xs align-middle">{TABLE_LABELS[row.table_name] ?? row.table_name}</TableCell>
                     <TableCell className="border-l border-border/60 px-2 py-1.5 text-xs align-middle max-w-[420px] truncate">{describeRecord(row)}</TableCell>
+                    <TableCell className="whitespace-nowrap border-l border-border/60 px-2 py-1.5 text-xs font-bold align-middle">{actorLabel(row.actor_id)}</TableCell>
                     <TableCell className="whitespace-nowrap border-l border-border/60 px-2 py-1.5 text-xs align-middle">
-                      {row.undone_at ? <span className="text-muted-foreground">בוטל</span> : <span className="text-income font-bold">פעיל</span>}
+                      {row.undone_at ? <span className="text-muted-foreground">בוטל {row.undone_by ? `· ${actorLabel(row.undone_by)}` : ""}</span> : <span className="text-income font-bold">פעיל</span>}
                     </TableCell>
                     <TableCell className="text-center px-2 py-1.5 align-middle">
                       <Button size="sm" variant="outline" disabled={!!row.undone_at} onClick={() => setPendingUndo(row)}>
