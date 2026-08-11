@@ -253,9 +253,20 @@ export function ClassificationRulesPanel() {
                   כלל חדש
                 </Button>
               </div>
-            )}
           </CardHeader>
           <CardContent>
+            {canEdit && (
+              <div className="mb-4 flex flex-wrap items-center gap-6 rounded-md border bg-muted/40 p-3">
+                <div className="flex items-center gap-2">
+                  <Switch id="cls-all" checked={allTx} onCheckedChange={setAllTx} />
+                  <Label htmlFor="cls-all" className="text-sm">החל על כל התנועות (לא רק לא-מסווגות)</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch id="cls-ovr" checked={overwrite} onCheckedChange={setOverwrite} />
+                  <Label htmlFor="cls-ovr" className="text-sm">דרוס ערך קיים</Label>
+                </div>
+              </div>
+            )}
             {isLoading ? (
               <div className="p-6 text-center text-muted-foreground">טוען…</div>
             ) : rules.length === 0 ? (
