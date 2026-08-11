@@ -126,14 +126,20 @@ export function SecurityAuditPanel() {
         <div>
           <CardTitle>סריקת אבטחה יומית</CardTitle>
           <p className="text-sm text-muted-foreground mt-1">
-            סריקה אוטומטית של תלויות npm כל יום בשעה 09:00. בודקת פגיעויות ידועות מול מאגר OSV.dev.
+            סריקה אוטומטית כל יום בשעה 09:00: פגיעויות בחבילות npm (OSV.dev) + בדיקת תצורת האבטחה של בסיס הנתונים (הגנת שורות, הרשאות, פונקציות רגישות).
           </p>
         </div>
         <div className="flex gap-2">
+          {autoFixable.length > 0 && (
+            <Button onClick={() => autofixMut.mutate()} disabled={fixing} className="bg-emerald-600 hover:bg-emerald-700">
+              {fixing ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Wrench className="w-4 h-4 ml-2" />}
+              תקן אוטומטית ({autoFixable.length})
+            </Button>
+          )}
           {latestVulns.length > 0 && (
             <Button variant="default" onClick={copyFixPrompt} className="bg-orange-600 hover:bg-orange-700">
-              <Wrench className="w-4 h-4 ml-2" />
-              תקן דרך Lovable ({latestVulns.length})
+              <Copy className="w-4 h-4 ml-2" />
+              תקן חבילות דרך Lovable ({latestVulns.length})
             </Button>
           )}
           <Button onClick={() => runNow.mutate()} disabled={running} variant="outline">
