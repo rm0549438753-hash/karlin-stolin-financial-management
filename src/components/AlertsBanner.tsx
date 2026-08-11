@@ -1,13 +1,23 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { AlertCircle, CalendarClock, CalendarX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccounts } from "@/hooks/use-lookups";
+import { useTransactionsRealtime } from "@/hooks/use-tx-realtime";
 import { formatCurrency, formatDate } from "@/lib/format";
 
 export function AlertsBanner() {
   const { data: accounts = [] } = useAccounts();
   const checksAccount = accounts.find((a: any) => a.schema_type === "checks");
+  const qc = useQueryClient();
+
+  // Keep the banner counts in step with the transaction screens: any insert,
+  // edit, import or delete refreshes them (debounced for bulk operations).
+  useTransactionsRealtime("alerts-banner-tx", () => {
+    qc.invalidateQueries({ queryKey: ["alerts-upcoming-checks"] });
+    qc.invalidateQueries({ queryKey: ["alerts-uncategorized-count"] });
+    qc.invalidateQueries({ queryKey: ["alerts-no-date-count"] });
+  });
 
   const CACHE = { staleTime: 5 * 60_000, gcTime: 30 * 60_000, refetchOnWindowFocus: false } as const;
 

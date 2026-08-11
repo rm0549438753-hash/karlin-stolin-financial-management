@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, RotateCcw, Search, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
@@ -85,6 +85,27 @@ function ActionHistoryPage() {
 
   const rows = useMemo(() => (data?.pages ?? []).flat(), [data]);
 
+  const actorIds = useMemo(() => {
+    const ids = new Set<string>();
+    rows.forEach((r) => { if (r.actor_id) ids.add(r.actor_id); if (r.undone_by) ids.add(r.undone_by); });
+    return Array.from(ids).sort();
+  }, [rows]);
+
+  const { data: actorNames } = useQuery({
+    queryKey: ["actor-names", actorIds],
+    enabled: actorIds.length > 0,
+    staleTime: 10 * 60_000,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc("actor_names", { _ids: actorIds });
+      if (error) throw error;
+      const map = new Map<string, string>();
+      (data ?? []).forEach((p: any) => map.set(p.id, p.full_name ?? ""));
+      return map;
+    },
+  });
+
+  const actorLabel = (id: string | null) => (id ? (actorNames?.get(id) || "משתמש לא ידוע") : "מערכת");
+
   const { data: accounts = [] } = useAccounts();
   const { data: funds = [] } = useFunds();
   const { data: expenseTypes = [] } = useExpenseTypes();
@@ -108,8 +129,9 @@ function ActionHistoryPage() {
       describeRecord(row),
       row.created_at,
       row.record_id,
+      row.actor_id ? actorNames?.get(row.actor_id) : "",
     ].some((v) => String(v ?? "").toLowerCase().includes(q)));
-  }, [rows, search]);
+  }, [rows, search, actorNames]);
 
   const undoMutation = useMutation({
     mutationFn: async (row: ActionHistoryRow) => {
@@ -170,21 +192,23 @@ function ActionHistoryPage() {
                   <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border px-2 py-2 whitespace-nowrap">פעולה</TableHead>
                   <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border px-2 py-2 whitespace-nowrap">אזור</TableHead>
                   <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border px-2 py-2 whitespace-nowrap">פרטים</TableHead>
+                  <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border px-2 py-2 whitespace-nowrap">מבצע</TableHead>
                   <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border px-2 py-2 whitespace-nowrap">סטטוס</TableHead>
                   <TableHead className="text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2 py-2 whitespace-nowrap">פעולות</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading && <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">טוען…</TableCell></TableRow>}
-                {!isLoading && filtered.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-12 text-muted-foreground">אין פעולות להצגה</TableCell></TableRow>}
+                {isLoading && <TableRow><TableCell colSpan={7} className="text-center py-10 text-muted-foreground">טוען…</TableCell></TableRow>}
+                {!isLoading && filtered.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground">אין פעולות להצגה</TableCell></TableRow>}
                 {filtered.map((row, idx) => (
                   <TableRow key={row.id} className={(idx % 2 ? "bg-muted/20 " : "") + "border-b border-border hover:bg-primary/5"}>
                     <TableCell className="whitespace-nowrap tabular-nums border-l border-border/60 px-2 py-1.5 text-xs align-middle">{new Date(row.created_at).toLocaleString("he-IL")}</TableCell>
                     <TableCell className="whitespace-nowrap border-l border-border/60 px-2 py-1.5 text-xs font-bold align-middle">{ACTION_LABELS[row.action]}</TableCell>
                     <TableCell className="whitespace-nowrap border-l border-border/60 px-2 py-1.5 text-xs align-middle">{TABLE_LABELS[row.table_name] ?? row.table_name}</TableCell>
                     <TableCell className="border-l border-border/60 px-2 py-1.5 text-xs align-middle max-w-[420px] truncate">{describeRecord(row)}</TableCell>
+                    <TableCell className="whitespace-nowrap border-l border-border/60 px-2 py-1.5 text-xs font-bold align-middle">{actorLabel(row.actor_id)}</TableCell>
                     <TableCell className="whitespace-nowrap border-l border-border/60 px-2 py-1.5 text-xs align-middle">
-                      {row.undone_at ? <span className="text-muted-foreground">בוטל</span> : <span className="text-income font-bold">פעיל</span>}
+                      {row.undone_at ? <span className="text-muted-foreground">בוטל {row.undone_by ? `· ${actorLabel(row.undone_by)}` : ""}</span> : <span className="text-income font-bold">פעיל</span>}
                     </TableCell>
                     <TableCell className="text-center px-2 py-1.5 align-middle">
                       <Button size="sm" variant="outline" disabled={!!row.undone_at} onClick={() => setPendingUndo(row)}>
@@ -228,6 +252,7 @@ function ActionHistoryPage() {
                 <Detail label="אזור" value={TABLE_LABELS[pendingUndo.table_name] ?? pendingUndo.table_name} />
                 <Detail label="זמן" value={new Date(pendingUndo.created_at).toLocaleString("he-IL")} />
                 <Detail label="פרטים" value={describeRecord(pendingUndo)} />
+                <Detail label="מבצע" value={actorLabel(pendingUndo.actor_id)} />
               </div>
 
               <div className="rounded-xl border overflow-hidden">
