@@ -214,9 +214,42 @@ export function SecurityAuditPanel() {
                   {openId === r.id && (
                     <TableRow>
                       <TableCell colSpan={9} className="bg-muted/30">
-                        {r.error_message ? (
-                          <div className="p-3 text-red-700">{r.error_message}</div>
-                        ) : r.report_json?.vulnerabilities?.length ? (
+                        {r.error_message && <div className="p-3 text-red-700">{r.error_message}</div>}
+                        {r.report_json?.config_findings?.length ? (
+                          <div className="p-3 space-y-2">
+                            <div className="font-semibold text-sm">ממצאי תצורת בסיס נתונים</div>
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>ממצא</TableHead>
+                                  <TableHead>חומרה</TableHead>
+                                  <TableHead>פירוט</TableHead>
+                                  <TableHead>תיקון</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {r.report_json.config_findings.map((f: any) => (
+                                  <TableRow key={f.id}>
+                                    <TableCell className="text-xs">{f.title}</TableCell>
+                                    <TableCell>
+                                      <Badge className={SEV_COLORS[f.severity] || ""}>
+                                        {SEV_LABELS[f.severity] || f.severity}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-xs max-w-md">{f.detail}</TableCell>
+                                    <TableCell className="text-xs">
+                                      {f.remediation}
+                                      {f.auto_fixable && (
+                                        <Badge className="bg-emerald-600 text-white mr-2">תיקון אוטומטי</Badge>
+                                      )}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        ) : null}
+                        {r.report_json?.vulnerabilities?.length ? (
                           <div className="p-3 space-y-2">
                             <div className="text-sm text-muted-foreground">
                               נסרקו {r.total_dependencies} חבילות
@@ -256,9 +289,12 @@ export function SecurityAuditPanel() {
                               </TableBody>
                             </Table>
                           </div>
-                        ) : (
-                          <div className="p-3 text-green-700">לא נמצאו פגיעויות בסריקה זו ✓</div>
-                        )}
+                        ) : null}
+                        {!r.error_message &&
+                          !r.report_json?.vulnerabilities?.length &&
+                          !r.report_json?.config_findings?.length && (
+                            <div className="p-3 text-green-700">לא נמצאו ממצאי אבטחה בסריקה זו ✓</div>
+                          )}
                       </TableCell>
                     </TableRow>
                   )}
