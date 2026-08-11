@@ -14,7 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, Pencil, Play, Eye, Check, X } from "lucide-react";
+import { Plus, Trash2, Pencil, Play, Eye, Check, X, History } from "lucide-react";
+import { RuleApplicationsDialog } from "@/components/RuleApplicationsDialog";
 import { toast } from "sonner";
 import { useAccounts, useCategories, useSubcategories, useExpenseTypes, useFunds } from "@/hooks/use-lookups";
 import { useUserRole } from "@/hooks/use-auth";
