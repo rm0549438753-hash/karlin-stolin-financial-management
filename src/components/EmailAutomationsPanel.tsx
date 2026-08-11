@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, Mail, Plus, Send, Eye, Trash2, Pencil, Copy, ChevronDown, ChevronLeft } from "lucide-react";
-import { UpcomingChecksEmailPanel } from "@/components/UpcomingChecksEmailPanel";
+
 import { toast } from "sonner";
 
 const TRIGGERS = [
