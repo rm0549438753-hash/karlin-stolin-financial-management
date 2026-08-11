@@ -61,8 +61,10 @@ function AdminSettingsPage() {
         <TabsContent value="users"><UsersPanel /></TabsContent>
 
         <TabsContent value="backup"><BackupPanel /></TabsContent>
-        <TabsContent value="checks_email"><UpcomingChecksEmailPanel /></TabsContent>
-        <TabsContent value="automations"><EmailAutomationsPanel /></TabsContent>
+        <TabsContent value="automations" className="space-y-4">
+          <EmailAutomationsPanel />
+          <UpcomingChecksEmailPanel />
+        </TabsContent>
 
         <TabsContent value="security_audit"><SecurityAuditPanel /></TabsContent>
         <TabsContent value="access"><SecurityAccessPanel /></TabsContent>
