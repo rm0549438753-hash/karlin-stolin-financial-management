@@ -207,103 +207,154 @@ export function EmailAutomationsPanel() {
             <div className="py-8 text-center text-muted-foreground">טוען…</div>
           ) : items.length === 0 ? (
             <div className="py-8 text-center text-muted-foreground">עדיין לא הוגדרו אוטומציות.</div>
-          ) : (
-            <div className="border rounded-lg overflow-x-auto">
-              <Table>
-                <TableHeader>
+          ) : null}
+
+          <div className="border rounded-lg overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-8" />
+                  <TableHead className="text-right">פעיל</TableHead>
+                  <TableHead className="text-right">שם</TableHead>
+                  <TableHead className="text-right">סוג</TableHead>
+                  <TableHead className="text-right">תדירות</TableHead>
+                  <TableHead className="text-right">שעה</TableHead>
+                  <TableHead className="text-right">נמענים</TableHead>
+                  <TableHead className="text-right">הרצה אחרונה</TableHead>
+                  <TableHead className="text-right">פעולות</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {/* Pinned: the checks email keeps its own engine, shown first */}
+                <TableRow className="bg-muted/40">
+                  <TableCell className="px-1">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setOpenId(openId === "checks" ? null : "checks")}>
+                      {openId === "checks" ? <ChevronDown className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                    </Button>
+                  </TableCell>
+                  <TableCell><Badge variant="secondary">מובנה</Badge></TableCell>
+                  <TableCell className="font-semibold">מייל יומי · צ'קים שיוצאים מחר</TableCell>
+                  <TableCell className="text-sm">צ'קים לפירעון</TableCell>
+                  <TableCell className="text-sm">יומי</TableCell>
+                  <TableCell>—</TableCell>
+                  <TableCell className="text-xs">לפי ההגדרות</TableCell>
+                  <TableCell className="text-xs">—</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">פתח לפרטים</TableCell>
+                </TableRow>
+                {openId === "checks" && (
                   <TableRow>
-                    <TableHead className="text-right">פעיל</TableHead>
-                    <TableHead className="text-right">שם</TableHead>
-                    <TableHead className="text-right">סוג</TableHead>
-                    <TableHead className="text-right">תדירות</TableHead>
-                    <TableHead className="text-right">שעה</TableHead>
-                    <TableHead className="text-right">נמענים</TableHead>
-                    <TableHead className="text-right">הרצה אחרונה</TableHead>
-                    <TableHead className="text-right">פעולות</TableHead>
+                    <TableCell colSpan={9} className="bg-muted/20 p-4">
+                      <UpcomingChecksEmailPanel />
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map((a) => (
-                    <TableRow key={a.id}>
-                      <TableCell>
-                        <Switch
-                          checked={a.is_active}
-                          onCheckedChange={(v) => toggle.mutate({ id: a.id, is_active: v })}
-                        />
-                      </TableCell>
-                      <TableCell className="font-semibold">{a.name}</TableCell>
-                      <TableCell className="text-sm">{triggerLabel(a.trigger_type)}</TableCell>
-                      <TableCell className="text-sm">
-                        {FREQUENCIES.find((f) => f.value === a.frequency)?.label ?? a.frequency}
-                      </TableCell>
-                      <TableCell>{String(a.send_hour).padStart(2, "0")}:00</TableCell>
-                      <TableCell className="text-xs max-w-48 truncate">{(a.recipients ?? []).join(", ") || "—"}</TableCell>
-                      <TableCell className="text-xs">
-                        {a.last_run_at ? new Date(a.last_run_at).toLocaleString("he-IL") : "—"}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" title="עריכה" onClick={() => setEditing(a)}>
-                            <Pencil className="w-4 h-4" />
+                )}
+
+                {items.map((a) => {
+                  const aRuns = runsByAutomation.get(a.id) ?? [];
+                  const isOpen = openId === a.id;
+                  return (
+                    <Fragment key={a.id}>
+                      <TableRow>
+                        <TableCell className="px-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setOpenId(isOpen ? null : a.id)}>
+                            {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" title="תצוגה מקדימה" disabled={busyId === a.id} onClick={() => doPreview(a.id)}>
-                            {busyId === a.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" title="שכפול" onClick={() => setEditing({ ...a, id: undefined, name: `${a.name} - עותק`, is_active: false })}>
-                            <Copy className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" title="שלח עכשיו" disabled={busyId === a.id} onClick={() => doSend(a.id)}>
-                            <Send className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" title="מחיקה" onClick={() => remove.mutate(a.id)}>
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                        </TableCell>
+                        <TableCell>
+                          <Switch
+                            checked={a.is_active}
+                            onCheckedChange={(v) => toggle.mutate({ id: a.id, is_active: v })}
+                          />
+                        </TableCell>
+                        <TableCell className="font-semibold">{a.name}</TableCell>
+                        <TableCell className="text-sm">{triggerLabel(a.trigger_type)}</TableCell>
+                        <TableCell className="text-sm">
+                          {FREQUENCIES.find((f) => f.value === a.frequency)?.label ?? a.frequency}
+                        </TableCell>
+                        <TableCell>{String(a.send_hour).padStart(2, "0")}:00</TableCell>
+                        <TableCell className="text-xs max-w-48 truncate">{(a.recipients ?? []).join(", ") || "—"}</TableCell>
+                        <TableCell className="text-xs">
+                          {a.last_run_at ? new Date(a.last_run_at).toLocaleString("he-IL") : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" title="עריכה" onClick={() => setEditing(a)}>
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" title="תצוגה מקדימה" disabled={busyId === a.id} onClick={() => doPreview(a.id)}>
+                              {busyId === a.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" title="שכפול" onClick={() => setEditing({ ...a, id: undefined, name: `${a.name} - עותק`, is_active: false })}>
+                              <Copy className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" title="שלח עכשיו" disabled={busyId === a.id} onClick={() => doSend(a.id)}>
+                              <Send className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" title="מחיקה" onClick={() => remove.mutate(a.id)}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                      {isOpen && (
+                        <TableRow>
+                          <TableCell colSpan={9} className="bg-muted/20 p-4">
+                            <div className="space-y-3">
+                              <div className="grid gap-2 sm:grid-cols-2 text-sm">
+                                <div><b>נושא:</b> {a.subject_template || "—"}</div>
+                                <div><b>נמענים:</b> {(a.recipients ?? []).join(", ") || "—"}</div>
+                                <div><b>שליחה גם כשאין נתונים:</b> {a.send_when_empty ? "כן" : "לא"}</div>
+                                <div>
+                                  <b>{a.trigger_type === "checks_due" ? "ימים קדימה:" : "סף:"}</b>{" "}
+                                  {a.trigger_type === "checks_due" ? (a.days_ahead ?? "—") : (a.threshold_value ?? "—")}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-sm font-semibold mb-2">יומן שליחות</div>
+                                {aRuns.length === 0 ? (
+                                  <div className="text-sm text-muted-foreground">אין עדיין שליחות לאוטומציה זו.</div>
+                                ) : (
+                                  <div className="border rounded-lg overflow-x-auto bg-card">
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow>
+                                          <TableHead className="text-right">מועד</TableHead>
+                                          <TableHead className="text-right">סטטוס</TableHead>
+                                          <TableHead className="text-right">נמענים</TableHead>
+                                          <TableHead className="text-right">פירוט</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {aRuns.map((r: any) => (
+                                          <TableRow key={r.id}>
+                                            <TableCell className="text-xs">{new Date(r.ran_at).toLocaleString("he-IL")}</TableCell>
+                                            <TableCell>
+                                              <Badge variant={r.status === "sent" ? "default" : r.status === "failed" ? "destructive" : "secondary"}>
+                                                {r.status === "sent" ? "נשלח" : r.status === "failed" ? "נכשל" : "דולג"}
+                                              </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-xs">{(r.recipients ?? []).join(", ") || "—"}</TableCell>
+                                            <TableCell className="text-xs">{r.error_message ?? r.summary ?? "—"}</TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </Fragment>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">היסטוריית שליחות</CardTitle></CardHeader>
-        <CardContent>
-          {runs.length === 0 ? (
-            <div className="text-sm text-muted-foreground">אין עדיין שליחות.</div>
-          ) : (
-            <div className="border rounded-lg overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-right">מועד</TableHead>
-                    <TableHead className="text-right">סטטוס</TableHead>
-                    <TableHead className="text-right">נמענים</TableHead>
-                    <TableHead className="text-right">פירוט</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {runs.map((r: any) => (
-                    <TableRow key={r.id}>
-                      <TableCell className="text-xs">{new Date(r.ran_at).toLocaleString("he-IL")}</TableCell>
-                      <TableCell>
-                        <Badge variant={r.status === "sent" ? "default" : r.status === "failed" ? "destructive" : "secondary"}>
-                          {r.status === "sent" ? "נשלח" : r.status === "failed" ? "נכשל" : "דולג"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-xs">{(r.recipients ?? []).join(", ") || "—"}</TableCell>
-                      <TableCell className="text-xs">{r.error_message ?? r.summary ?? "—"}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Editor */}
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
