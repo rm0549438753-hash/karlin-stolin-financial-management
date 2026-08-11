@@ -69,6 +69,7 @@ export function EmailAutomationsPanel() {
   const qc = useQueryClient();
   const [editing, setEditing] = useState<Partial<Automation> | null>(null);
   const [preview, setPreview] = useState<{ subject: string; html: string; recipients: string[] } | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
 
   const { data: items = [], isLoading } = useQuery({
