@@ -174,15 +174,19 @@ export function ClassificationRulesPanel() {
   });
 
   const previewMut = useMutation({
-    mutationFn: async (ruleId?: string) => runPreview({ data: { ruleId, onlyUnclassified: true } }),
+    mutationFn: async (ruleId?: string) =>
+      runPreview({ data: { ruleId, onlyUnclassified: !allTx, overwrite } }),
     onSuccess: (res) => setPreview(res),
     onError: (e: any) => toast.error(e?.message ?? "התצוגה המקדימה נכשלה"),
   });
 
   const applyMut = useMutation({
-    mutationFn: async (ruleId?: string) => runApply({ data: { ruleId, onlyUnclassified: true } }),
+    mutationFn: async (ruleId?: string) =>
+      runApply({ data: { ruleId, onlyUnclassified: !allTx, overwrite } }),
     onSuccess: (res: any) => {
-      toast.success(`סווגו ${res.applied} תנועות, נוצרו ${res.suggested} הצעות לאישור`);
+      toast.success(
+        `סווגו ${res.applied} תנועות, נוצרו ${res.suggested} הצעות, ${res.skipped ?? 0} דולגו (השדה כבר מלא)`,
+      );
       setPreview(null);
       qc.invalidateQueries({ queryKey: ["classification-rules"] });
       qc.invalidateQueries({ queryKey: ["tx-all"] });
