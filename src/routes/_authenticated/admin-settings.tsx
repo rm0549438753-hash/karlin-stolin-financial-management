@@ -4,7 +4,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUserRole } from "@/hooks/use-auth";
 import { BackupPanel } from "@/components/BackupPanel";
-import { UpcomingChecksEmailPanel } from "@/components/UpcomingChecksEmailPanel";
 import { SecurityAuditPanel } from "@/components/SecurityAuditPanel";
 import { UsersPanel } from "@/routes/_authenticated/settings";
 import { SecurityAccessPanel } from "@/components/SecurityAccessPanel";
