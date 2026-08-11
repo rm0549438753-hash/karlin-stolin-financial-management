@@ -85,6 +85,27 @@ function ActionHistoryPage() {
 
   const rows = useMemo(() => (data?.pages ?? []).flat(), [data]);
 
+  const actorIds = useMemo(() => {
+    const ids = new Set<string>();
+    rows.forEach((r) => { if (r.actor_id) ids.add(r.actor_id); if (r.undone_by) ids.add(r.undone_by); });
+    return Array.from(ids).sort();
+  }, [rows]);
+
+  const { data: actorNames } = useQuery({
+    queryKey: ["actor-names", actorIds],
+    enabled: actorIds.length > 0,
+    staleTime: 10 * 60_000,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc("actor_names", { _ids: actorIds });
+      if (error) throw error;
+      const map = new Map<string, string>();
+      (data ?? []).forEach((p: any) => map.set(p.id, p.full_name ?? ""));
+      return map;
+    },
+  });
+
+  const actorLabel = (id: string | null) => (id ? (actorNames?.get(id) || "משתמש לא ידוע") : "מערכת");
+
   const { data: accounts = [] } = useAccounts();
   const { data: funds = [] } = useFunds();
   const { data: expenseTypes = [] } = useExpenseTypes();
