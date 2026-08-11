@@ -11,6 +11,7 @@ import {
   triggerSecurityAuditNow,
   listSecurityAuditRuns,
   deleteSecurityAuditRun,
+  autofixSecurityConfig,
 } from "@/lib/security-audit.functions";
 
 function fmt(v: string | null) {
