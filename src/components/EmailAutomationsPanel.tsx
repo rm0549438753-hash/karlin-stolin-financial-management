@@ -89,11 +89,21 @@ export function EmailAutomationsPanel() {
         .from("email_automation_runs")
         .select("*")
         .order("ran_at", { ascending: false })
-        .limit(20);
+        .limit(300);
       if (error) throw error;
       return data ?? [];
     },
   });
+
+  const runsByAutomation = useMemo(() => {
+    const m = new Map<string, any[]>();
+    for (const r of runs as any[]) {
+      const k = r.automation_id ?? "—";
+      if (!m.has(k)) m.set(k, []);
+      m.get(k)!.push(r);
+    }
+    return m;
+  }, [runs]);
 
   const save = useMutation({
     mutationFn: async (a: Partial<Automation>) => {
