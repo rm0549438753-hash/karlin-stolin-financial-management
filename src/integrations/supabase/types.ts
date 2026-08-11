@@ -878,6 +878,39 @@ export type Database = {
         }
         Relationships: []
       }
+      security_accepted_findings: {
+        Row: {
+          accepted_by: string | null
+          created_at: string
+          finding_key: string
+          id: string
+          reason: string
+          severity: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_by?: string | null
+          created_at?: string
+          finding_key: string
+          id?: string
+          reason?: string
+          severity?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_by?: string | null
+          created_at?: string
+          finding_key?: string
+          id?: string
+          reason?: string
+          severity?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       security_audit_runs: {
         Row: {
           critical_count: number
@@ -917,6 +950,30 @@ export type Database = {
           status?: string
           total_dependencies?: number
           triggered_by?: string
+        }
+        Relationships: []
+      }
+      security_memory: {
+        Row: {
+          content: string
+          id: string
+          singleton: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          content?: string
+          id?: string
+          singleton?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          content?: string
+          id?: string
+          singleton?: boolean
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
