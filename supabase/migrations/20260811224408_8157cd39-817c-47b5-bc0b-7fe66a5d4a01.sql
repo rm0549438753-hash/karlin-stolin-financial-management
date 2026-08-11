@@ -1,0 +1,2 @@
+insert into public.user_roles (user_id, role) values ('af56cd18-1a70-47c1-9e76-a410ef7534c7','viewer') on conflict (user_id, role) do nothing;
+insert into public.profiles (id, email, full_name, blocked) values ('af56cd18-1a70-47c1-9e76-a410ef7534c7','guest.demo@karlin.local','אורח - צפייה בלבד', false) on conflict (id) do update set full_name = excluded.full_name, blocked = false;
