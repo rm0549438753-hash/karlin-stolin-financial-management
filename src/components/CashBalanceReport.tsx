@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
+import { useTransactionsRealtime } from "@/hooks/use-tx-realtime";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +13,6 @@ import { Wallet, TrendingUp, TrendingDown, Printer } from "lucide-react";
 import { ExportMenu } from "@/components/ExportMenu";
 import { exportRowsAsPdf, objectsToTable } from "@/lib/export-pdf";
 import {
-import { useTransactionsRealtime } from "@/hooks/use-tx-realtime";
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, LabelList,
   ComposedChart, Line,
 } from "recharts";

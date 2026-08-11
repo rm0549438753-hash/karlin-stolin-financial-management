@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useTransactionsRealtime } from "@/hooks/use-tx-realtime";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAllTransactionsShared } from "@/lib/tx-fetch";
@@ -31,7 +32,6 @@ import { exportRowsAsPdf, objectsToTable } from "@/lib/export-pdf";
 import { useUserRole } from "@/hooks/use-auth";
 
 import {
-import { useTransactionsRealtime } from "@/hooks/use-tx-realtime";
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LabelList,
 } from "recharts";
 
