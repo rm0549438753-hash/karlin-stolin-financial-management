@@ -252,6 +252,7 @@ function ActionHistoryPage() {
                 <Detail label="אזור" value={TABLE_LABELS[pendingUndo.table_name] ?? pendingUndo.table_name} />
                 <Detail label="זמן" value={new Date(pendingUndo.created_at).toLocaleString("he-IL")} />
                 <Detail label="פרטים" value={describeRecord(pendingUndo)} />
+                <Detail label="מבצע" value={actorLabel(pendingUndo.actor_id)} />
               </div>
 
               <div className="rounded-xl border overflow-hidden">
