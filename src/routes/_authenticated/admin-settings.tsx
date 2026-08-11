@@ -54,7 +54,6 @@ function AdminSettingsPage() {
         <TabsList className="flex-wrap">
           <TabsTrigger value="users">משתמשים והרשאות</TabsTrigger>
           <TabsTrigger value="backup">גיבוי יומי</TabsTrigger>
-          <TabsTrigger value="checks_email">מייל צ'קים</TabsTrigger>
           <TabsTrigger value="automations">אוטומציות מייל</TabsTrigger>
           <TabsTrigger value="security_audit">סריקת אבטחה</TabsTrigger>
           <TabsTrigger value="access">אבטחה וגישה</TabsTrigger>
