@@ -25,17 +25,22 @@ export function useUserRole() {
     queryKey: ["user-role", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user!.id);
+      const [{ data, error }, { data: profile }] = await Promise.all([
+        supabase.from("user_roles").select("role").eq("user_id", user!.id),
+        supabase.from("profiles").select("full_view").eq("id", user!.id).maybeSingle(),
+      ]);
       if (error) throw error;
       const roles = data.map((r) => r.role as string);
+      // Read-only guest: sees every screen a superadmin sees, edits nothing.
+      const isFullViewer = !!(profile as any)?.full_view;
       const isSuperAdmin = roles.includes("superadmin");
       const isAdmin = roles.includes("admin") || isSuperAdmin;
       const isEditor = roles.includes("editor") || isAdmin;
       const isViewer = roles.includes("viewer") || (!isAdmin && !isEditor);
       return {
+        isFullViewer,
+        canViewAdmin: isAdmin || isFullViewer,
+        canViewSuperAdmin: isSuperAdmin || isFullViewer,
         isSuperAdmin,
         isAdmin,
         isEditor,

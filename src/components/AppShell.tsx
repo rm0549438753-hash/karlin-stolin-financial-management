@@ -80,7 +80,7 @@ function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
-              {(role?.isAdmin || role?.isEditor) && (
+              {(role?.isAdmin || role?.isEditor || role?.isFullViewer) && (
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={path === "/settings"} tooltip="הגדרות מערכת" className="text-white hover:bg-white/10 data-[active=true]:bg-white/15 data-[active=true]:text-white data-[active=true]:font-bold py-5 text-base">
                     <Link to="/settings" className="flex items-center gap-3">
@@ -91,7 +91,7 @@ function AppSidebar() {
                 </SidebarMenuItem>
               )}
 
-              {role?.isSuperAdmin && (
+              {role?.canViewSuperAdmin && (
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={path === "/admin-settings"} tooltip="הגדרות ניהול" className="text-white hover:bg-white/10 data-[active=true]:bg-white/15 data-[active=true]:text-white data-[active=true]:font-bold py-5 text-base">
                     <Link to="/admin-settings" className="flex items-center gap-3">

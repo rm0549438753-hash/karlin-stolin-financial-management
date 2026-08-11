@@ -77,7 +77,7 @@ function SecurityAuditHistoryPage() {
   );
 
   async function runNow() {
-    if (!role?.isAdmin) return;
+    if (!role?.isAdmin && !role?.isFullViewer) return;
     setRunning(true);
     try {
       const r: any = await trigger();

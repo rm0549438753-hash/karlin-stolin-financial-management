@@ -37,7 +37,7 @@ function AdminSettingsPage() {
     );
   }
 
-  if (!role?.isSuperAdmin) {
+  if (!role?.canViewSuperAdmin) {
     return (
       <AppShell title="הגדרות ניהול">
         <Card>
