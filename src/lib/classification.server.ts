@@ -184,6 +184,8 @@ export async function runRules(
       if (sample.length < 25) {
         sample.push({ id: tx.id, payee: tx.payee, description: tx.description, rule: firstRule.name, patch });
       }
+    } else if (matchedButNothingToDo) {
+      skipped += 1;
     }
   }
 
