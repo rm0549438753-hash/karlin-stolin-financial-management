@@ -138,7 +138,7 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const dupSets = useMemo(() => {
     const byNorm = new Map<string, string[]>();
     groups.forEach((_, payee) => {
-      if (payee === "ללא מוטב") return;
+      if (payee === TECHNICAL_LABEL) return;
       const norm = normalizePayee(payee);
       if (!norm) return;
       if (!byNorm.has(norm)) byNorm.set(norm, []);
@@ -167,6 +167,9 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     const q = search.trim().toLowerCase();
     const filtered = q ? arr.filter((r) => r.payee.toLowerCase().includes(q)) : arr;
     filtered.sort((a, b) => {
+      // The technical bucket always stays at the bottom.
+      if (a.payee === TECHNICAL_LABEL) return 1;
+      if (b.payee === TECHNICAL_LABEL) return -1;
       let cmp = 0;
       switch (sortKey) {
         case "payee": cmp = a.payee.localeCompare(b.payee, "he"); break;
@@ -207,7 +210,7 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   return (
     <ReportShell
       title="דוח מוטבים"
-      subtitle="ריכוז תנועות לפי מוטב, עם זיהוי שמות דומים/כפולים"
+      subtitle="שמות אנשים וחברות בלבד — תנועות בנקאיות טכניות מרוכזות בשורה נפרדת"
       onExport={() => exportRowsToExcel(exportRows(), "דוח מוטבים.xlsx")}
       onExportPdf={() => {
         const { headers, data } = objectsToTable(exportRows());
@@ -215,7 +218,7 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       }}
     >
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Kpi label="מס׳ מוטבים" value={String(rows.length)} />
+        <Kpi label="מס׳ מוטבים" value={String(rows.filter((r) => r.payee !== TECHNICAL_LABEL).length)} />
         <Kpi label="סה״כ שולם" value={formatCurrency(totalPaid)} />
         <Kpi label="שמות אפשריים כפולים" value={String(dupCount)} />
         <Kpi label="מס׳ תנועות" value={String(scoped.length)} />
