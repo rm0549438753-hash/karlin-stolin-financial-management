@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Mail, Plus, Send, Eye, Trash2, Pencil } from "lucide-react";
+import { Loader2, Mail, Plus, Send, Eye, Trash2, Pencil, Copy } from "lucide-react";
 import { toast } from "sonner";
 
 const TRIGGERS = [
@@ -237,6 +237,9 @@ export function EmailAutomationsPanel() {
                           </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8" title="תצוגה מקדימה" disabled={busyId === a.id} onClick={() => doPreview(a.id)}>
                             {busyId === a.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title="שכפול" onClick={() => setEditing({ ...a, id: undefined, name: `${a.name} - עותק`, is_active: false })}>
+                            <Copy className="w-4 h-4" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8" title="שלח עכשיו" disabled={busyId === a.id} onClick={() => doSend(a.id)}>
                             <Send className="w-4 h-4" />
