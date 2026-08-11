@@ -4,6 +4,15 @@
 
 type Severity = "low" | "moderate" | "high" | "critical";
 
+export type ConfigFinding = {
+  id: string;
+  severity: Severity;
+  auto_fixable: boolean;
+  title: string;
+  detail: string;
+  remediation: string;
+};
+
 type Vuln = {
   package: string;
   version: string;
