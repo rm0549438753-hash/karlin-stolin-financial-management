@@ -287,7 +287,9 @@ async function evaluate(db: any, a: any): Promise<Evaluated> {
     case "uncategorized":
     default: {
       const minCount = Number(a.threshold_value ?? 1);
-      const uncat = rows.filter((r) => !r.fund_id || !r.expense_type_id);
+      // Same definition as the "תנועות לא מסווגות" report: both fund AND
+      // expense type are missing (not either/or).
+      const uncat = rows.filter((r) => !r.fund_id && !r.expense_type_id);
       const byAccount = new Map<string, number>();
       for (const r of uncat) byAccount.set(r.account_id, (byAccount.get(r.account_id) ?? 0) + 1);
       const triggered = uncat.length >= minCount;
