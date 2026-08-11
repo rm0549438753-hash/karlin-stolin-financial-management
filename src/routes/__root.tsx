@@ -107,8 +107,15 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
   useEffect(() => {
+    // Theme: dark by default unless the user explicitly chose light.
+    try {
+      const saved = localStorage.getItem("theme");
+      document.documentElement.classList.toggle("dark", saved ? saved === "dark" : true);
+    } catch { /* storage unavailable */ }
+
     // Auto-logout on browser close: sessionStorage is cleared when the browser
     // (not just the tab) fully closes. Reloads / in-tab navigation keep it.
+
     try {
       const SESSION_FLAG = "lovable-app-session-active";
       if (!sessionStorage.getItem(SESSION_FLAG)) {
