@@ -37,12 +37,31 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   });
 }
 
+/**
+ * Baseline hardening headers on every response. No frame-ancestors/X-Frame-Options
+ * here on purpose — the Lovable editor renders the app inside an iframe.
+ */
+function withSecurityHeaders(response: Response, request: Request) {
+  const h = new Headers(response.headers);
+  h.set("X-Content-Type-Options", "nosniff");
+  h.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  h.set("Permissions-Policy", "geolocation=(), microphone=(), camera=(), payment=(), usb=()");
+  h.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  h.set("Cross-Origin-Opener-Policy", "same-origin");
+  const path = new URL(request.url).pathname;
+  // Nothing but the legal pages should ever be indexed or cached by crawlers.
+  if (path !== "/privacy" && path !== "/terms") {
+    h.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+  }
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers: h });
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      return withSecurityHeaders(await normalizeCatastrophicSsrResponse(response), request);
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {
