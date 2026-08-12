@@ -471,6 +471,27 @@ export async function revealDownloadCode() {
   return { required: true, code: await decryptText(data.code_cipher), legacy: false };
 }
 
+/**
+ * Brute-force guard for the APK download code: max 10 wrong attempts per IP
+ * per 10 minutes. Attempts are recorded in failed_login_attempts (email is
+ * namespaced with "apk:" so it never collides with real accounts).
+ */
+export async function downloadCodeThrottled(ip: string | null) {
+  const admin = adminClient();
+  const since = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  const { count } = await admin
+    .from("failed_login_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("email", `apk:${ip ?? "unknown"}`)
+    .gte("created_at", since);
+  return (count ?? 0) >= 10;
+}
+
+export async function recordDownloadCodeFailure(ip: string | null) {
+  const admin = adminClient();
+  await admin.from("failed_login_attempts").insert({ email: `apk:${ip ?? "unknown"}`, ip });
+}
+
 export async function verifyDownloadCode(code: string) {
   const admin = adminClient();
   const { data } = await admin.from("app_download_settings").select("code_hash").eq("singleton", true).maybeSingle();
