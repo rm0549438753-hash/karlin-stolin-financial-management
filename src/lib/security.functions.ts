@@ -79,8 +79,23 @@ export const getDownloadCodeStatus = createServerFn({ method: "GET" }).handler(a
 export const checkDownloadCode = createServerFn({ method: "POST" })
   .inputValidator(z.object({ code: z.string().max(64) }))
   .handler(async ({ data }) => {
-    const { verifyDownloadCode } = await import("@/lib/security.server");
-    return await verifyDownloadCode(data.code);
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const req = getRequest();
+    const ip =
+      req?.headers.get("cf-connecting-ip") ??
+      req?.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      null;
+    const { verifyDownloadCode, downloadCodeThrottled, recordDownloadCodeFailure } = await import(
+      "@/lib/security.server"
+    );
+    if (await downloadCodeThrottled(ip)) return { ok: false, required: true, throttled: true };
+    const res = await verifyDownloadCode(data.code);
+    if (!res.ok) {
+      await recordDownloadCodeFailure(ip);
+      // Constant-ish delay to blunt automated guessing.
+      await new Promise((r) => setTimeout(r, 700));
+    }
+    return res;
   });
 
 async function assertSuper(context: any) {
