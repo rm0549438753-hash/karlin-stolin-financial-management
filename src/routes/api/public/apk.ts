@@ -9,9 +9,19 @@ export const Route = createFileRoute("/api/public/apk")({
       // Direct download link for the Android app.
       GET: async ({ request }) => {
         const url = new URL(request.url);
-        const { verifyDownloadCode } = await import("@/lib/security.server");
+        const ip =
+          request.headers.get("cf-connecting-ip") ??
+          request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+          null;
+        const { verifyDownloadCode, downloadCodeThrottled, recordDownloadCodeFailure } = await import(
+          "@/lib/security.server"
+        );
+        if (await downloadCodeThrottled(ip)) {
+          return new Response("יותר מדי ניסיונות — נסה שוב בעוד כמה דקות", { status: 429 });
+        }
         const check = await verifyDownloadCode(url.searchParams.get("code") ?? "");
         if (!check.ok) {
+          await recordDownloadCodeFailure(ip);
           return new Response("קוד הורדה שגוי", { status: 401 });
         }
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
