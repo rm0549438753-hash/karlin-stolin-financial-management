@@ -109,7 +109,7 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const [printOpen, setPrintOpen] = useState(false);
   const [accountId, setAccountId] = useState("all");
   const [expenseTypeId, setExpenseTypeId] = useState("all");
-  const [direction, setDirection] = useState<"all" | "expense" | "income">("expense");
+  const [direction] = useState<"all" | "expense" | "income">("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
@@ -289,14 +289,6 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
             {(lookups.expenseTypes ?? []).map((e: any) => (
               <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
             ))}
-          </SelectContent>
-        </Select>
-        <Select value={direction} onValueChange={(v) => setDirection(v as any)}>
-          <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="expense">הוצאות בלבד</SelectItem>
-            <SelectItem value="income">הכנסות בלבד</SelectItem>
-            <SelectItem value="all">הכל</SelectItem>
           </SelectContent>
         </Select>
         <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-[150px]" />
