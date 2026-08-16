@@ -209,6 +209,23 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     return filtered;
   }, [groups, search, sortKey, sortDir, dupSets, effDate]);
 
+  const detail = useMemo(() => rows.find((r) => r.payee === expanded) ?? null, [rows, expanded]);
+  const detailSorted = useMemo(
+    () => (detail ? [...detail.rows].sort((a, b) => (effDate(b) ?? "").localeCompare(effDate(a) ?? "")) : []),
+    [detail, effDate],
+  );
+  const detailRows = (d: NonNullable<typeof detail>) =>
+    [...d.rows]
+      .sort((a, b) => (effDate(b) ?? "").localeCompare(effDate(a) ?? ""))
+      .map((t: any) => ({
+        "תאריך": formatDate(effDate(t)),
+        "חשבון": acctMap.get(t.account_id) ?? "",
+        "פרטים": t.description ?? "",
+        "אסמכתא": t.reference ?? "",
+        "סכום": Number(t.amount),
+      }));
+
+
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else { setSortKey(key); setSortDir("desc"); }
