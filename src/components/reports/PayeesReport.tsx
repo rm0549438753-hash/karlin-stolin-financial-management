@@ -127,6 +127,11 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const scoped = useMemo(() => {
     return txs.filter((t: any) => {
       if (accountId !== "all" && t.account_id !== accountId) return false;
+      if (expenseTypeId !== "all") {
+        if (expenseTypeId === "none") {
+          if (t.expense_type_id) return false;
+        } else if (t.expense_type_id !== expenseTypeId) return false;
+      }
       const amt = Number(t.amount) || 0;
       if (direction === "expense" && amt >= 0) return false;
       if (direction === "income" && amt <= 0) return false;
@@ -135,7 +140,8 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       if (to && (!d || d > to)) return false;
       return true;
     });
-  }, [txs, accountId, direction, from, to, effDate]);
+  }, [txs, accountId, expenseTypeId, direction, from, to, effDate]);
+
 
   const groups = useMemo(() => {
     const map = new Map<string, Tx[]>();
