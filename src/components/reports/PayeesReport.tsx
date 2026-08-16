@@ -109,19 +109,32 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
 
   const acctMap = nameMap(lookups.accounts);
 
+  // Checks rows carry only value_date, so the effective date must follow the
+  // same rule the dashboard uses, otherwise every check payee disappears.
+  const checksIds = useMemo(
+    () => new Set((lookups.accounts as any[]).filter((a) => a.schema_type === "checks").map((a) => a.id)),
+    [lookups.accounts],
+  );
+  const effDate = useMemo(
+    () => (t: any): string | null =>
+      checksIds.has(t.account_id)
+        ? (t.value_date ?? t.transaction_date ?? null)
+        : (t.transaction_date ?? t.value_date ?? null),
+    [checksIds],
+  );
+
   const scoped = useMemo(() => {
     return txs.filter((t: any) => {
       if (accountId !== "all" && t.account_id !== accountId) return false;
       const amt = Number(t.amount) || 0;
       if (direction === "expense" && amt >= 0) return false;
       if (direction === "income" && amt <= 0) return false;
-      const d = t.transaction_date;
-      if (!d) return false;
-      if (from && d < from) return false;
-      if (to && d > to) return false;
+      const d = effDate(t);
+      if (from && (!d || d < from)) return false;
+      if (to && (!d || d > to)) return false;
       return true;
     });
-  }, [txs, accountId, direction, from, to]);
+  }, [txs, accountId, direction, from, to, effDate]);
 
   const groups = useMemo(() => {
     const map = new Map<string, Tx[]>();
@@ -132,6 +145,7 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     });
     return map;
   }, [scoped]);
+
 
 
   // Detect near-duplicate payee names via normalized key.
@@ -155,11 +169,11 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     const arr = Array.from(groups.entries()).map(([payee, rows]) => {
       const total = rows.reduce((s, t) => s + Math.abs(Number(t.amount)), 0);
       const count = rows.length;
-      const dates = rows.map((t) => t.transaction_date).sort();
-      const first = dates[0];
-      const last = dates[dates.length - 1];
+      const dates = rows.map((t) => effDate(t)).filter(Boolean).sort() as string[];
+      const first = dates[0] ?? "";
+      const last = dates[dates.length - 1] ?? "";
       const avg = total / count;
-      const daySpan = (new Date(last).getTime() - new Date(first).getTime()) / 86400000;
+      const daySpan = first && last ? (new Date(last).getTime() - new Date(first).getTime()) / 86400000 : 0;
       const avgGapDays = count > 1 ? daySpan / (count - 1) : 0;
       const frequency = count < 2 ? "יחיד" : avgGapDays <= 10 ? "שבועי" : avgGapDays <= 40 ? "חודשי" : avgGapDays <= 100 ? "רבעוני" : "לא סדיר";
       return { payee, rows, total, count, first, last, avg, frequency, dup: dupSets.get(payee) };
@@ -182,7 +196,7 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       return sortDir === "asc" ? cmp : -cmp;
     });
     return filtered;
-  }, [groups, search, sortKey, sortDir, dupSets]);
+  }, [groups, search, sortKey, sortDir, dupSets, effDate]);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -303,9 +317,9 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {[...r.rows].sort((a, b) => b.transaction_date.localeCompare(a.transaction_date)).map((t) => (
+                            {[...r.rows].sort((a, b) => (effDate(b) ?? "").localeCompare(effDate(a) ?? "")).map((t) => (
                               <TableRow key={t.id}>
-                                <TableCell className="border-l">{formatDate(t.transaction_date)}</TableCell>
+                                <TableCell className="border-l">{formatDate(effDate(t))}</TableCell>
                                 <TableCell className="border-l">{acctMap.get(t.account_id) ?? ""}</TableCell>
                                 <TableCell className="border-l">{t.description ?? ""}</TableCell>
                                 <TableCell className="text-left tabular-nums">{formatCurrency(Number(t.amount))}</TableCell>

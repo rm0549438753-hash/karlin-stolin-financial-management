@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router"
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { hasLiveSession } from "@/lib/session-guard";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -230,6 +231,7 @@ function TransactionsPage() {
     queryKey: ["transactions", { account, category, subcategory, fund, expType, from, to }],
     enabled: !!account,
     queryFn: async () => {
+      if (!(await hasLiveSession())) return [] as TransactionRow[];
       const buildQ = () => {
         let q = supabase.from("transactions").select("*").eq("account_id", account).order("transaction_date", { ascending: false });
         if (category.length) q = q.in("category_id", category);
@@ -261,6 +263,7 @@ function TransactionsPage() {
     queryKey: ["uncategorized-count", account],
     enabled: !!account,
     queryFn: async () => {
+      if (!(await hasLiveSession())) return 0;
       const { count, error } = await supabase
         .from("transactions")
         .select("*", { count: "exact", head: true })
@@ -280,6 +283,7 @@ function TransactionsPage() {
     queryKey: ["import-batches", account],
     enabled: !!account,
     queryFn: async () => {
+      if (!(await hasLiveSession())) return [];
       const { data, error } = await supabase
         .from("import_batches")
         .select("*")

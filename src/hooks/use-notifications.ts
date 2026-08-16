@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { hasLiveSession } from "@/lib/session-guard";
 
 export type AppNotification = {
   id: string;
@@ -18,6 +19,7 @@ export function useNotifications() {
   return useQuery({
     queryKey: KEY,
     queryFn: async (): Promise<AppNotification[]> => {
+      if (!(await hasLiveSession())) return [];
       const { data, error } = await supabase
         .from("notifications")
         .select("id,kind,title,body,link,severity,read_at,created_at")

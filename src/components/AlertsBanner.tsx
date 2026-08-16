@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { AlertCircle, CalendarClock, CalendarX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { hasLiveSession } from "@/lib/session-guard";
 import { useAccounts } from "@/hooks/use-lookups";
 import { useTransactionsRealtime } from "@/hooks/use-tx-realtime";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -25,6 +26,7 @@ export function AlertsBanner() {
     queryKey: ["alerts-upcoming-checks", checksAccount?.id],
     enabled: !!checksAccount,
     queryFn: async () => {
+      if (!(await hasLiveSession())) return [];
       const today = new Date().toISOString().slice(0, 10);
       const wk = new Date(); wk.setDate(wk.getDate() + 7);
       const weekAhead = wk.toISOString().slice(0, 10);
@@ -43,6 +45,7 @@ export function AlertsBanner() {
   const { data: uncategorizedCount = 0 } = useQuery({
     queryKey: ["alerts-uncategorized-count"],
     queryFn: async () => {
+      if (!(await hasLiveSession())) return 0;
       const { count, error } = await supabase
         .from("transactions")
         .select("id", { count: "exact", head: true })
@@ -58,6 +61,7 @@ export function AlertsBanner() {
   const { data: noDateCount = 0 } = useQuery({
     queryKey: ["alerts-no-date-count", checksAccountId ?? "none"],
     queryFn: async () => {
+      if (!(await hasLiveSession())) return 0;
       // Checks account is dateless only when value_date is missing.
       // Other accounts are dateless when both transaction_date and value_date are missing.
       let others = supabase
