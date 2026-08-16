@@ -259,6 +259,16 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
             ))}
           </SelectContent>
         </Select>
+        <Select value={expenseTypeId} onValueChange={setExpenseTypeId}>
+          <SelectTrigger className="w-[170px]"><SelectValue placeholder="סוג" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">כל הסוגים</SelectItem>
+            <SelectItem value="none">ללא סוג</SelectItem>
+            {(lookups.expenseTypes ?? []).map((e: any) => (
+              <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Select value={direction} onValueChange={(v) => setDirection(v as any)}>
           <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
           <SelectContent>
