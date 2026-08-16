@@ -169,11 +169,11 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     const arr = Array.from(groups.entries()).map(([payee, rows]) => {
       const total = rows.reduce((s, t) => s + Math.abs(Number(t.amount)), 0);
       const count = rows.length;
-      const dates = rows.map((t) => t.transaction_date).sort();
-      const first = dates[0];
-      const last = dates[dates.length - 1];
+      const dates = rows.map((t) => effDate(t)).filter(Boolean).sort() as string[];
+      const first = dates[0] ?? "";
+      const last = dates[dates.length - 1] ?? "";
       const avg = total / count;
-      const daySpan = (new Date(last).getTime() - new Date(first).getTime()) / 86400000;
+      const daySpan = first && last ? (new Date(last).getTime() - new Date(first).getTime()) / 86400000 : 0;
       const avgGapDays = count > 1 ? daySpan / (count - 1) : 0;
       const frequency = count < 2 ? "יחיד" : avgGapDays <= 10 ? "שבועי" : avgGapDays <= 40 ? "חודשי" : avgGapDays <= 100 ? "רבעוני" : "לא סדיר";
       return { payee, rows, total, count, first, last, avg, frequency, dup: dupSets.get(payee) };
