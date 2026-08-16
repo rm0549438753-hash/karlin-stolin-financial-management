@@ -140,6 +140,11 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           if (t.expense_type_id) return false;
         } else if (t.expense_type_id !== expenseTypeId) return false;
       }
+      if (categoryId !== "all") {
+        if (categoryId === "none") {
+          if (t.category_id) return false;
+        } else if (t.category_id !== categoryId) return false;
+      }
       const amt = Number(t.amount) || 0;
       if (direction === "expense" && amt >= 0) return false;
       if (direction === "income" && amt <= 0) return false;
