@@ -291,14 +291,6 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
             ))}
           </SelectContent>
         </Select>
-        <Select value={direction} onValueChange={(v) => setDirection(v as any)}>
-          <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="expense">הוצאות בלבד</SelectItem>
-            <SelectItem value="income">הכנסות בלבד</SelectItem>
-            <SelectItem value="all">הכל</SelectItem>
-          </SelectContent>
-        </Select>
         <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-[150px]" />
         <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-[150px]" />
       </div>
