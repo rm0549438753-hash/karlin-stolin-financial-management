@@ -317,7 +317,7 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {[...r.rows].sort((a, b) => b.transaction_date.localeCompare(a.transaction_date)).map((t) => (
+                            {[...r.rows].sort((a, b) => (effDate(b) ?? "").localeCompare(effDate(a) ?? "")).map((t) => (
                               <TableRow key={t.id}>
                                 <TableCell className="border-l">{formatDate(t.transaction_date)}</TableCell>
                                 <TableCell className="border-l">{acctMap.get(t.account_id) ?? ""}</TableCell>
