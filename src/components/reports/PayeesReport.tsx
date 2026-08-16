@@ -109,19 +109,32 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
 
   const acctMap = nameMap(lookups.accounts);
 
+  // Checks rows carry only value_date, so the effective date must follow the
+  // same rule the dashboard uses, otherwise every check payee disappears.
+  const checksIds = useMemo(
+    () => new Set((lookups.accounts as any[]).filter((a) => a.schema_type === "checks").map((a) => a.id)),
+    [lookups.accounts],
+  );
+  const effDate = useMemo(
+    () => (t: any): string | null =>
+      checksIds.has(t.account_id)
+        ? (t.value_date ?? t.transaction_date ?? null)
+        : (t.transaction_date ?? t.value_date ?? null),
+    [checksIds],
+  );
+
   const scoped = useMemo(() => {
     return txs.filter((t: any) => {
       if (accountId !== "all" && t.account_id !== accountId) return false;
       const amt = Number(t.amount) || 0;
       if (direction === "expense" && amt >= 0) return false;
       if (direction === "income" && amt <= 0) return false;
-      const d = t.transaction_date;
-      if (!d) return false;
-      if (from && d < from) return false;
-      if (to && d > to) return false;
+      const d = effDate(t);
+      if (from && (!d || d < from)) return false;
+      if (to && (!d || d > to)) return false;
       return true;
     });
-  }, [txs, accountId, direction, from, to]);
+  }, [txs, accountId, direction, from, to, effDate]);
 
   const groups = useMemo(() => {
     const map = new Map<string, Tx[]>();
@@ -132,6 +145,7 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     });
     return map;
   }, [scoped]);
+
 
 
   // Detect near-duplicate payee names via normalized key.
