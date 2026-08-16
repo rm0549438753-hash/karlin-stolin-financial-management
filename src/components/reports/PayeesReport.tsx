@@ -153,7 +153,16 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       if (to && (!d || d > to)) return false;
       return true;
     });
-  }, [txs, accountId, expenseTypeId, direction, from, to, effDate]);
+  }, [txs, accountId, expenseTypeId, categoryId, direction, from, to, effDate]);
+
+  // Flat list of every transaction behind the filtered payees – used for the
+  // "expanded print" that shows each payee together with its transactions.
+  const expandedPrintRows = useMemo(
+    () =>
+      rowsForPrint(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [scoped, search, sortKey, sortDir],
+  );
 
 
   const groups = useMemo(() => {
