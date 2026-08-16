@@ -10,6 +10,22 @@ import { z } from "zod";
 export const guestLogin = createServerFn({ method: "POST" })
   .inputValidator(z.object({ token: z.string().min(8).max(128) }))
   .handler(async ({ data }) => {
+    const { getRequestHeader } = await import("@tanstack/react-start/server");
+    const ip =
+      getRequestHeader("cf-connecting-ip") ??
+      getRequestHeader("x-forwarded-for")?.split(",")[0]?.trim() ??
+      null;
+
+    const {
+      guestLoginThrottled,
+      recordGuestLoginFailure,
+      clearGuestLoginFailures,
+    } = await import("@/lib/security.server");
+
+    if (await guestLoginThrottled(ip)) {
+      throw new Error("יותר מדי ניסיונות. נסה שוב בעוד 10 דקות.");
+    }
+
     const { createHash, timingSafeEqual } = await import("node:crypto");
     const expected = process.env["GUEST_LINK_TOKEN"];
     const email = process.env["GUEST_DEMO_EMAIL"];
@@ -17,7 +33,12 @@ export const guestLogin = createServerFn({ method: "POST" })
     if (!expected || !email || !password) throw new Error("Guest access is not configured");
     const suppliedHash = createHash("sha256").update(data.token, "utf8").digest();
     const expectedHash = createHash("sha256").update(expected, "utf8").digest();
-    if (!timingSafeEqual(suppliedHash, expectedHash)) throw new Error("Invalid link");
+    if (!timingSafeEqual(suppliedHash, expectedHash)) {
+      await recordGuestLoginFailure(ip);
+      throw new Error("Invalid link");
+    }
+    await clearGuestLoginFailures(ip);
+
 
     const { createClient } = await import("@supabase/supabase-js");
     const url = process.env["SUPABASE_URL"] ?? process.env["VITE_SUPABASE_URL"];
