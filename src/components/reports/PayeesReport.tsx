@@ -116,6 +116,7 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const [to, setTo] = useState("");
 
   const acctMap = nameMap(lookups.accounts);
+  const catMap = nameMap(lookups.categories ?? []);
 
   // Checks rows carry only value_date, so the effective date must follow the
   // same rule the dashboard uses, otherwise every check payee disappears.
