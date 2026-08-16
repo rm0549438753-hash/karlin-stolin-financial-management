@@ -103,6 +103,7 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [accountId, setAccountId] = useState("all");
+  const [expenseTypeId, setExpenseTypeId] = useState("all");
   const [direction, setDirection] = useState<"all" | "expense" | "income">("expense");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -126,6 +127,11 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const scoped = useMemo(() => {
     return txs.filter((t: any) => {
       if (accountId !== "all" && t.account_id !== accountId) return false;
+      if (expenseTypeId !== "all") {
+        if (expenseTypeId === "none") {
+          if (t.expense_type_id) return false;
+        } else if (t.expense_type_id !== expenseTypeId) return false;
+      }
       const amt = Number(t.amount) || 0;
       if (direction === "expense" && amt >= 0) return false;
       if (direction === "income" && amt <= 0) return false;
@@ -134,7 +140,8 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       if (to && (!d || d > to)) return false;
       return true;
     });
-  }, [txs, accountId, direction, from, to, effDate]);
+  }, [txs, accountId, expenseTypeId, direction, from, to, effDate]);
+
 
   const groups = useMemo(() => {
     const map = new Map<string, Tx[]>();
@@ -249,6 +256,16 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
             <SelectItem value="all">כל החשבונות</SelectItem>
             {lookups.accounts.map((a: any) => (
               <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={expenseTypeId} onValueChange={setExpenseTypeId}>
+          <SelectTrigger className="w-[170px]"><SelectValue placeholder="סוג" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">כל הסוגים</SelectItem>
+            <SelectItem value="none">ללא סוג</SelectItem>
+            {(lookups.expenseTypes ?? []).map((e: any) => (
+              <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
