@@ -506,3 +506,37 @@ export async function isDownloadCodeRequired() {
   const { data } = await admin.from("app_download_settings").select("code_hash").eq("singleton", true).maybeSingle();
   return { required: !!data?.code_hash };
 }
+
+/* ------------------------------------------------------------------ */
+/* Guest link throttling                                               */
+/* ------------------------------------------------------------------ */
+
+const GUEST_WINDOW_MIN = 10;
+const GUEST_MAX_FAILS = 5;
+
+/**
+ * Brute-force guard for the read-only guest link: max 5 wrong tokens per IP
+ * per 10 minutes. Reuses failed_login_attempts (email namespaced "guest:")
+ * and honours the blocked_ips list, exactly like the regular login path.
+ */
+export async function guestLoginThrottled(ip: string | null) {
+  if ((await isIpBlocked(ip)).blocked) return true;
+  const admin = adminClient();
+  const since = new Date(Date.now() - GUEST_WINDOW_MIN * 60_000).toISOString();
+  const { count } = await admin
+    .from("failed_login_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("email", `guest:${ip ?? "unknown"}`)
+    .gte("created_at", since);
+  return (count ?? 0) >= GUEST_MAX_FAILS;
+}
+
+export async function recordGuestLoginFailure(ip: string | null) {
+  const admin = adminClient();
+  await admin.from("failed_login_attempts").insert({ email: `guest:${ip ?? "unknown"}`, ip });
+}
+
+export async function clearGuestLoginFailures(ip: string | null) {
+  const admin = adminClient();
+  await admin.from("failed_login_attempts").delete().eq("email", `guest:${ip ?? "unknown"}`);
+}
