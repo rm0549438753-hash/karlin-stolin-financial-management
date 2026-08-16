@@ -4,10 +4,14 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ExportMenu } from "@/components/ExportMenu";
+import { PrintDialog } from "@/components/PrintDialog";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { ReportShell, Kpi, nameMap, exportRowsToExcel, type Tx } from "@/routes/_authenticated/reports";
 import { exportRowsAsPdf, objectsToTable } from "@/lib/export-pdf";
-import { Search, ChevronDown, ChevronUp, ChevronsUpDown, Copy } from "lucide-react";
+import { Search, ChevronDown, ChevronUp, ChevronsUpDown, Copy, Printer } from "lucide-react";
 
 function normalizePayee(name: string) {
   return name
