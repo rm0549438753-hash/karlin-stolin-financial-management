@@ -23,6 +23,7 @@ import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin-settings'
 import { Route as AuthenticatedActionHistoryRouteImport } from './routes/_authenticated/action-history'
+import { Route as ApiPublicSetupGuestRouteImport } from './routes/api/public/setup-guest'
 import { Route as ApiPublicApkRouteImport } from './routes/api/public/apk'
 import { Route as ApiPublicHooksHourlyAlertsRouteImport } from './routes/api/public/hooks/hourly-alerts'
 import { Route as ApiPublicHooksDailySecurityAuditRouteImport } from './routes/api/public/hooks/daily-security-audit'
@@ -102,6 +103,11 @@ const AuthenticatedActionHistoryRoute =
     path: '/action-history',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicSetupGuestRoute = ApiPublicSetupGuestRouteImport.update({
+  id: '/api/public/setup-guest',
+  path: '/api/public/setup-guest',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicApkRoute = ApiPublicApkRouteImport.update({
   id: '/api/public/apk',
   path: '/api/public/apk',
@@ -147,6 +153,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/transactions': typeof AuthenticatedTransactionsRoute
   '/api/public/apk': typeof ApiPublicApkRoute
+  '/api/public/setup-guest': typeof ApiPublicSetupGuestRoute
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
   '/api/public/hooks/daily-checks-email': typeof ApiPublicHooksDailyChecksEmailRoute
   '/api/public/hooks/daily-security-audit': typeof ApiPublicHooksDailySecurityAuditRoute
@@ -167,6 +174,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/transactions': typeof AuthenticatedTransactionsRoute
   '/api/public/apk': typeof ApiPublicApkRoute
+  '/api/public/setup-guest': typeof ApiPublicSetupGuestRoute
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
   '/api/public/hooks/daily-checks-email': typeof ApiPublicHooksDailyChecksEmailRoute
   '/api/public/hooks/daily-security-audit': typeof ApiPublicHooksDailySecurityAuditRoute
@@ -189,6 +197,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/transactions': typeof AuthenticatedTransactionsRoute
   '/api/public/apk': typeof ApiPublicApkRoute
+  '/api/public/setup-guest': typeof ApiPublicSetupGuestRoute
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
   '/api/public/hooks/daily-checks-email': typeof ApiPublicHooksDailyChecksEmailRoute
   '/api/public/hooks/daily-security-audit': typeof ApiPublicHooksDailySecurityAuditRoute
@@ -211,6 +220,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/transactions'
     | '/api/public/apk'
+    | '/api/public/setup-guest'
     | '/api/public/hooks/daily-backup'
     | '/api/public/hooks/daily-checks-email'
     | '/api/public/hooks/daily-security-audit'
@@ -231,6 +241,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/transactions'
     | '/api/public/apk'
+    | '/api/public/setup-guest'
     | '/api/public/hooks/daily-backup'
     | '/api/public/hooks/daily-checks-email'
     | '/api/public/hooks/daily-security-audit'
@@ -252,6 +263,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/transactions'
     | '/api/public/apk'
+    | '/api/public/setup-guest'
     | '/api/public/hooks/daily-backup'
     | '/api/public/hooks/daily-checks-email'
     | '/api/public/hooks/daily-security-audit'
@@ -267,6 +279,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   TermsRoute: typeof TermsRoute
   ApiPublicApkRoute: typeof ApiPublicApkRoute
+  ApiPublicSetupGuestRoute: typeof ApiPublicSetupGuestRoute
   ApiPublicHooksDailyBackupRoute: typeof ApiPublicHooksDailyBackupRoute
   ApiPublicHooksDailyChecksEmailRoute: typeof ApiPublicHooksDailyChecksEmailRoute
   ApiPublicHooksDailySecurityAuditRoute: typeof ApiPublicHooksDailySecurityAuditRoute
@@ -373,6 +386,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedActionHistoryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/setup-guest': {
+      id: '/api/public/setup-guest'
+      path: '/api/public/setup-guest'
+      fullPath: '/api/public/setup-guest'
+      preLoaderRoute: typeof ApiPublicSetupGuestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/apk': {
       id: '/api/public/apk'
       path: '/api/public/apk'
@@ -443,6 +463,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   TermsRoute: TermsRoute,
   ApiPublicApkRoute: ApiPublicApkRoute,
+  ApiPublicSetupGuestRoute: ApiPublicSetupGuestRoute,
   ApiPublicHooksDailyBackupRoute: ApiPublicHooksDailyBackupRoute,
   ApiPublicHooksDailyChecksEmailRoute: ApiPublicHooksDailyChecksEmailRoute,
   ApiPublicHooksDailySecurityAuditRoute: ApiPublicHooksDailySecurityAuditRoute,
