@@ -109,7 +109,7 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const [printOpen, setPrintOpen] = useState(false);
   const [accountId, setAccountId] = useState("all");
   const [expenseTypeId, setExpenseTypeId] = useState("all");
-  const [direction, setDirection] = useState<"all" | "expense" | "income">("expense");
+  const [direction] = useState<"all" | "expense" | "income">("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
