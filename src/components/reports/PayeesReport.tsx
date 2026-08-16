@@ -454,6 +454,38 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
         />
       )}
 
+      <PrintDialog
+        open={printAllOpen}
+        onOpenChange={setPrintAllOpen}
+        title="דוח מוטבים — הדפסה מורחבת"
+        subtitle={[
+          accountId !== "all" ? `חשבון: ${acctMap.get(accountId) ?? ""}` : null,
+          expenseTypeId !== "all"
+            ? `סוג: ${expenseTypeId === "none" ? "ללא סוג" : (nameMap(lookups.expenseTypes ?? []).get(expenseTypeId) ?? "")}`
+            : null,
+          categoryId !== "all"
+            ? `קטגוריה: ${categoryId === "none" ? "ללא קטגוריה" : (catMap.get(categoryId) ?? "")}`
+            : null,
+          from ? `מ־${formatDate(from)}` : null,
+          to ? `עד ${formatDate(to)}` : null,
+        ].filter(Boolean).join(" · ")}
+        scopes={[{ id: "all", label: "כל המוטבים", rows: expandedPrintRows }]}
+        columns={[
+          { id: "payee", header: "מוטב", align: "right", format: (t: any) => t.__payee ?? "" },
+          { id: "date", header: "תאריך", align: "right", format: (t: any) => formatDate(effDate(t)) },
+          { id: "account", header: "חשבון", align: "right", format: (t: any) => acctMap.get(t.account_id) ?? "" },
+          { id: "category", header: "קטגוריה", align: "right", format: (t: any) => (t.category_id ? catMap.get(t.category_id) ?? "" : "") },
+          { id: "desc", header: "פרטים", align: "right", format: (t: any) => t.description ?? "" },
+          { id: "ref", header: "אסמכתא", align: "right", format: (t: any) => t.reference ?? "" },
+          { id: "amount", header: "סכום", align: "left", format: (t: any) => formatCurrency(Number(t.amount)) },
+        ]}
+        totals={[
+          { label: "סה״כ", value: formatCurrency(totalPaid), tone: "neutral" },
+          { label: "מס׳ מוטבים", value: String(rows.length) },
+          { label: "מס׳ תנועות", value: String(expandedPrintRows.length) },
+        ]}
+      />
+
     </ReportShell>
   );
 }
