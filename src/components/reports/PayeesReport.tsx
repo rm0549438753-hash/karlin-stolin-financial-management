@@ -107,8 +107,10 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [printOpen, setPrintOpen] = useState(false);
+  const [printAllOpen, setPrintAllOpen] = useState(false);
   const [accountId, setAccountId] = useState("all");
   const [expenseTypeId, setExpenseTypeId] = useState("all");
+  const [categoryId, setCategoryId] = useState("all");
   const [direction] = useState<"all" | "expense" | "income">("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
