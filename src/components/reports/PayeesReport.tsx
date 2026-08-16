@@ -310,8 +310,21 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
             ))}
           </SelectContent>
         </Select>
+        <Select value={categoryId} onValueChange={setCategoryId}>
+          <SelectTrigger className="w-[180px]"><SelectValue placeholder="קטגוריה" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">כל הקטגוריות</SelectItem>
+            <SelectItem value="none">ללא קטגוריה</SelectItem>
+            {(lookups.categories ?? []).map((c: any) => (
+              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-[150px]" />
         <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-[150px]" />
+        <Button variant="outline" size="sm" onClick={() => setPrintAllOpen(true)} className="no-print">
+          <Printer className="w-4 h-4 ml-1" />הדפסה מורחבת
+        </Button>
       </div>
 
 
