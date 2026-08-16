@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { hasLiveSession } from "@/lib/session-guard";
 
 /**
  * Shared full-table transaction fetcher used by the dashboard and the reports
@@ -18,6 +19,7 @@ export const TX_ALL_KEY = ["tx-all"] as const;
 export type AnyTx = Record<string, any>;
 
 export async function fetchAllTransactionsShared(): Promise<AnyTx[]> {
+  if (!(await hasLiveSession())) return [];
   const { data, error } = await supabase.rpc("dashboard_rows");
   if (error) throw error;
   return (data ?? []) as AnyTx[];
