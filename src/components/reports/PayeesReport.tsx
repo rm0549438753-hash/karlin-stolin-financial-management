@@ -218,6 +218,17 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     return filtered;
   }, [groups, search, sortKey, sortDir, dupSets, effDate]);
 
+  // Expanded print: every filtered payee followed by its own transactions.
+  const expandedPrintRows = useMemo(
+    () =>
+      rows.flatMap((r) =>
+        [...r.rows]
+          .sort((a, b) => (effDate(a) ?? "").localeCompare(effDate(b) ?? ""))
+          .map((t: any) => ({ ...t, __payee: r.payee })),
+      ),
+    [rows, effDate],
+  );
+
   const detail = useMemo(() => rows.find((r) => r.payee === expanded) ?? null, [rows, expanded]);
   const detailSorted = useMemo(
     () => (detail ? [...detail.rows].sort((a, b) => (effDate(b) ?? "").localeCompare(effDate(a) ?? "")) : []),
