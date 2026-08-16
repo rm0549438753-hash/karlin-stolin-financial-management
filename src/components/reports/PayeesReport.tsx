@@ -4,10 +4,14 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ExportMenu } from "@/components/ExportMenu";
+import { PrintDialog } from "@/components/PrintDialog";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { ReportShell, Kpi, nameMap, exportRowsToExcel, type Tx } from "@/routes/_authenticated/reports";
 import { exportRowsAsPdf, objectsToTable } from "@/lib/export-pdf";
-import { Search, ChevronDown, ChevronUp, ChevronsUpDown, Copy } from "lucide-react";
+import { Search, ChevronDown, ChevronUp, ChevronsUpDown, Copy, Printer } from "lucide-react";
 
 function normalizePayee(name: string) {
   return name
@@ -102,6 +106,7 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const [sortKey, setSortKey] = useState<SortKey>("total");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [printOpen, setPrintOpen] = useState(false);
   const [accountId, setAccountId] = useState("all");
   const [expenseTypeId, setExpenseTypeId] = useState("all");
   const [direction, setDirection] = useState<"all" | "expense" | "income">("expense");
@@ -205,6 +210,23 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     return filtered;
   }, [groups, search, sortKey, sortDir, dupSets, effDate]);
 
+  const detail = useMemo(() => rows.find((r) => r.payee === expanded) ?? null, [rows, expanded]);
+  const detailSorted = useMemo(
+    () => (detail ? [...detail.rows].sort((a, b) => (effDate(b) ?? "").localeCompare(effDate(a) ?? "")) : []),
+    [detail, effDate],
+  );
+  const detailRows = (d: NonNullable<typeof detail>) =>
+    [...d.rows]
+      .sort((a, b) => (effDate(b) ?? "").localeCompare(effDate(a) ?? ""))
+      .map((t: any) => ({
+        "תאריך": formatDate(effDate(t)),
+        "חשבון": acctMap.get(t.account_id) ?? "",
+        "פרטים": t.description ?? "",
+        "אסמכתא": t.reference ?? "",
+        "סכום": Number(t.amount),
+      }));
+
+
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else { setSortKey(key); setSortDir("desc"); }
@@ -297,58 +319,28 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           </TableHeader>
           <TableBody>
             {rows.map((r) => (
-              <>
-                <TableRow
-                  key={r.payee}
-                  className="border-b cursor-pointer hover:bg-primary/5"
-                  onClick={() => setExpanded(expanded === r.payee ? null : r.payee)}
-                >
-                  <TableCell className="font-medium border-l">
-                    <div className="flex items-center gap-2">
-                      {r.payee}
-                      {r.dup && (
-                        <Badge variant="outline" className="text-amber-600 border-amber-400 gap-1" title={`שמות דומים: ${r.dup.join(", ")}`}>
-                          <Copy className="w-3 h-3" />כפילות אפשרית
-                        </Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-left tabular-nums border-l">{formatCurrency(r.total)}</TableCell>
-                  <TableCell className="text-left tabular-nums border-l">{r.count}</TableCell>
-                  <TableCell className="text-left tabular-nums border-l">{formatCurrency(r.avg)}</TableCell>
-                  <TableCell className="text-right border-l">{formatDate(r.first)}</TableCell>
-                  <TableCell className="text-right border-l">{formatDate(r.last)}</TableCell>
-                  <TableCell className="text-right">{r.frequency}</TableCell>
-                </TableRow>
-                {expanded === r.payee && (
-                  <TableRow key={r.payee + "-detail"} className="bg-muted/20">
-                    <TableCell colSpan={7} className="p-0">
-                      <div className="p-3">
-                        <Table className="border-collapse">
-                          <TableHeader>
-                            <TableRow className="bg-muted/30">
-                              <TableHead className="text-right border-l">תאריך</TableHead>
-                              <TableHead className="text-right border-l">חשבון</TableHead>
-                              <TableHead className="text-right border-l">פרטים</TableHead>
-                              <TableHead className="text-left">סכום</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {[...r.rows].sort((a, b) => (effDate(b) ?? "").localeCompare(effDate(a) ?? "")).map((t) => (
-                              <TableRow key={t.id}>
-                                <TableCell className="border-l">{formatDate(effDate(t))}</TableCell>
-                                <TableCell className="border-l">{acctMap.get(t.account_id) ?? ""}</TableCell>
-                                <TableCell className="border-l">{t.description ?? ""}</TableCell>
-                                <TableCell className="text-left tabular-nums">{formatCurrency(Number(t.amount))}</TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </>
+              <TableRow
+                key={r.payee}
+                className="border-b cursor-pointer hover:bg-primary/5"
+                onClick={() => setExpanded(r.payee)}
+              >
+                <TableCell className="font-medium border-l">
+                  <div className="flex items-center gap-2">
+                    {r.payee}
+                    {r.dup && (
+                      <Badge variant="outline" className="text-amber-600 border-amber-400 gap-1" title={`שמות דומים: ${r.dup.join(", ")}`}>
+                        <Copy className="w-3 h-3" />כפילות אפשרית
+                      </Badge>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="text-left tabular-nums border-l">{formatCurrency(r.total)}</TableCell>
+                <TableCell className="text-left tabular-nums border-l">{r.count}</TableCell>
+                <TableCell className="text-left tabular-nums border-l">{formatCurrency(r.avg)}</TableCell>
+                <TableCell className="text-right border-l">{formatDate(r.first)}</TableCell>
+                <TableCell className="text-right border-l">{formatDate(r.last)}</TableCell>
+                <TableCell className="text-right">{r.frequency}</TableCell>
+              </TableRow>
             ))}
             {rows.length === 0 && (
               <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">אין נתונים</TableCell></TableRow>
@@ -356,6 +348,88 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={!!detail} onOpenChange={(o) => !o && setExpanded(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-xl">{detail?.payee}</DialogTitle>
+            <DialogDescription>
+              {detail && `${detail.count} תנועות · סה״כ ${formatCurrency(detail.total)} · ממוצע ${formatCurrency(detail.avg)} · ${detail.frequency}`}
+            </DialogDescription>
+          </DialogHeader>
+
+          {detail && (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <Kpi label="סה״כ" value={formatCurrency(detail.total)} />
+                <Kpi label="מס׳ תנועות" value={String(detail.count)} />
+                <Kpi label="תאריך ראשון" value={formatDate(detail.first)} />
+                <Kpi label="תאריך אחרון" value={formatDate(detail.last)} />
+              </div>
+
+              <div className="flex flex-wrap gap-2 no-print">
+                <ExportMenu
+                  onExcel={() => exportRowsToExcel(detailRows(detail), `מוטב - ${detail.payee}.xlsx`)}
+                  onPdf={() => {
+                    const { headers, data } = objectsToTable(detailRows(detail));
+                    exportRowsAsPdf(`מוטב - ${detail.payee}`, headers, data);
+                  }}
+                />
+                <Button variant="outline" size="sm" onClick={() => setPrintOpen(true)}>
+                  <Printer className="w-4 h-4 ml-1" />הדפסה
+                </Button>
+              </div>
+
+              <div className="rounded-lg border overflow-hidden overflow-x-auto">
+                <Table className="border-collapse">
+                  <TableHeader>
+                    <TableRow className="bg-muted/30">
+                      <TableHead className="text-right border-l">תאריך</TableHead>
+                      <TableHead className="text-right border-l">חשבון</TableHead>
+                      <TableHead className="text-right border-l">פרטים</TableHead>
+                      <TableHead className="text-right border-l">אסמכתא</TableHead>
+                      <TableHead className="text-left">סכום</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {detailSorted.map((t) => (
+                      <TableRow key={t.id}>
+                        <TableCell className="border-l">{formatDate(effDate(t))}</TableCell>
+                        <TableCell className="border-l">{acctMap.get(t.account_id) ?? ""}</TableCell>
+                        <TableCell className="border-l">{t.description ?? ""}</TableCell>
+                        <TableCell className="border-l">{t.reference ?? ""}</TableCell>
+                        <TableCell className="text-left tabular-nums">{formatCurrency(Number(t.amount))}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {detail && (
+        <PrintDialog
+          open={printOpen}
+          onOpenChange={setPrintOpen}
+          title={`דוח מוטב — ${detail.payee}`}
+          subtitle={`${detail.count} תנועות · סה״כ ${formatCurrency(detail.total)}`}
+          scopes={[{ id: "all", label: "כל התנועות", rows: detailSorted }]}
+          columns={[
+            { id: "date", header: "תאריך", align: "right", format: (t: any) => formatDate(effDate(t)) },
+            { id: "account", header: "חשבון", align: "right", format: (t: any) => acctMap.get(t.account_id) ?? "" },
+            { id: "desc", header: "פרטים", align: "right", format: (t: any) => t.description ?? "" },
+            { id: "ref", header: "אסמכתא", align: "right", format: (t: any) => t.reference ?? "" },
+            { id: "amount", header: "סכום", align: "left", format: (t: any) => formatCurrency(Number(t.amount)) },
+          ]}
+          totals={[
+            { label: "סה״כ", value: formatCurrency(detail.total), tone: "neutral" },
+            { label: "מס׳ תנועות", value: String(detail.count) },
+          ]}
+        />
+      )}
+
     </ReportShell>
   );
 }
