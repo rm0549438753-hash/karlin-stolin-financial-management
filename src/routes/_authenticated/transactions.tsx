@@ -233,7 +233,7 @@ function TransactionsPage() {
     queryFn: async () => {
       if (!(await hasLiveSession())) return [] as TransactionRow[];
       const buildQ = () => {
-        let q = supabase.from("transactions").select("*").eq("account_id", account).order("transaction_date", { ascending: false });
+        let q = supabase.from("transactions").select("*", { count: "exact" }).eq("account_id", account).order("transaction_date", { ascending: false });
         if (category.length) q = q.in("category_id", category);
         if (subcategory.length) q = q.in("subcategory_id", subcategory);
         if (fund.length) q = q.in("fund_id", fund);
@@ -250,7 +250,7 @@ function TransactionsPage() {
       const all: TransactionRow[] = (first.data ?? []) as TransactionRow[];
       const total = first.count ?? all.length;
       if (total > PAGE) {
-        const pages: Promise<any>[] = [];
+        const pages: any[] = [];
         for (let offset = PAGE; offset < total; offset += PAGE) {
           pages.push(buildQ().range(offset, offset + PAGE - 1));
         }
