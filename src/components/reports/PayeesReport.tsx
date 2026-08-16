@@ -196,7 +196,7 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       return sortDir === "asc" ? cmp : -cmp;
     });
     return filtered;
-  }, [groups, search, sortKey, sortDir, dupSets]);
+  }, [groups, search, sortKey, sortDir, dupSets, effDate]);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
