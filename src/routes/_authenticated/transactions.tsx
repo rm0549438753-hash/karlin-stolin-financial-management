@@ -242,20 +242,31 @@ function TransactionsPage() {
         if (to) q = q.lte("transaction_date", to);
         return q;
       };
+      // First page also returns the exact total, so the remaining pages can be
+      // fetched in parallel instead of one-after-another (was 4-5 serial trips).
       const PAGE = 1000;
-      const all: TransactionRow[] = [];
-      for (let offset = 0; ; offset += PAGE) {
-        const { data, error } = await buildQ().range(offset, offset + PAGE - 1);
-        if (error) throw error;
-        if (!data || data.length === 0) break;
-        all.push(...(data as TransactionRow[]));
-        if (data.length < PAGE) break;
+      const first = await buildQ().range(0, PAGE - 1);
+      if (first.error) throw first.error;
+      const all: TransactionRow[] = (first.data ?? []) as TransactionRow[];
+      const total = first.count ?? all.length;
+      if (total > PAGE) {
+        const pages: Promise<any>[] = [];
+        for (let offset = PAGE; offset < total; offset += PAGE) {
+          pages.push(buildQ().range(offset, offset + PAGE - 1));
+        }
+        const results = await Promise.all(pages);
+        for (const r of results) {
+          if (r.error) throw r.error;
+          all.push(...((r.data ?? []) as TransactionRow[]));
+        }
       }
       return all;
     },
     staleTime: 2 * 60_000,
     gcTime: 15 * 60_000,
     refetchOnWindowFocus: false,
+    placeholderData: (prev: any) => prev,
+
   });
 
   // Fetch full uncategorized count for this account (unfiltered), cached
