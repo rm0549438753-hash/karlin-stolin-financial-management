@@ -107,13 +107,16 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [printOpen, setPrintOpen] = useState(false);
+  const [printAllOpen, setPrintAllOpen] = useState(false);
   const [accountId, setAccountId] = useState("all");
   const [expenseTypeId, setExpenseTypeId] = useState("all");
+  const [categoryId, setCategoryId] = useState("all");
   const [direction] = useState<"all" | "expense" | "income">("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
   const acctMap = nameMap(lookups.accounts);
+  const catMap = nameMap(lookups.categories ?? []);
 
   // Checks rows carry only value_date, so the effective date must follow the
   // same rule the dashboard uses, otherwise every check payee disappears.
@@ -137,6 +140,11 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           if (t.expense_type_id) return false;
         } else if (t.expense_type_id !== expenseTypeId) return false;
       }
+      if (categoryId !== "all") {
+        if (categoryId === "none") {
+          if (t.category_id) return false;
+        } else if (t.category_id !== categoryId) return false;
+      }
       const amt = Number(t.amount) || 0;
       if (direction === "expense" && amt >= 0) return false;
       if (direction === "income" && amt <= 0) return false;
@@ -145,7 +153,7 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       if (to && (!d || d > to)) return false;
       return true;
     });
-  }, [txs, accountId, expenseTypeId, direction, from, to, effDate]);
+  }, [txs, accountId, expenseTypeId, categoryId, direction, from, to, effDate]);
 
 
   const groups = useMemo(() => {
@@ -209,6 +217,17 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     });
     return filtered;
   }, [groups, search, sortKey, sortDir, dupSets, effDate]);
+
+  // Expanded print: every filtered payee followed by its own transactions.
+  const expandedPrintRows = useMemo(
+    () =>
+      rows.flatMap((r) =>
+        [...r.rows]
+          .sort((a, b) => (effDate(a) ?? "").localeCompare(effDate(b) ?? ""))
+          .map((t: any) => ({ ...t, __payee: r.payee })),
+      ),
+    [rows, effDate],
+  );
 
   const detail = useMemo(() => rows.find((r) => r.payee === expanded) ?? null, [rows, expanded]);
   const detailSorted = useMemo(
@@ -291,8 +310,21 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
             ))}
           </SelectContent>
         </Select>
+        <Select value={categoryId} onValueChange={setCategoryId}>
+          <SelectTrigger className="w-[180px]"><SelectValue placeholder="קטגוריה" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">כל הקטגוריות</SelectItem>
+            <SelectItem value="none">ללא קטגוריה</SelectItem>
+            {(lookups.categories ?? []).map((c: any) => (
+              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-[150px]" />
         <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-[150px]" />
+        <Button variant="outline" size="sm" onClick={() => setPrintAllOpen(true)} className="no-print">
+          <Printer className="w-4 h-4 ml-1" />הדפסה מורחבת
+        </Button>
       </div>
 
 
@@ -421,6 +453,38 @@ export function PayeesReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           ]}
         />
       )}
+
+      <PrintDialog
+        open={printAllOpen}
+        onOpenChange={setPrintAllOpen}
+        title="דוח מוטבים — הדפסה מורחבת"
+        subtitle={[
+          accountId !== "all" ? `חשבון: ${acctMap.get(accountId) ?? ""}` : null,
+          expenseTypeId !== "all"
+            ? `סוג: ${expenseTypeId === "none" ? "ללא סוג" : (nameMap(lookups.expenseTypes ?? []).get(expenseTypeId) ?? "")}`
+            : null,
+          categoryId !== "all"
+            ? `קטגוריה: ${categoryId === "none" ? "ללא קטגוריה" : (catMap.get(categoryId) ?? "")}`
+            : null,
+          from ? `מ־${formatDate(from)}` : null,
+          to ? `עד ${formatDate(to)}` : null,
+        ].filter(Boolean).join(" · ")}
+        scopes={[{ id: "all", label: "כל המוטבים", rows: expandedPrintRows }]}
+        columns={[
+          { id: "payee", header: "מוטב", align: "right", format: (t: any) => t.__payee ?? "" },
+          { id: "date", header: "תאריך", align: "right", format: (t: any) => formatDate(effDate(t)) },
+          { id: "account", header: "חשבון", align: "right", format: (t: any) => acctMap.get(t.account_id) ?? "" },
+          { id: "category", header: "קטגוריה", align: "right", format: (t: any) => (t.category_id ? catMap.get(t.category_id) ?? "" : "") },
+          { id: "desc", header: "פרטים", align: "right", format: (t: any) => t.description ?? "" },
+          { id: "ref", header: "אסמכתא", align: "right", format: (t: any) => t.reference ?? "" },
+          { id: "amount", header: "סכום", align: "left", format: (t: any) => formatCurrency(Number(t.amount)) },
+        ]}
+        totals={[
+          { label: "סה״כ", value: formatCurrency(totalPaid), tone: "neutral" },
+          { label: "מס׳ מוטבים", value: String(rows.length) },
+          { label: "מס׳ תנועות", value: String(expandedPrintRows.length) },
+        ]}
+      />
 
     </ReportShell>
   );
