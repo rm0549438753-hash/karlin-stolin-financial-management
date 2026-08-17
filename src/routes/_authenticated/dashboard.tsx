@@ -642,6 +642,7 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
               disabled={!drill?.rows.length}
               onExcel={() => drill && exportTxsToExcel(drill.rows, lookups, `${drill.title}.xlsx`)}
               onPdf={() => setPrintOpen(true)}
+              pdfOpensDialog
             />
             <Button size="sm" variant="outline" onClick={() => setPrintOpen(true)} disabled={!drill?.rows.length}>
               <Printer className="w-4 h-4 ml-1" />הדפסה
@@ -854,6 +855,7 @@ function VaultsTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                 disabled={!openRows.length}
                 onExcel={() => openVault && exportTxsToExcel(openRows, lookups, `דוח קופה - ${openVault.name}.xlsx`)}
                 onPdf={() => setPrintOpen(true)}
+              pdfOpensDialog
               />
               <Button size="sm" variant="outline" onClick={() => setPrintOpen(true)} disabled={!openRows.length}>
                 <Printer className="w-4 h-4 ml-1" />הדפסה

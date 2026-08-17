@@ -17,6 +17,8 @@ interface ExportMenuProps {
   size?: Size;
   label?: string;
   variant?: "default" | "outline" | "ghost" | "secondary";
+  /** When the PDF action only opens the print dialog, skip the export toast. */
+  pdfOpensDialog?: boolean;
 }
 
 export function ExportMenu({
@@ -26,6 +28,7 @@ export function ExportMenu({
   size = "sm",
   label = "ייצוא",
   variant = "outline",
+  pdfOpensDialog,
 }: ExportMenuProps) {
   /** Wraps an export handler with clear "preparing / done / failed" toasts. */
   const run = async (kind: "אקסל" | "PDF", fn: () => void | Promise<void>) => {
@@ -51,7 +54,7 @@ export function ExportMenu({
           <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
           אקסל (XLSX)
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => run("PDF", onPdf)} className="gap-2 cursor-pointer">
+        <DropdownMenuItem onClick={() => (pdfOpensDialog ? onPdf() : run("PDF", onPdf))} className="gap-2 cursor-pointer">
           <FileText className="w-4 h-4 text-red-600" />
           PDF
         </DropdownMenuItem>
