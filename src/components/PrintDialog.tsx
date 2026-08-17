@@ -290,12 +290,13 @@ ${footerHtml}
     const html = buildHtml(autoPrint);
     const w = window.open("", "_blank", "width=1100,height=800");
     if (!w) {
-      alert("חלון ההדפסה נחסם. אשר חלונות קופצים בדפדפן ונסה שוב.");
+      toast.error("חלון ההדפסה נחסם. אשר חלונות קופצים בדפדפן ונסה שוב.");
       return;
     }
     w.document.open();
     w.document.write(html);
     w.document.close();
+    toast.success("הדוח נפתח בחלון הדפסה");
     onOpenChange(false);
   }
 
