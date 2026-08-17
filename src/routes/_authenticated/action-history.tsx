@@ -50,6 +50,13 @@ const ALLOWED_UNDO_TABLES = new Set(Object.keys(TABLE_LABELS));
 const HIDDEN_DETAIL_FIELDS = new Set(["id", "created_at", "updated_at", "created_by", "updated_by", "import_batch_id"]);
 const PAGE_SIZE = 50;
 
+/** Default window: the last 30 days, so the page doesn't open with the whole log. */
+function daysAgo(n: number) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
+}
+
 async function fetchActionHistoryPage(pageParam: number, fromDate: string, toDate: string): Promise<ActionHistoryRow[]> {
   let q = (supabase as any)
     .from("action_history")
@@ -66,7 +73,7 @@ async function fetchActionHistoryPage(pageParam: number, fromDate: string, toDat
 function ActionHistoryPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
-  const [fromDate, setFromDate] = useState("");
+  const [fromDate, setFromDate] = useState(() => daysAgo(30));
   const [toDate, setToDate] = useState("");
   const [pendingUndo, setPendingUndo] = useState<ActionHistoryRow | null>(null);
 
@@ -174,7 +181,7 @@ function ActionHistoryPage() {
               </div>
               {(fromDate || toDate) && (
                 <Button variant="ghost" size="sm" onClick={clearDates} className="mb-0.5">
-                  <X className="w-3.5 h-3.5 ml-1" />נקה
+                  <X className="w-3.5 h-3.5 ml-1" />כל התקופה
                 </Button>
               )}
               <div className="relative min-w-[220px]">

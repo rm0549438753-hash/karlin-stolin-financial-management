@@ -206,7 +206,7 @@ export function ReportShell({ title, subtitle, onExport, onExportPdf, onPrint, c
         </div>
         <div className="flex gap-2 no-print">
           {onExport && (
-            <ExportMenu onExcel={onExport} onPdf={onPrint ?? onExportPdf ?? (() => window.print())} />
+            <ExportMenu onExcel={onExport} onPdf={onPrint ?? onExportPdf ?? (() => window.print())} pdfOpensDialog={!!onPrint || !onExportPdf} />
           )}
           <Button variant="outline" size="sm" onClick={onPrint ?? (() => window.print())}>
             <Printer className="w-4 h-4 ml-1" />הדפסה
@@ -351,6 +351,7 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                     exportTxs(monthRows, lookups, `צ׳קים עתידיים - ${monthLabel}.xlsx`);
                   }}
                   onPdf={() => setPrintOpen(true)}
+                  pdfOpensDialog
                 />
                 <Button size="sm" variant="outline" onClick={() => setPrintOpen(true)}>
                   <Printer className="w-4 h-4 ml-1" />הדפסה

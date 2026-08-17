@@ -163,7 +163,11 @@ export function ClassificationRulesPanel() {
       const { error } = await supabase.from("classification_rules").update({ is_active }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["classification-rules"] }),
+    onSuccess: (_d, v) => {
+      toast.success(v.is_active ? "הכלל הופעל" : "הכלל הושבת");
+      qc.invalidateQueries({ queryKey: ["classification-rules"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "עדכון הכלל נכשל"),
   });
 
   const remove = useMutation({
@@ -175,12 +179,16 @@ export function ClassificationRulesPanel() {
       toast.success("הכלל נמחק");
       qc.invalidateQueries({ queryKey: ["classification-rules"] });
     },
+    onError: (e: any) => toast.error(e?.message ?? "המחיקה נכשלה"),
   });
 
   const previewMut = useMutation({
     mutationFn: async (ruleId?: string) =>
       runPreview({ data: { ruleId, onlyUnclassified: !allTx, overwrite } }),
-    onSuccess: (res) => setPreview(res),
+    onSuccess: (res: any) => {
+      setPreview(res);
+      toast.success(`תצוגה מקדימה: ${res?.applied ?? 0} יסווגו · ${res?.suggested ?? 0} יוצעו לאישור`);
+    },
     onError: (e: any) => toast.error(e?.message ?? "התצוגה המקדימה נכשלה"),
   });
 
@@ -578,7 +586,8 @@ function SuggestionsList({ nameOf, canEdit }: { nameOf: Map<string, string>; can
 
   const act = useMutation({
     mutationFn: async ({ id, accept }: { id: string; accept: boolean }) => resolve({ data: { id, accept } }),
-    onSuccess: () => {
+    onSuccess: (_d, v) => {
+      toast.success(v.accept ? "ההצעה אושרה והתנועה סווגה" : "ההצעה נדחתה");
       qc.invalidateQueries({ queryKey: ["classification-suggestions"] });
       qc.invalidateQueries({ queryKey: ["tx-all"] });
     },

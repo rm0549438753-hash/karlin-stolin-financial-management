@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -290,12 +291,13 @@ ${footerHtml}
     const html = buildHtml(autoPrint);
     const w = window.open("", "_blank", "width=1100,height=800");
     if (!w) {
-      alert("חלון ההדפסה נחסם. אשר חלונות קופצים בדפדפן ונסה שוב.");
+      toast.error("חלון ההדפסה נחסם. אשר חלונות קופצים בדפדפן ונסה שוב.");
       return;
     }
     w.document.open();
     w.document.write(html);
     w.document.close();
+    toast.success("הדוח נפתח בחלון הדפסה");
     onOpenChange(false);
   }
 

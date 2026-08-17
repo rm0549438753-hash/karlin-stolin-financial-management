@@ -6,16 +6,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Download, FileSpreadsheet, FileText } from "lucide-react";
+import { toast } from "sonner";
 
 type Size = "sm" | "default" | "lg";
 
 interface ExportMenuProps {
-  onExcel: () => void;
-  onPdf: () => void;
+  onExcel: () => unknown;
+  onPdf: () => unknown;
   disabled?: boolean;
   size?: Size;
   label?: string;
   variant?: "default" | "outline" | "ghost" | "secondary";
+  /** When the PDF action only opens the print dialog, skip the export toast. */
+  pdfOpensDialog?: boolean;
 }
 
 export function ExportMenu({
@@ -25,7 +28,19 @@ export function ExportMenu({
   size = "sm",
   label = "ייצוא",
   variant = "outline",
+  pdfOpensDialog,
 }: ExportMenuProps) {
+  /** Wraps an export handler with clear "preparing / done / failed" toasts. */
+  const run = async (kind: "אקסל" | "PDF", fn: () => unknown) => {
+    const id = toast.loading(`מכין קובץ ${kind}…`);
+    try {
+      await fn();
+      toast.success(`הקובץ (${kind}) יוצא בהצלחה`, { id });
+    } catch (e: any) {
+      toast.error(e?.message ?? `הייצוא (${kind}) נכשל`, { id });
+    }
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -35,11 +50,11 @@ export function ExportMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[10rem]">
-        <DropdownMenuItem onClick={onExcel} className="gap-2 cursor-pointer">
+        <DropdownMenuItem onClick={() => run("אקסל", onExcel)} className="gap-2 cursor-pointer">
           <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
           אקסל (XLSX)
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={onPdf} className="gap-2 cursor-pointer">
+        <DropdownMenuItem onClick={() => (pdfOpensDialog ? onPdf() : run("PDF", onPdf))} className="gap-2 cursor-pointer">
           <FileText className="w-4 h-4 text-red-600" />
           PDF
         </DropdownMenuItem>
