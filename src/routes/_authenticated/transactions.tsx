@@ -400,6 +400,45 @@ function TransactionsPage() {
 
   const columns: ColumnDef[] = selectedAccount ? COLUMNS_BY_SCHEMA[selectedAccount.schema_type] : [];
 
+  // Optional smart grouping of the visible rows (display only — no data changes)
+  const groups = useMemo(() => {
+    if (groupBy === "none") return null;
+    const label = (r: any): string => {
+      if (groupBy === "month") {
+        const d = r.transaction_date ?? r.value_date;
+        if (!d) return "ללא תאריך";
+        const [y, m] = String(d).split("-");
+        return `${m}/${y}`;
+      }
+      if (groupBy === "fund") return r.fund_id ? (ctx.fundMap.get(r.fund_id) ?? "—") : "ללא קופה";
+      if (groupBy === "expType") return r.expense_type_id ? (ctx.expMap.get(r.expense_type_id) ?? "—") : "ללא סוג";
+      return r.category_id ? (ctx.catMap.get(r.category_id) ?? "—") : "ללא קטגוריה";
+    };
+    const map = new Map<string, any[]>();
+    for (const r of filtered as any[]) {
+      const k = label(r);
+      if (!map.has(k)) map.set(k, []);
+      map.get(k)!.push(r);
+    }
+    return Array.from(map.entries()).map(([key, rows]) => {
+      let inc = 0, exp = 0;
+      for (const r of rows) {
+        const a = Number(r.amount) || (Number(r.credit) || 0) - (Number(r.debit) || 0);
+        if (a > 0) inc += a; else exp += a;
+      }
+      return { key, rows, inc, exp, net: inc + exp };
+    });
+  }, [filtered, groupBy, ctx.fundMap, ctx.expMap, ctx.catMap]);
+
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const toggleGroup = (k: string) =>
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      next.has(k) ? next.delete(k) : next.add(k);
+      return next;
+    });
+
+
   const totals = useMemo(() => {
     let inc = 0, exp = 0;
     for (const r of filtered as any[]) {
