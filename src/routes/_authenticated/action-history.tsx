@@ -181,7 +181,7 @@ function ActionHistoryPage() {
               </div>
               {(fromDate || toDate) && (
                 <Button variant="ghost" size="sm" onClick={clearDates} className="mb-0.5">
-                  <X className="w-3.5 h-3.5 ml-1" />נקה
+                  <X className="w-3.5 h-3.5 ml-1" />כל התקופה
                 </Button>
               )}
               <div className="relative min-w-[220px]">
