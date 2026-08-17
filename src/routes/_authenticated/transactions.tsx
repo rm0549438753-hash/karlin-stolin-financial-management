@@ -40,6 +40,22 @@ export const Route = createFileRoute("/_authenticated/transactions")({
 
 const ALL = "__all__";
 
+type GroupBy = "none" | "month" | "fund" | "expType" | "category";
+
+const GROUP_OPTIONS: { value: GroupBy; label: string }[] = [
+  { value: "none", label: "ללא קיבוץ" },
+  { value: "month", label: "קיבוץ לפי חודש" },
+  { value: "fund", label: "קיבוץ לפי קופה" },
+  { value: "expType", label: "קיבוץ לפי סוג" },
+  { value: "category", label: "קיבוץ לפי קטגוריה" },
+];
+
+/** First day of the current month, as YYYY-MM-DD. */
+function startOfCurrentMonth() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+}
+
 type SchemaType = Account["schema_type"];
 
 type ColumnDef = {

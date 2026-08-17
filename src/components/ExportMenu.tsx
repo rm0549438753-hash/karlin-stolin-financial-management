@@ -11,8 +11,8 @@ import { toast } from "sonner";
 type Size = "sm" | "default" | "lg";
 
 interface ExportMenuProps {
-  onExcel: () => void | Promise<void>;
-  onPdf: () => void | Promise<void>;
+  onExcel: () => unknown;
+  onPdf: () => unknown;
   disabled?: boolean;
   size?: Size;
   label?: string;
@@ -31,7 +31,7 @@ export function ExportMenu({
   pdfOpensDialog,
 }: ExportMenuProps) {
   /** Wraps an export handler with clear "preparing / done / failed" toasts. */
-  const run = async (kind: "אקסל" | "PDF", fn: () => void | Promise<void>) => {
+  const run = async (kind: "אקסל" | "PDF", fn: () => unknown) => {
     const id = toast.loading(`מכין קובץ ${kind}…`);
     try {
       await fn();
