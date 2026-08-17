@@ -204,6 +204,7 @@ function TransactionsPage() {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [printOpen, setPrintOpen] = useState(false);
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Restore the last-used filters for this account. With no saved filters we
   // default to the current month so the table doesn't open with thousands of rows.
@@ -708,7 +709,15 @@ function TransactionsPage() {
           )}
 
           <div className="rounded-2xl border bg-card overflow-hidden">
-            <div className="px-4 py-3 bg-muted/40 flex flex-wrap gap-2 items-center">
+            <button
+              type="button"
+              className="md:hidden w-full px-4 py-2.5 bg-muted/40 border-b flex items-center justify-between text-sm font-bold"
+              onClick={() => setFiltersOpen((v) => !v)}
+            >
+              <span className="flex items-center gap-1.5"><Search className="w-4 h-4" />סינון וחיפוש</span>
+              {filtersOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            </button>
+            <div className={(filtersOpen ? "flex " : "hidden md:flex ") + "px-4 py-3 bg-muted/40 flex-wrap gap-2 items-center [&_input]:min-w-0 [&>*]:max-w-full"}>
               <div className="relative min-w-[160px]">
                 <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <Input value={searchDesc} onChange={(e) => setSearchDesc(e.target.value)} placeholder="תיאור / הערה" className="pr-9 bg-card" />
