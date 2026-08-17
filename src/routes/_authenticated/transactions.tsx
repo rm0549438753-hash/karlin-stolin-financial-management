@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { hasLiveSession } from "@/lib/session-guard";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Trash2, Download, Search, Upload, AlertTriangle, History, Undo2, X, Printer } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Search, Upload, AlertTriangle, History, Undo2, X, Printer, ChevronDown, ChevronLeft } from "lucide-react";
 import { useAccounts, useCategories, useFunds, useExpenseTypes, useSubcategories, type Account } from "@/hooks/use-lookups";
 import { formatDate } from "@/lib/format";
 import { TransactionDialog, type TransactionRow } from "@/components/TransactionDialog";
@@ -397,6 +397,54 @@ function TransactionsPage() {
     });
     return r;
   }, [rows, searchDesc, searchRef, searchName, searchAmount, onlyUncat, dateSort]);
+
+                    const renderRow = (r: any, idx: number) => {
+                    const isUncat = !r.fund_id && !r.expense_type_id;
+                    const isChecked = selectedIds.has(r.id);
+                    const isHighlighted = urlSearch.highlight === r.id || kbHighlightId === r.id;
+
+                    return (
+                      <TableRow
+                        key={r.id}
+                        data-tx-id={r.id}
+                        className={
+                          "group border-b border-border transition-colors hover:bg-primary/5 " +
+                          (isHighlighted ? "ring-2 ring-primary bg-primary/10 " : isChecked ? "bg-primary/5 " : isUncat ? "bg-amber-50/30 " : idx % 2 ? "bg-muted/20 " : "")
+                        }
+                      >
+                        <TableCell className="w-7 px-0.5 text-center border-l border-border/60">
+                          <Checkbox checked={isChecked} onCheckedChange={() => toggleOne(r.id)} aria-label="בחר תנועה" className="h-3.5 w-3.5" />
+                        </TableCell>
+                        {columns.map((col) => (
+                          <TableCell
+                            key={col.header}
+                            className={
+                              "border-l border-border/60 last:border-l-0 px-1.5 py-1 text-[11px] align-middle leading-tight " +
+                              (col.align === "left" ? "text-left whitespace-nowrap " : col.align === "center" ? "text-center " : "text-right ") +
+                              "max-w-[110px] truncate"
+                            }
+                            title={typeof col.render(r as any, ctx) === "string" ? String(col.render(r as any, ctx)) : undefined}
+                          >
+                            {col.render(r as any, ctx)}
+                          </TableCell>
+                        ))}
+                        <TableCell className="border-l border-border/60 last:border-l-0 px-0.5 py-1 w-16">
+                          <div className="flex items-center justify-center gap-0.5">
+                            {role?.isEditor && (
+                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setEditing(r); setDialogOpen(true); }}>
+                                <Pencil className="w-3 h-3" />
+                              </Button>
+                            )}
+                            {role?.isAdmin && (
+                              <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => setDeleteId(r.id)}>
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  };
 
   const columns: ColumnDef[] = selectedAccount ? COLUMNS_BY_SCHEMA[selectedAccount.schema_type] : [];
 
@@ -795,51 +843,33 @@ function TransactionsPage() {
                   {!isLoading && filtered.length === 0 && (
                     <TableRow><TableCell colSpan={columns.length + 2} className="text-center py-12 text-muted-foreground">אין תנועות להצגה</TableCell></TableRow>
                   )}
-                  {filtered.map((r, idx) => {
-                    const isUncat = !r.fund_id && !r.expense_type_id;
-                    const isChecked = selectedIds.has(r.id);
-                    const isHighlighted = urlSearch.highlight === r.id || kbHighlightId === r.id;
-
+                  {!groups && filtered.map((r, idx) => renderRow(r, idx))}
+                  {groups && groups.map((g) => {
+                    const collapsed = collapsedGroups.has(g.key);
                     return (
-                      <TableRow
-                        key={r.id}
-                        data-tx-id={r.id}
-                        className={
-                          "group border-b border-border transition-colors hover:bg-primary/5 " +
-                          (isHighlighted ? "ring-2 ring-primary bg-primary/10 " : isChecked ? "bg-primary/5 " : isUncat ? "bg-amber-50/30 " : idx % 2 ? "bg-muted/20 " : "")
-                        }
-                      >
-                        <TableCell className="w-7 px-0.5 text-center border-l border-border/60">
-                          <Checkbox checked={isChecked} onCheckedChange={() => toggleOne(r.id)} aria-label="בחר תנועה" className="h-3.5 w-3.5" />
-                        </TableCell>
-                        {columns.map((col) => (
-                          <TableCell
-                            key={col.header}
-                            className={
-                              "border-l border-border/60 last:border-l-0 px-1.5 py-1 text-[11px] align-middle leading-tight " +
-                              (col.align === "left" ? "text-left whitespace-nowrap " : col.align === "center" ? "text-center " : "text-right ") +
-                              "max-w-[110px] truncate"
-                            }
-                            title={typeof col.render(r as any, ctx) === "string" ? String(col.render(r as any, ctx)) : undefined}
-                          >
-                            {col.render(r as any, ctx)}
+                      <Fragment key={g.key}>
+                        <TableRow className="bg-primary/10 hover:bg-primary/15 border-y border-primary/30">
+                          <TableCell colSpan={columns.length + 2} className="px-2 py-1.5">
+                            <button
+                              type="button"
+                              onClick={() => toggleGroup(g.key)}
+                              className="w-full flex flex-wrap items-center justify-between gap-2 text-right"
+                            >
+                              <span className="flex items-center gap-1.5 text-[12px] font-bold text-primary">
+                                {collapsed ? <ChevronLeft className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                                {g.key}
+                                <span className="text-muted-foreground font-normal">({g.rows.length})</span>
+                              </span>
+                              <span className="flex gap-3 text-[11px] tabular-nums">
+                                <span className="text-income">{fmtNum(g.inc)} ₪</span>
+                                <span className="text-expense">{fmtNum(Math.abs(g.exp))} ₪</span>
+                                <span className={g.net >= 0 ? "text-income font-bold" : "text-expense font-bold"}>{fmtNum(g.net)} ₪</span>
+                              </span>
+                            </button>
                           </TableCell>
-                        ))}
-                        <TableCell className="border-l border-border/60 last:border-l-0 px-0.5 py-1 w-16">
-                          <div className="flex items-center justify-center gap-0.5">
-                            {role?.isEditor && (
-                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setEditing(r); setDialogOpen(true); }}>
-                                <Pencil className="w-3 h-3" />
-                              </Button>
-                            )}
-                            {role?.isAdmin && (
-                              <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => setDeleteId(r.id)}>
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
+                        </TableRow>
+                        {!collapsed && g.rows.map((r: any, idx: number) => renderRow(r, idx))}
+                      </Fragment>
                     );
                   })}
                 </TableBody>
