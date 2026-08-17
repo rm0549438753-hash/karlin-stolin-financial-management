@@ -187,17 +187,20 @@ function TransactionsPage() {
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [printOpen, setPrintOpen] = useState(false);
+  const [groupBy, setGroupBy] = useState<GroupBy>("none");
 
-  // Restore the last-used filters for this account (or reset to blank) when it changes
+  // Restore the last-used filters for this account. With no saved filters we
+  // default to the current month so the table doesn't open with thousands of rows.
   useEffect(() => {
     setSelectedIds(new Set());
     const saved = account ? loadFilters(account) : null;
-    const f = saved ?? EMPTY_FILTERS;
+    const f = saved ?? { ...EMPTY_FILTERS, from: startOfCurrentMonth() };
     setOnlyUncat(f.onlyUncat);
     setSearchDesc(f.searchDesc); setSearchRef(f.searchRef); setSearchName(f.searchName); setSearchAmount(f.searchAmount);
     setCategory(f.category); setSubcategory(f.subcategory); setFund(f.fund); setExpType(f.expType);
     setFrom(f.from); setTo(f.to); setDateSort(f.dateSort);
   }, [account]);
+
 
   // Persist the current filters for this account whenever they change
   useEffect(() => {
