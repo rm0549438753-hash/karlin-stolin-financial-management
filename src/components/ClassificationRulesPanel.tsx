@@ -187,7 +187,7 @@ export function ClassificationRulesPanel() {
       runPreview({ data: { ruleId, onlyUnclassified: !allTx, overwrite } }),
     onSuccess: (res: any) => {
       setPreview(res);
-      toast.success(`נמצאו ${res?.matches?.length ?? res?.total ?? 0} התאמות לתצוגה מקדימה`);
+      toast.success(`תצוגה מקדימה: ${res?.applied ?? 0} יסווגו · ${res?.suggested ?? 0} יוצעו לאישור`);
     },
     onError: (e: any) => toast.error(e?.message ?? "התצוגה המקדימה נכשלה"),
   });
