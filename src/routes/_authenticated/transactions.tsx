@@ -398,7 +398,7 @@ function TransactionsPage() {
     return r;
   }, [rows, searchDesc, searchRef, searchName, searchAmount, onlyUncat, dateSort]);
 
-                    const renderRow = (r: any, idx: number) => {
+  const renderRow = (r: any, idx: number) => {
                     const isUncat = !r.fund_id && !r.expense_type_id;
                     const isChecked = selectedIds.has(r.id);
                     const isHighlighted = urlSearch.highlight === r.id || kbHighlightId === r.id;
@@ -731,6 +731,14 @@ function TransactionsPage() {
               <MultiFilter value={fund} onChange={setFund} placeholder="כל הקופות" items={funds} />
               <MultiFilter value={category} onChange={(v) => { setCategory(v); setSubcategory([]); }} placeholder="כל הקטגוריות" items={categories} />
               <MultiFilter value={subcategory} onChange={setSubcategory} placeholder="כל תתי הקטגוריות" items={category.length === 0 ? subcats : subcats.filter((s) => category.includes(s.category_id ?? ""))} />
+              <Select value={groupBy} onValueChange={(v) => setGroupBy(v as GroupBy)}>
+                <SelectTrigger className="w-[150px] bg-card"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {GROUP_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {account && (
                 <SavedViewsMenu
                   accountId={account}
@@ -743,7 +751,17 @@ function TransactionsPage() {
 
             {isLoading ? <SummarySkeleton /> : (
               <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 border-b bg-background text-sm">
-                <div>סך תנועות: <b>{totals.count}</b></div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span>סך תנועות: <b>{totals.count}</b></span>
+                  {(from || to) && (
+                    <button
+                      className="text-xs font-bold text-primary hover:underline"
+                      onClick={() => { setFrom(""); setTo(""); }}
+                    >
+                      מוצג טווח תאריכים מסונן · הצג את כל התקופה
+                    </button>
+                  )}
+                </div>
                 <div className="flex gap-4">
                   <span>הכנסות: <b className="text-income tabular-nums">{fmtNum(totals.inc)} ₪</b></span>
                   <span>הוצאות: <b className="text-expense tabular-nums">{fmtNum(Math.abs(totals.exp))} ₪</b></span>
