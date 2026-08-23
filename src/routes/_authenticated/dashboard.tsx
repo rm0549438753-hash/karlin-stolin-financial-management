@@ -683,8 +683,8 @@ function DrillSheet({ drill, onClose, lookups }: { drill: { title: string; rows:
             className="pr-9 bg-card"
           />
         </div>
-        <div className="rounded-2xl border bg-card overflow-hidden">
-          <Table className="border-collapse">
+        <div className="rounded-2xl border bg-card overflow-hidden overflow-x-auto">
+          <Table className="border-collapse min-w-[640px]">
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
                 <TableHead className="text-right text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-l border-border px-2 py-2 whitespace-nowrap">תאריך</TableHead>
