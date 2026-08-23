@@ -100,7 +100,7 @@ function ReportsPage() {
         dir="rtl"
         className="space-y-4"
       >
-        <TabsList className="flex md:flex-wrap h-auto justify-start gap-1 overflow-x-auto max-w-full">
+        <TabsList className="flex md:flex-wrap h-auto justify-start gap-1 scroll-x-hint max-w-full">
           <TabsTrigger value="future-checks" className="shrink-0 gap-1.5 text-sm md:text-base font-semibold px-3 md:px-4 py-2">
             <CalendarClock className="w-4 h-4" />צ׳קים עתידיים
           </TabsTrigger>
@@ -303,13 +303,13 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
         <div className="rounded-lg border bg-card p-3 sm:p-4">
           <p className="text-sm font-semibold mb-3">פריסה לפי חודש — לחץ לפירוט</p>
           {/* Narrow screens scroll the chart instead of squeezing the months. */}
-          <div className="overflow-x-auto -mx-1 px-1">
+          <div className="scroll-x-hint -mx-1 px-1">
             <div style={{ minWidth: Math.max(320, monthly.length * 72) }}>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={monthly} margin={{ top: 24, right: 10, left: 10, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" fontSize={12} />
-                  <YAxis fontSize={12} orientation="left" tickFormatter={compactFmt} width={48} />
+                  <XAxis dataKey="month" fontSize={13} tickMargin={6} />
+                  <YAxis fontSize={13} orientation="left" tickFormatter={compactFmt} width={56} />
                   <Tooltip formatter={(v: number) => formatCurrency(v)} />
                   <Bar
                     dataKey="סכום"
@@ -318,7 +318,7 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
                     cursor="pointer"
                     onClick={(d: any) => setOpenMonth(d.month)}
                   >
-                    <LabelList dataKey="סכום" position="top" fontSize={11} fontWeight={700} formatter={(v: number) => compactFmt(v)} />
+                    <LabelList dataKey="סכום" position="top" fontSize={12} fontWeight={700} formatter={(v: number) => compactFmt(v)} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -667,7 +667,7 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           </div>
         )}
 
-        <div className="overflow-x-auto">
+        <div className="scroll-x-hint">
           <Table className="border-collapse">
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
@@ -896,7 +896,7 @@ function NoDateReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setAccountFilter("all"); }}>איפוס</Button>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="scroll-x-hint">
           <Table className="border-collapse">
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
