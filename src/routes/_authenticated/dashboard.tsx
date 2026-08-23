@@ -451,14 +451,14 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center" dir="rtl">
             {/* Right side: big pie + total */}
             <div className="flex flex-col items-center justify-center order-1">
-              <ResponsiveContainer width="100%" height={320}>
+              <ResponsiveContainer width="100%" height={isMobile ? 240 : 320}>
                 <PieChart>
                   <Pie
                     data={data}
                     dataKey="value"
                     nameKey="name"
-                    innerRadius={60}
-                    outerRadius={130}
+                    innerRadius="48%"
+                    outerRadius="88%"
                     cursor="pointer"
                     onClick={(d: any) => openTypeDrill(d.id, d.name, kind)}
                   >
@@ -471,13 +471,14 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
               </ResponsiveContainer>
               <div className="mt-2 text-center">
                 <div className="text-xs text-muted-foreground">סה"כ</div>
-                <div className={"text-2xl font-extrabold tabular-nums " + (kind === "income" ? "text-income" : "text-expense")}>
+                <div className={"text-xl sm:text-2xl font-extrabold tabular-nums " + (kind === "income" ? "text-income" : "text-expense")}>
                   {formatCurrency(total)}
                 </div>
               </div>
             </div>
             {/* Left side: detailed legend list */}
-            <ul className="space-y-1.5 text-sm max-h-[360px] overflow-y-auto pl-1 order-2">
+            <ul className="space-y-1.5 text-sm max-h-[280px] md:max-h-[360px] overflow-y-auto pl-1 order-2">
+
               {data.map((d, i) => {
                 const pct = total ? ((d.value / total) * 100).toFixed(1) : "0";
                 return (
