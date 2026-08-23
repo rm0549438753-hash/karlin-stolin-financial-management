@@ -215,3 +215,48 @@
   .print-area .recharts-wrapper { page-break-inside: avoid; }
 }
 
+
+/* ---- Mobile / installed-app adaptations ---- */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Keep the sticky header clear of the status bar / notch in the installed app */
+.app-header {
+  padding-top: var(--safe-top);
+}
+
+@media (max-width: 767px) {
+  /* Prevent mobile browsers from auto-zooming when focusing a field */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  /* No page-level horizontal scroll; wide tables scroll inside their own box */
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Smooth, contained horizontal scrolling for data tables */
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+
+  /* Comfortable touch targets */
+  button,
+  [role="tab"],
+  a[data-slot="sidebar-menu-button"] {
+    min-height: 40px;
+  }
+
+  /* Charts should never force the layout wider than the screen */
+  .recharts-wrapper,
+  .recharts-surface {
+    max-width: 100% !important;
+  }
+}
