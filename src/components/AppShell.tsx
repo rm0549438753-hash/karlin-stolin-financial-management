@@ -181,10 +181,14 @@ export function AppShell({ children, title, actions }: { children: ReactNode; ti
 
           </header>
           {actions && (
-            <div className="md:hidden scroll-x-hint flex items-center gap-2 whitespace-nowrap px-3 py-2 border-b bg-card/60 [&_button]:shrink-0 [&_a]:shrink-0">
+            <ScrollStrip
+              className="md:hidden border-b bg-card/60"
+              innerClassName="px-3 py-2 [&_button]:h-9 [&_button]:text-xs"
+            >
               {actions}
-            </div>
+            </ScrollStrip>
           )}
+
           <main className="flex-1 p-3 md:p-6 overflow-x-hidden pb-[max(1rem,env(safe-area-inset-bottom))]">{children}</main>
         </div>
       </div>
