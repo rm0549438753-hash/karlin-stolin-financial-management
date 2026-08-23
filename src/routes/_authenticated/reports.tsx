@@ -108,23 +108,23 @@ function ReportsPage() {
         dir="rtl"
         className="space-y-4"
       >
-        <TabsList className="flex flex-wrap h-auto justify-start gap-1">
-          <TabsTrigger value="future-checks" className="gap-1.5 text-base font-semibold px-4 py-2">
+        <TabsList className="flex md:flex-wrap h-auto justify-start gap-1 overflow-x-auto max-w-full">
+          <TabsTrigger value="future-checks" className="shrink-0 gap-1.5 text-sm md:text-base font-semibold px-3 md:px-4 py-2">
             <CalendarClock className="w-4 h-4" />צ׳קים עתידיים
           </TabsTrigger>
-          <TabsTrigger value="uncategorized" className="gap-1.5 text-base font-semibold px-4 py-2">
+          <TabsTrigger value="uncategorized" className="shrink-0 gap-1.5 text-sm md:text-base font-semibold px-3 md:px-4 py-2">
             <AlertTriangle className="w-4 h-4" />לא מסווגות
           </TabsTrigger>
-          <TabsTrigger value="no-date" className="gap-1.5 text-base font-semibold px-4 py-2">
+          <TabsTrigger value="no-date" className="shrink-0 gap-1.5 text-sm md:text-base font-semibold px-3 md:px-4 py-2">
             <CalendarX className="w-4 h-4" />ללא תאריך
           </TabsTrigger>
-          <TabsTrigger value="fund-opening" className="gap-1.5 text-base font-semibold px-4 py-2">
+          <TabsTrigger value="fund-opening" className="shrink-0 gap-1.5 text-sm md:text-base font-semibold px-3 md:px-4 py-2">
             <Wallet className="w-4 h-4" />יתרת תחילת שנה
           </TabsTrigger>
-          <TabsTrigger value="cash-balance" className="gap-1.5 text-base font-semibold px-4 py-2">
+          <TabsTrigger value="cash-balance" className="shrink-0 gap-1.5 text-sm md:text-base font-semibold px-3 md:px-4 py-2">
             <Coins className="w-4 h-4" />יתרת מזומן
           </TabsTrigger>
-          <TabsTrigger value="payees" className="gap-1.5 text-base font-semibold px-4 py-2">
+          <TabsTrigger value="payees" className="shrink-0 gap-1.5 text-sm md:text-base font-semibold px-3 md:px-4 py-2">
             <Users className="w-4 h-4" />דוח מוטבים
           </TabsTrigger>
         </TabsList>

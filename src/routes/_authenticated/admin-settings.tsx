@@ -52,7 +52,7 @@ function AdminSettingsPage() {
   return (
     <AppShell title="הגדרות ניהול">
       <Tabs defaultValue="users" className="space-y-4">
-        <TabsList className="flex-wrap">
+        <TabsList className="flex md:flex-wrap overflow-x-auto max-w-full justify-start [&>*]:shrink-0">
           <TabsTrigger value="users">משתמשים והרשאות</TabsTrigger>
           <TabsTrigger value="backup">גיבוי יומי</TabsTrigger>
           <TabsTrigger value="automations">אוטומציות מייל</TabsTrigger>
