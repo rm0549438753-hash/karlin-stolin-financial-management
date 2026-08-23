@@ -400,6 +400,11 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
   }, [pieFilteredTxs, etMap]);
 
   const [drill, setDrill] = useState<{ title: string; rows: Tx[] } | null>(null);
+  // On phones the charts had no room: the 12-month bar chart squeezed all
+  // columns into a few pixels and the pie shrank behind its legend. On mobile
+  // the bars scroll horizontally at a comfortable width and the pie is sized
+  // relative to the card with the legend stacked underneath.
+  const isMobile = useIsMobile();
 
   const openMonth = (monthKey: string, kind: "income" | "expense", label: string) => {
     const rows = txs.filter((t) => {
