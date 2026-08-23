@@ -265,25 +265,42 @@ function TransactionsPage() {
         if (to) q = q.lte("transaction_date", to);
         return q;
       };
-      // First page also returns the exact total, so the remaining pages can be
-      // fetched in parallel instead of one-after-another (was 4-5 serial trips).
+      // True paging: the first page (200 rows) resolves almost instantly and is
+      // what the screen paints with. The remaining pages stream in afterwards
+      // and are appended to the same cache entry, so the table never blocks on
+      // thousands of rows and the data/logic downstream is unchanged.
+      const FIRST = 200;
       const PAGE = 1000;
-      const first = await buildQ().range(0, PAGE - 1);
+      const first = await buildQ().range(0, FIRST - 1);
       if (first.error) throw first.error;
       const all: TransactionRow[] = (first.data ?? []) as TransactionRow[];
       const total = first.count ?? all.length;
-      if (total > PAGE) {
-        const pages: any[] = [];
-        for (let offset = PAGE; offset < total; offset += PAGE) {
-          pages.push(buildQ().range(offset, offset + PAGE - 1));
-        }
-        const results = await Promise.all(pages);
-        for (const r of results) {
-          if (r.error) throw r.error;
-          all.push(...((r.data ?? []) as TransactionRow[]));
-        }
+      if (total > all.length) {
+        const key = txQueryKey;
+        void (async () => {
+          try {
+            const reqs: any[] = [];
+            for (let offset = FIRST; offset < total; offset += PAGE) {
+              reqs.push(buildQ().range(offset, Math.min(offset + PAGE, total) - 1));
+            }
+            const results = await Promise.all(reqs);
+            const rest: TransactionRow[] = [];
+            for (const r of results) {
+              if (r.error) return;
+              rest.push(...((r.data ?? []) as TransactionRow[]));
+            }
+            qc.setQueryData(key, (prev: TransactionRow[] | undefined) => {
+              const base = prev && prev.length >= all.length ? prev.slice(0, all.length) : all;
+              const seen = new Set(base.map((x: any) => x.id));
+              return [...base, ...rest.filter((x: any) => !seen.has(x.id))];
+            });
+          } catch {
+            /* background fill is best-effort; the first page stays usable */
+          }
+        })();
       }
       return all;
+
     },
     staleTime: 2 * 60_000,
     gcTime: 15 * 60_000,
