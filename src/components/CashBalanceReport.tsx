@@ -63,7 +63,7 @@ export function useCashBalance() {
   // Keep in sync when transactions change
   useTransactionsRealtime("cash-balance-tx", () => {
     if (!cashAccount?.id) return;
-    qc.invalidateQueries({ queryKey: ["cash-transactions", cashAccount.id] });
+    qc.invalidateQueries({ queryKey: ["cash-transactions", cashAccount.id], refetchType: "active" });
   });
 
   return { cashAccount, transactions: q.data ?? [], isLoading: q.isLoading };

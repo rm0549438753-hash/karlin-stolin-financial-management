@@ -153,7 +153,7 @@ export function ClassificationRulesPanel() {
       toast.success("הכלל נשמר");
       setOpen(false);
       setForm(EMPTY);
-      qc.invalidateQueries({ queryKey: ["classification-rules"] });
+      qc.invalidateQueries({ queryKey: ["classification-rules"], refetchType: "active" });
     },
     onError: (e: any) => toast.error(e?.message ?? "שמירה נכשלה"),
   });
@@ -165,7 +165,7 @@ export function ClassificationRulesPanel() {
     },
     onSuccess: (_d, v) => {
       toast.success(v.is_active ? "הכלל הופעל" : "הכלל הושבת");
-      qc.invalidateQueries({ queryKey: ["classification-rules"] });
+      qc.invalidateQueries({ queryKey: ["classification-rules"], refetchType: "active" });
     },
     onError: (e: any) => toast.error(e?.message ?? "עדכון הכלל נכשל"),
   });
@@ -177,7 +177,7 @@ export function ClassificationRulesPanel() {
     },
     onSuccess: () => {
       toast.success("הכלל נמחק");
-      qc.invalidateQueries({ queryKey: ["classification-rules"] });
+      qc.invalidateQueries({ queryKey: ["classification-rules"], refetchType: "active" });
     },
     onError: (e: any) => toast.error(e?.message ?? "המחיקה נכשלה"),
   });
@@ -200,9 +200,9 @@ export function ClassificationRulesPanel() {
         `סווגו ${res.applied} תנועות, נוצרו ${res.suggested} הצעות, ${res.skipped ?? 0} דולגו (השדה כבר מלא)`,
       );
       setPreview(null);
-      qc.invalidateQueries({ queryKey: ["classification-rules"] });
-      qc.invalidateQueries({ queryKey: ["tx-all"] });
-      qc.invalidateQueries({ queryKey: ["classification-suggestions"] });
+      qc.invalidateQueries({ queryKey: ["classification-rules"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["tx-all"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["classification-suggestions"], refetchType: "active" });
     },
     onError: (e: any) => toast.error(e?.message ?? "ההרצה נכשלה"),
   });
@@ -588,8 +588,8 @@ function SuggestionsList({ nameOf, canEdit }: { nameOf: Map<string, string>; can
     mutationFn: async ({ id, accept }: { id: string; accept: boolean }) => resolve({ data: { id, accept } }),
     onSuccess: (_d, v) => {
       toast.success(v.accept ? "ההצעה אושרה והתנועה סווגה" : "ההצעה נדחתה");
-      qc.invalidateQueries({ queryKey: ["classification-suggestions"] });
-      qc.invalidateQueries({ queryKey: ["tx-all"] });
+      qc.invalidateQueries({ queryKey: ["classification-suggestions"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["tx-all"], refetchType: "active" });
     },
     onError: (e: any) => toast.error(e?.message ?? "הפעולה נכשלה"),
   });

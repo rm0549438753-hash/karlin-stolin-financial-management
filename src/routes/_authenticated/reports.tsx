@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useTransactionsRealtime } from "@/hooks/use-tx-realtime";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchAllTransactionsShared } from "@/lib/tx-fetch";
+import { useAllTransactions } from "@/hooks/use-tx-all";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
@@ -67,30 +67,22 @@ export type Tx = {
   association: string | null;
 };
 
-async function fetchAllTransactions(): Promise<Tx[]> {
-  return (await fetchAllTransactionsShared()) as unknown as Tx[];
-}
 
 
 function ReportsPage() {
   const { tab } = Route.useSearch();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { data: allTxs = [], isLoading } = useQuery({
-    queryKey: ["tx-all"],
-    queryFn: fetchAllTransactions,
-    staleTime: 5 * 60_000,
-    gcTime: 30 * 60_000,
-    refetchOnWindowFocus: false,
-  });
+  const { data: allTxs = [], isLoading } = useAllTransactions();
+
   // Every report except "no date" works on dated rows only.
   const txs = useMemo(
     () => (allTxs as Tx[]).filter((t) => t.transaction_date != null || t.value_date != null),
     [allTxs],
   );
   useTransactionsRealtime("reports-tx", () => {
-    qc.invalidateQueries({ queryKey: ["tx-all"] });
-    qc.invalidateQueries({ queryKey: ["alerts-no-date-count"] });
+    qc.invalidateQueries({ queryKey: ["tx-all"], refetchType: "active" });
+    qc.invalidateQueries({ queryKey: ["tx-alert-counts"], refetchType: "active" });
   });
   const { data: accounts = [] } = useAccounts();
   const { data: funds = [] } = useFunds();
@@ -553,10 +545,9 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     onSuccess: () => {
       toast.success(`${selectedIds.size} תנועות נמחקו`);
       setSelectedIds(new Set());
-      qc.invalidateQueries({ queryKey: ["transactions"] });
-      qc.invalidateQueries({ queryKey: ["tx-all"] });
-      qc.invalidateQueries({ queryKey: ["tx-all"] });
-      qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
+      qc.invalidateQueries({ queryKey: ["transactions"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["tx-all"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["tx-alert-counts"], refetchType: "active" });
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאה"),
   });
@@ -784,7 +775,7 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
         open={bulkEditOpen}
         onOpenChange={setBulkEditOpen}
         ids={Array.from(selectedIds)}
-        onDone={() => { setSelectedIds(new Set()); qc.invalidateQueries({ queryKey: ["tx-all"] }); qc.invalidateQueries({ queryKey: ["transactions"] }); }}
+        onDone={() => { setSelectedIds(new Set()); qc.invalidateQueries({ queryKey: ["tx-all"], refetchType: "active" }); qc.invalidateQueries({ queryKey: ["transactions"], refetchType: "active" }); }}
       />
 
       <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
@@ -861,10 +852,9 @@ function NoDateReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     onSuccess: (_d, vars) => {
       toast.success("תאריך עודכן");
       setDrafts((d) => { const n = { ...d }; delete n[vars.id]; return n; });
-      qc.invalidateQueries({ queryKey: ["tx-all"] });
-      qc.invalidateQueries({ queryKey: ["tx-all"] });
-      qc.invalidateQueries({ queryKey: ["transactions"] });
-      qc.invalidateQueries({ queryKey: ["alerts-no-date-count"] });
+      qc.invalidateQueries({ queryKey: ["tx-all"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["transactions"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["tx-alert-counts"], refetchType: "active" });
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאה"),
     onSettled: () => setSavingId(null),

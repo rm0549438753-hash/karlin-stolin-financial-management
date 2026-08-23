@@ -91,8 +91,8 @@ export function SecurityAccessPanel() {
     onSuccess: (r: any) => {
       toast.success(r?.enabled ? "קוד ההורדה עודכן" : "קוד ההורדה בוטל — ההורדה פתוחה");
       setCodeValue("");
-      qc.invalidateQueries({ queryKey: ["download-code-status-admin"] });
-      qc.invalidateQueries({ queryKey: ["download-code-reveal"] });
+      qc.invalidateQueries({ queryKey: ["download-code-status-admin"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["download-code-reveal"], refetchType: "active" });
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאה בשמירת הקוד"),
   });
@@ -103,7 +103,7 @@ export function SecurityAccessPanel() {
       toast.success("הכתובת נחסמה");
       setNewIp("");
       setNewIpReason("");
-      qc.invalidateQueries({ queryKey: ["blocked-ips"] });
+      qc.invalidateQueries({ queryKey: ["blocked-ips"], refetchType: "active" });
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאה בחסימה"),
   });
@@ -112,7 +112,7 @@ export function SecurityAccessPanel() {
     mutationFn: async (id: string) => await doUnblock({ data: { id } }),
     onSuccess: () => {
       toast.success("החסימה הוסרה");
-      qc.invalidateQueries({ queryKey: ["blocked-ips"] });
+      qc.invalidateQueries({ queryKey: ["blocked-ips"], refetchType: "active" });
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאה"),
   });
@@ -121,7 +121,7 @@ export function SecurityAccessPanel() {
     mutationFn: async () => await purge(),
     onSuccess: (r: any) => {
       toast.success(`נמחקו ${(r?.loginEventsDeleted ?? 0) + (r?.failedDeleted ?? 0)} רשומות ישנות`);
-      qc.invalidateQueries({ queryKey: ["security-events"] });
+      qc.invalidateQueries({ queryKey: ["security-events"], refetchType: "active" });
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאה"),
   });

@@ -102,7 +102,7 @@ export function FundOpeningBalancesReport() {
           .insert({ fund_id: fundId, year, amount, note: d.note || null });
         if (error) throw error;
       }
-      await qc.invalidateQueries({ queryKey: ["fund_opening_balances"] });
+      await qc.invalidateQueries({ queryKey: ["fund_opening_balances"], refetchType: "active" });
       toast.success("נשמר");
     } catch (e: any) {
       toast.error(e?.message ?? "שגיאה בשמירה");

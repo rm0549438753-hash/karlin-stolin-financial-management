@@ -51,10 +51,9 @@ export function BulkEditDialog({
     },
     onSuccess: () => {
       toast.success(`${ids.length} תנועות עודכנו`);
-      qc.invalidateQueries({ queryKey: ["transactions"] });
-      qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
-      qc.invalidateQueries({ queryKey: ["tx-all"] });
-      qc.invalidateQueries({ queryKey: ["tx-all"] });
+      qc.invalidateQueries({ queryKey: ["transactions"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["tx-alert-counts"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["tx-all"], refetchType: "active" });
       onOpenChange(false);
       setFund(KEEP); setExp(KEEP); setCat(KEEP); setSub(KEEP);
       onDone?.();

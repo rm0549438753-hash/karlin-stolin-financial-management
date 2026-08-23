@@ -26,7 +26,8 @@ import { ExportMenu } from "@/components/ExportMenu";
 import { exportRowsAsPdf, objectsToTable } from "@/lib/export-pdf";
 import { useFundOpeningBalances } from "@/components/FundOpeningBalancesReport";
 import { CashBalanceCard } from "@/components/CashBalanceReport";
-import { TX_ALL_KEY, fetchAllTransactionsShared } from "@/lib/tx-fetch";
+import { TX_ALL_KEY } from "@/lib/tx-fetch";
+import { useAllTransactions } from "@/hooks/use-tx-all";
 import { useTransactionsRealtime } from "@/hooks/use-tx-realtime";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -63,13 +64,7 @@ type RawTx = Omit<Tx, "transaction_date"> & { transaction_date: string | null };
 
 function DashboardPage() {
   const qc = useQueryClient();
-  const { data: allTxs = [], isLoading } = useQuery({
-    queryKey: TX_ALL_KEY,
-    queryFn: fetchAllTransactionsShared,
-    staleTime: 5 * 60_000,
-    gcTime: 30 * 60_000,
-    refetchOnWindowFocus: false,
-  });
+  const { data: allTxs = [], isLoading } = useAllTransactions();
   const rawTxs = useMemo(
     () => (allTxs as RawTx[]).filter((t) => t.transaction_date != null || t.value_date != null),
     [allTxs],
@@ -78,7 +73,7 @@ function DashboardPage() {
 
   // Realtime: keep dashboard fresh when transactions change anywhere
   useTransactionsRealtime("dashboard-tx", () => {
-    qc.invalidateQueries({ queryKey: TX_ALL_KEY });
+    qc.invalidateQueries({ queryKey: TX_ALL_KEY, refetchType: "active" });
   });
 
   const { data: accounts = [] } = useAccounts();

@@ -315,15 +315,14 @@ export function ImportDialog({ open, onOpenChange, account }: { open: boolean; o
     },
     onSuccess: (res) => {
       toast.success(`יובאו ${res.count} תנועות`);
-      qc.invalidateQueries({ queryKey: ["transactions"] });
-      qc.invalidateQueries({ queryKey: ["import-batches"] });
-      qc.invalidateQueries({ queryKey: ["tx-all"] });
-      qc.invalidateQueries({ queryKey: ["tx-all"] });
-      qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
-      qc.invalidateQueries({ queryKey: ["funds"] });
-      qc.invalidateQueries({ queryKey: ["expense-types"] });
-      qc.invalidateQueries({ queryKey: ["categories"] });
-      qc.invalidateQueries({ queryKey: ["subcategories"] });
+      qc.invalidateQueries({ queryKey: ["transactions"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["import-batches"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["tx-all"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["tx-alert-counts"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["funds"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["expense-types"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["categories"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["subcategories"], refetchType: "active" });
       setFile(null); setPreview(null);
       onOpenChange(false);
     },

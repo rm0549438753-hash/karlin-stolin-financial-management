@@ -65,7 +65,7 @@ export function BackupPanel() {
       } else {
         toast.error(`שגיאה בגיבוי: ${res?.error ?? "לא ידוע"}`);
       }
-      qc.invalidateQueries({ queryKey: ["backup_runs"] });
+      qc.invalidateQueries({ queryKey: ["backup_runs"], refetchType: "active" });
     },
     onError: (err: any) => toast.error(`שגיאה בגיבוי: ${err?.message ?? err}`),
     onSettled: () => setRunning(false),
@@ -73,14 +73,14 @@ export function BackupPanel() {
 
   const advance = useMutation({
     mutationFn: () => continueRun(),
-    onSettled: () => qc.invalidateQueries({ queryKey: ["backup_runs"] }),
+    onSettled: () => qc.invalidateQueries({ queryKey: ["backup_runs"], refetchType: "active" }),
   });
 
   const deleteRun = useMutation({
     mutationFn: (id: string) => del({ data: { id } }),
     onSuccess: () => {
       toast.success("נמחק");
-      qc.invalidateQueries({ queryKey: ["backup_runs"] });
+      qc.invalidateQueries({ queryKey: ["backup_runs"], refetchType: "active" });
     },
     onError: (err: any) => toast.error(`שגיאה: ${err?.message ?? err}`),
   });

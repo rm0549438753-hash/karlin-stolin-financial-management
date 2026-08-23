@@ -158,10 +158,9 @@ export function TransactionDialog({
     },
     onSuccess: () => {
       toast.success(initial ? "תנועה עודכנה" : "תנועה נוספה");
-      qc.invalidateQueries({ queryKey: ["transactions"] });
-      qc.invalidateQueries({ queryKey: ["tx-all"] });
-      qc.invalidateQueries({ queryKey: ["tx-all"] });
-      qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
+      qc.invalidateQueries({ queryKey: ["transactions"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["tx-all"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["tx-alert-counts"], refetchType: "active" });
       onOpenChange(false);
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאה"),

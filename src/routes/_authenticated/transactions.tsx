@@ -1,3 +1,5 @@
+import { useAlertCounts } from "@/hooks/use-alert-counts";
+import { useIdbQueryCache } from "@/hooks/use-idb-query-cache";
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -247,8 +249,9 @@ function TransactionsPage() {
 
 
 
+  const txQueryKey = ["transactions", { account, category, subcategory, fund, expType, from, to }] as const;
   const { data: rows = [], isLoading } = useQuery({
-    queryKey: ["transactions", { account, category, subcategory, fund, expType, from, to }],
+    queryKey: txQueryKey,
     enabled: !!account,
     queryFn: async () => {
       if (!(await hasLiveSession())) return [] as TransactionRow[];
@@ -289,25 +292,13 @@ function TransactionsPage() {
 
   });
 
-  // Fetch full uncategorized count for this account (unfiltered), cached
-  const { data: uncatCount = 0 } = useQuery({
-    queryKey: ["uncategorized-count", account],
-    enabled: !!account,
-    queryFn: async () => {
-      if (!(await hasLiveSession())) return 0;
-      const { count, error } = await supabase
-        .from("transactions")
-        .select("*", { count: "exact", head: true })
-        .eq("account_id", account)
-        .is("fund_id", null)
-        .is("expense_type_id", null);
-      if (error) throw error;
-      return count ?? 0;
-    },
-    staleTime: 5 * 60_000,
-    gcTime: 30 * 60_000,
-    refetchOnWindowFocus: false,
-  });
+  // Keep the last rows for this account/filter on the device for instant re-open.
+  useIdbQueryCache(txQueryKey, rows.length ? rows : undefined, !!account);
+
+  // Per-account uncategorized count — served by the shared indexed counter call
+  // instead of a full-table COUNT scan per screen.
+  const { data: alertCounts } = useAlertCounts();
+  const uncatCount = (account && alertCounts?.by_account?.[account]) || 0;
 
 
   const { data: batches = [] } = useQuery({
@@ -335,11 +326,10 @@ function TransactionsPage() {
     },
     onSuccess: () => {
       toast.success("הייבוא בוטל");
-      qc.invalidateQueries({ queryKey: ["transactions"] });
-      qc.invalidateQueries({ queryKey: ["import-batches"] });
-      qc.invalidateQueries({ queryKey: ["tx-all"] });
-      qc.invalidateQueries({ queryKey: ["tx-all"] });
-      qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
+      qc.invalidateQueries({ queryKey: ["transactions"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["import-batches"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["tx-all"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["tx-alert-counts"], refetchType: "active" });
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאה בביטול"),
   });
@@ -526,10 +516,9 @@ function TransactionsPage() {
     },
     onSuccess: () => {
       toast.success("התנועה נמחקה");
-      qc.invalidateQueries({ queryKey: ["transactions"] });
-      qc.invalidateQueries({ queryKey: ["tx-all"] });
-      qc.invalidateQueries({ queryKey: ["tx-all"] });
-      qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
+      qc.invalidateQueries({ queryKey: ["transactions"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["tx-all"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["tx-alert-counts"], refetchType: "active" });
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאה"),
   });
@@ -547,10 +536,9 @@ function TransactionsPage() {
     onSuccess: () => {
       toast.success(`${selectedIds.size} תנועות נמחקו`);
       setSelectedIds(new Set());
-      qc.invalidateQueries({ queryKey: ["transactions"] });
-      qc.invalidateQueries({ queryKey: ["tx-all"] });
-      qc.invalidateQueries({ queryKey: ["tx-all"] });
-      qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
+      qc.invalidateQueries({ queryKey: ["transactions"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["tx-all"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["tx-alert-counts"], refetchType: "active" });
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאה"),
   });

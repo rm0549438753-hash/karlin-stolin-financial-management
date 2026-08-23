@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { hasLiveSession } from "@/lib/session-guard";
 import { useAccounts } from "@/hooks/use-lookups";
 import { useTransactionsRealtime } from "@/hooks/use-tx-realtime";
+import { useAlertCounts, ALERT_COUNTS_KEY } from "@/hooks/use-alert-counts";
 import { formatCurrency, formatDate } from "@/lib/format";
 
 export function AlertsBanner() {
@@ -15,9 +16,8 @@ export function AlertsBanner() {
   // Keep the banner counts in step with the transaction screens: any insert,
   // edit, import or delete refreshes them (debounced for bulk operations).
   useTransactionsRealtime("alerts-banner-tx", () => {
-    qc.invalidateQueries({ queryKey: ["alerts-upcoming-checks"] });
-    qc.invalidateQueries({ queryKey: ["alerts-uncategorized-count"] });
-    qc.invalidateQueries({ queryKey: ["alerts-no-date-count"] });
+    qc.invalidateQueries({ queryKey: ["alerts-upcoming-checks"], refetchType: "active" });
+    qc.invalidateQueries({ queryKey: ALERT_COUNTS_KEY, refetchType: "active" });
   });
 
   const CACHE = { staleTime: 5 * 60_000, gcTime: 30 * 60_000, refetchOnWindowFocus: false } as const;
@@ -42,51 +42,11 @@ export function AlertsBanner() {
     ...CACHE,
   });
 
-  const { data: uncategorizedCount = 0 } = useQuery({
-    queryKey: ["alerts-uncategorized-count"],
-    queryFn: async () => {
-      if (!(await hasLiveSession())) return 0;
-      const { count, error } = await supabase
-        .from("transactions")
-        .select("id", { count: "exact", head: true })
-        .is("fund_id", null)
-        .is("expense_type_id", null);
-      if (error) throw error;
-      return count ?? 0;
-    },
-    ...CACHE,
-  });
-
-  const checksAccountId = checksAccount?.id;
-  const { data: noDateCount = 0 } = useQuery({
-    queryKey: ["alerts-no-date-count", checksAccountId ?? "none"],
-    queryFn: async () => {
-      if (!(await hasLiveSession())) return 0;
-      // Checks account is dateless only when value_date is missing.
-      // Other accounts are dateless when both transaction_date and value_date are missing.
-      let others = supabase
-        .from("transactions")
-        .select("id", { count: "exact", head: true })
-        .is("transaction_date", null)
-        .is("value_date", null);
-      if (checksAccountId) others = others.neq("account_id", checksAccountId);
-      const { count: othersCount, error: e1 } = await others;
-      if (e1) throw e1;
-
-      let checksCount = 0;
-      if (checksAccountId) {
-        const { count, error: e2 } = await supabase
-          .from("transactions")
-          .select("id", { count: "exact", head: true })
-          .eq("account_id", checksAccountId)
-          .is("value_date", null);
-        if (e2) throw e2;
-        checksCount = count ?? 0;
-      }
-      return (othersCount ?? 0) + checksCount;
-    },
-    ...CACHE,
-  });
+  // Both counters now come from ONE indexed database call instead of three
+  // full-table scans that ran on every screen and every refresh.
+  const { data: counts } = useAlertCounts();
+  const uncategorizedCount = counts?.uncategorized_total ?? 0;
+  const noDateCount = counts?.no_date ?? 0;
 
 
   const totalChecks = upcomingChecks.reduce((s: number, t: any) => s + Math.abs(Number(t.amount)), 0);

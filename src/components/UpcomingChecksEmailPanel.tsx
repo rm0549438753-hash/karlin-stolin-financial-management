@@ -100,7 +100,7 @@ export function UpcomingChecksEmailPanel() {
       if (res?.ok && res?.sent) toast.success(`המייל נשלח · ${res.count} צ'קים`);
       else if (res?.ok && res?.skipped) toast.info("אין צ'קים למחר — לא נשלח מייל");
       else toast.error(`שגיאה: ${res?.error ?? "לא ידוע"}`);
-      qc.invalidateQueries({ queryKey: ["check_email_runs"] });
+      qc.invalidateQueries({ queryKey: ["check_email_runs"], refetchType: "active" });
     },
     onError: (err: any) => toast.error(`שגיאה: ${err?.message ?? err}`),
     onSettled: () => setRunning(false),
@@ -110,7 +110,7 @@ export function UpcomingChecksEmailPanel() {
     mutationFn: (id: string) => del({ data: { id } }),
     onSuccess: () => {
       toast.success("נמחק");
-      qc.invalidateQueries({ queryKey: ["check_email_runs"] });
+      qc.invalidateQueries({ queryKey: ["check_email_runs"], refetchType: "active" });
     },
     onError: (err: any) => toast.error(`שגיאה: ${err?.message ?? err}`),
   });
@@ -121,7 +121,7 @@ export function UpcomingChecksEmailPanel() {
       if (res?.ok && res?.sent) toast.success(`נשלח מחדש · ${res.count} צ'קים`);
       else if (res?.ok && res?.skipped) toast.info("אין צ'קים לתאריך זה");
       else toast.error(`שגיאה: ${res?.error ?? "לא ידוע"}`);
-      qc.invalidateQueries({ queryKey: ["check_email_runs"] });
+      qc.invalidateQueries({ queryKey: ["check_email_runs"], refetchType: "active" });
     },
     onError: (err: any) => toast.error(`שגיאה: ${err?.message ?? err}`),
   });
@@ -140,7 +140,7 @@ export function UpcomingChecksEmailPanel() {
     }),
     onSuccess: () => {
       toast.success("ההגדרות נשמרו");
-      qc.invalidateQueries({ queryKey: ["check_email_settings"] });
+      qc.invalidateQueries({ queryKey: ["check_email_settings"], refetchType: "active" });
     },
     onError: (err: any) => toast.error(`שגיאה: ${err?.message ?? err}`),
   });

@@ -87,7 +87,7 @@ function LookupCRUD({ table, label, hasKind, hasCategory }: { table: string; lab
       const { error } = await supabase.from(table as any).insert(payload);
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("נוסף"); setName(""); qc.invalidateQueries({ queryKey: [table] }); qc.invalidateQueries({ queryKey: [table, "all"] }); },
+    onSuccess: () => { toast.success("נוסף"); setName(""); qc.invalidateQueries({ queryKey: [table], refetchType: "active" }); qc.invalidateQueries({ queryKey: [table, "all"], refetchType: "active" }); },
     onError: (e: any) => toast.error(e.message),
   });
   const del = useMutation({
@@ -95,7 +95,7 @@ function LookupCRUD({ table, label, hasKind, hasCategory }: { table: string; lab
       const { error } = await supabase.from(table as any).delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("נמחק"); qc.invalidateQueries({ queryKey: [table] }); qc.invalidateQueries({ queryKey: [table, "all"] }); },
+    onSuccess: () => { toast.success("נמחק"); qc.invalidateQueries({ queryKey: [table], refetchType: "active" }); qc.invalidateQueries({ queryKey: [table, "all"], refetchType: "active" }); },
     onError: (e: any) => toast.error(e.message ?? "לא ניתן למחוק (יתכן ויש בו שימוש)"),
   });
 
@@ -112,13 +112,13 @@ function LookupCRUD({ table, label, hasKind, hasCategory }: { table: string; lab
       toast.success("השם עודכן בכל המקומות במערכת");
       setEditing(null);
       // Invalidate everything that may reference these names
-      qc.invalidateQueries({ queryKey: [table] });
-      qc.invalidateQueries({ queryKey: [table, "all"] });
-      qc.invalidateQueries({ queryKey: ["accounts"] });
-      qc.invalidateQueries({ queryKey: ["funds"] });
-      qc.invalidateQueries({ queryKey: ["expense_types"] });
-      qc.invalidateQueries({ queryKey: ["categories"] });
-      qc.invalidateQueries({ queryKey: ["subcategories"] });
+      qc.invalidateQueries({ queryKey: [table], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: [table, "all"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["accounts"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["funds"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["expense_types"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["categories"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["subcategories"], refetchType: "active" });
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -221,7 +221,7 @@ export function UsersPanel() {
     onSuccess: () => {
       toast.success("המשתמש נוצר");
       setNewEmail(""); setNewPassword(""); setNewName(""); setNewRole("editor");
-      qc.invalidateQueries({ queryKey: ["users-with-roles"] });
+      qc.invalidateQueries({ queryKey: ["users-with-roles"], refetchType: "active" });
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאה ביצירת משתמש"),
   });
@@ -236,7 +236,7 @@ export function UsersPanel() {
       const { error } = await supabase.from("user_roles").insert(rows as any);
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("התפקיד עודכן"); qc.invalidateQueries({ queryKey: ["users-with-roles"] }); },
+    onSuccess: () => { toast.success("התפקיד עודכן"); qc.invalidateQueries({ queryKey: ["users-with-roles"], refetchType: "active" }); },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -244,13 +244,13 @@ export function UsersPanel() {
     mutationFn: async ({ userId, blocked }: { userId: string; blocked: boolean }) => {
       await setBlocked({ data: { userId, blocked } });
     },
-    onSuccess: (_d, v) => { toast.success(v.blocked ? "המשתמש נחסם" : "החסימה הוסרה"); qc.invalidateQueries({ queryKey: ["users-with-roles"] }); },
+    onSuccess: (_d, v) => { toast.success(v.blocked ? "המשתמש נחסם" : "החסימה הוסרה"); qc.invalidateQueries({ queryKey: ["users-with-roles"], refetchType: "active" }); },
     onError: (e: any) => toast.error(e.message),
   });
 
   const del = useMutation({
     mutationFn: async (userId: string) => { await deleteUser({ data: { userId } }); },
-    onSuccess: () => { toast.success("המשתמש נמחק"); qc.invalidateQueries({ queryKey: ["users-with-roles"] }); },
+    onSuccess: () => { toast.success("המשתמש נמחק"); qc.invalidateQueries({ queryKey: ["users-with-roles"], refetchType: "active" }); },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -443,7 +443,7 @@ export function SheetsSyncPanel() {
     },
     onSuccess: async (_d, items) => {
       toast.success(items.length === 1 ? "נוסף לרשימת מוסתרים" : `${items.length} פריטים הוסתרו`);
-      await qc.invalidateQueries({ queryKey: ["sync-ignores"] });
+      await qc.invalidateQueries({ queryKey: ["sync-ignores"], refetchType: "active" });
       // Refresh preview so hidden items disappear immediately
       if (preview) {
         try {
@@ -459,7 +459,7 @@ export function SheetsSyncPanel() {
     mutationFn: async (id: string) => { await removeIgnoreFn({ data: { id } }); },
     onSuccess: async () => {
       toast.success("הוסר מרשימת מוסתרים");
-      await qc.invalidateQueries({ queryKey: ["sync-ignores"] });
+      await qc.invalidateQueries({ queryKey: ["sync-ignores"], refetchType: "active" });
       if (preview) {
         try {
           const fresh = await runPreview();
