@@ -196,18 +196,18 @@ function DashboardPage() {
       <div className="mt-4"><CashBalanceCard /></div>
       <Tabs defaultValue="institution" className="space-y-4 mt-4" dir="rtl">
         <div className="flex items-center justify-between gap-3 flex-wrap">
-        <TabsList className="flex flex-wrap h-auto max-w-3xl flex-1 gap-1">
-          <TabsTrigger value="institution" className="text-base font-semibold px-4 py-2">
+        <TabsList className="flex w-full md:w-auto md:flex-wrap h-auto max-w-full md:max-w-3xl flex-1 gap-1 overflow-x-auto justify-start">
+          <TabsTrigger value="institution" className="shrink-0 text-sm md:text-base font-semibold px-3 md:px-4 py-2">
             מרכז קרלין סטולין
           </TabsTrigger>
-          <TabsTrigger value="project" className="text-base font-semibold px-4 py-2">
+          <TabsTrigger value="project" className="shrink-0 text-sm md:text-base font-semibold px-3 md:px-4 py-2">
             בית הכנסת - גבעת זאב
           </TabsTrigger>
-          <TabsTrigger value="vaults" className="text-base font-semibold px-4 py-2">
+          <TabsTrigger value="vaults" className="shrink-0 text-sm md:text-base font-semibold px-3 md:px-4 py-2">
             דו"ח קופות (הלוואות)
           </TabsTrigger>
         </TabsList>
-          {role?.isEditor && <Button onClick={() => setNewTxOpen(true)}>+ תנועה חדשה</Button>}
+          {role?.isEditor && <Button className="w-full md:w-auto" onClick={() => setNewTxOpen(true)}>+ תנועה חדשה</Button>}
         </div>
 
 
