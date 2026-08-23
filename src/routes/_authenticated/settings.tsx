@@ -38,7 +38,7 @@ function SettingsPage() {
   return (
     <AppShell title="הגדרות מערכת">
       <Tabs defaultValue="accounts" className="space-y-4">
-        <TabsList className="flex-wrap">
+        <TabsList className="flex md:flex-wrap overflow-x-auto max-w-full justify-start [&>*]:shrink-0">
           <TabsTrigger value="accounts">חשבונות</TabsTrigger>
           <TabsTrigger value="funds">קופות</TabsTrigger>
           <TabsTrigger value="expense_types">סוגי הוצאה</TabsTrigger>

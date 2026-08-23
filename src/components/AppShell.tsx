@@ -158,29 +158,34 @@ export function AppShell({ children, title, actions }: { children: ReactNode; ti
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <header
-            className="min-h-24 bg-[#0d3b66] shadow-2xl flex items-center px-4 md:px-8 gap-4 md:gap-6 sticky top-0 z-10"
+            className="app-header min-h-16 md:min-h-24 bg-[#0d3b66] shadow-2xl flex items-center px-3 md:px-8 gap-2 md:gap-6 sticky top-0 z-10"
             style={{ borderBottom: `4px solid ${GOLD}` }}
           >
-            <SidebarTrigger className="text-white hover:bg-white/10 h-10 w-10" />
+            <SidebarTrigger className="text-white hover:bg-white/10 h-10 w-10 shrink-0" />
             <div
-              className="h-16 w-16 bg-white rounded-full flex items-center justify-center p-0 overflow-hidden shadow-inner shrink-0"
+              className="h-10 w-10 md:h-16 md:w-16 bg-white rounded-full flex items-center justify-center p-0 overflow-hidden shadow-inner shrink-0"
               style={{ border: `2px solid ${GOLD}` }}
             >
               <img src={logoAsset.url} alt="" className="h-[120%] w-[120%] object-contain scale-110" />
             </div>
             <div className="flex flex-col min-w-0 flex-1">
-              <h1 className="text-xl md:text-2xl font-extrabold leading-none tracking-tight truncate" style={{ color: GOLD }}>{title}</h1>
+              <h1 className="text-base md:text-2xl font-extrabold leading-tight tracking-tight truncate" style={{ color: GOLD }}>{title}</h1>
               <p className="text-white/60 text-xs md:text-sm font-medium mt-1 hidden sm:block">מרכז קארלין סטאלין · ניהול פיננסי</p>
             </div>
-            <div className="mr-auto flex items-center gap-2 flex-wrap justify-end">
+            <div className="mr-auto flex items-center gap-1 md:gap-2 justify-end shrink-0">
               <GlobalSearch />
               <NotificationBell />
               <ThemeToggle />
-              {actions}
+              <div className="hidden md:flex items-center gap-2">{actions}</div>
             </div>
 
           </header>
-          <main className="flex-1 p-4 md:p-6 overflow-x-hidden">{children}</main>
+          {actions && (
+            <div className="md:hidden flex items-center gap-2 overflow-x-auto whitespace-nowrap px-3 py-2 border-b bg-card/60 [&_button]:shrink-0 [&_a]:shrink-0">
+              {actions}
+            </div>
+          )}
+          <main className="flex-1 p-3 md:p-6 overflow-x-hidden pb-[max(1rem,env(safe-area-inset-bottom))]">{children}</main>
         </div>
       </div>
     </SidebarProvider>
