@@ -289,25 +289,10 @@ function TransactionsPage() {
 
   });
 
-  // Fetch full uncategorized count for this account (unfiltered), cached
-  const { data: uncatCount = 0 } = useQuery({
-    queryKey: ["uncategorized-count", account],
-    enabled: !!account,
-    queryFn: async () => {
-      if (!(await hasLiveSession())) return 0;
-      const { count, error } = await supabase
-        .from("transactions")
-        .select("*", { count: "exact", head: true })
-        .eq("account_id", account)
-        .is("fund_id", null)
-        .is("expense_type_id", null);
-      if (error) throw error;
-      return count ?? 0;
-    },
-    staleTime: 5 * 60_000,
-    gcTime: 30 * 60_000,
-    refetchOnWindowFocus: false,
-  });
+  // Per-account uncategorized count — served by the shared indexed counter call
+  // instead of a full-table COUNT scan per screen.
+  const { data: alertCounts } = useAlertCounts();
+  const uncatCount = (account && alertCounts?.by_account?.[account]) || 0;
 
 
   const { data: batches = [] } = useQuery({
