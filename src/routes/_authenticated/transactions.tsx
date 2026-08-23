@@ -680,7 +680,7 @@ function TransactionsPage() {
       ) : (
         <div className="space-y-4">
           {/* Horizontal account tabs */}
-          <div className="rounded-2xl border bg-card p-1.5 overflow-x-auto no-print">
+          <div className="rounded-2xl border bg-card p-1.5 scroll-x-hint no-print">
             <div className="flex gap-1 min-w-max">
               {accounts.map((a) => {
                 const active = a.id === account;
@@ -703,17 +703,17 @@ function TransactionsPage() {
           </div>
 
           {uncatCount > 0 && (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-center justify-between gap-3">
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-9 h-9 rounded-full bg-amber-200 grid place-items-center text-amber-800 shrink-0">
                   <AlertTriangle className="w-4 h-4" />
                 </div>
-                <p className="text-sm text-amber-900 font-medium truncate">
-                  בחשבון <b>{selectedAccount?.name}</b>: <b>{uncatCount}</b> תנועות ללא קופה וללא סוג
+                <p className="text-[13px] sm:text-sm text-amber-900 font-medium min-w-0 leading-snug">
+                  בחשבון <b className="break-words">{selectedAccount?.name}</b>: <b>{uncatCount}</b> תנועות ללא קופה וללא סוג
                 </p>
               </div>
               <button
-                className="text-sm font-bold text-amber-800 hover:underline shrink-0"
+                className="text-xs sm:text-sm font-bold text-amber-800 hover:underline shrink-0 text-left"
                 onClick={() => setOnlyUncat((v) => !v)}
               >
                 {onlyUncat ? "הצג הכל" : "הצג רק לא מסווגות ←"}
