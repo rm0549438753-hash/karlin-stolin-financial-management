@@ -28,6 +28,7 @@ import { useFundOpeningBalances } from "@/components/FundOpeningBalancesReport";
 import { CashBalanceCard } from "@/components/CashBalanceReport";
 import { TX_ALL_KEY, fetchAllTransactionsShared } from "@/lib/tx-fetch";
 import { useTransactionsRealtime } from "@/hooks/use-tx-realtime";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
