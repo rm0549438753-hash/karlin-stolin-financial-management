@@ -1221,6 +1221,7 @@ export type Database = {
       }
       archive_old_action_history: { Args: never; Returns: number }
       dashboard_rows: { Args: never; Returns: Json }
+      dashboard_rows_compact: { Args: never; Returns: Json }
       get_cron_hook_secret: { Args: never; Returns: string }
       has_role: {
         Args: {
@@ -1232,6 +1233,7 @@ export type Database = {
       is_full_viewer: { Args: { _uid: string }; Returns: boolean }
       security_config_autofix: { Args: never; Returns: Json }
       security_config_findings: { Args: never; Returns: Json }
+      tx_alert_counts: { Args: never; Returns: Json }
       undo_action_history: {
         Args: { p_history_id: string }
         Returns: undefined
