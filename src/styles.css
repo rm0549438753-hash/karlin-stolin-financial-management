@@ -260,3 +260,21 @@
     max-width: 100% !important;
   }
 }
+
+/* Mobile scroll affordance: soft edge fade + slim gold scrollbar so users
+   can tell a horizontal strip continues beyond the screen edge. */
+.scroll-x-hint {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.scroll-x-hint::-webkit-scrollbar { height: 4px; }
+.scroll-x-hint::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--gold) 55%, transparent);
+  border-radius: 999px;
+}
+@media (max-width: 767px) {
+  .scroll-x-hint {
+    -webkit-mask-image: linear-gradient(to left, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+    mask-image: linear-gradient(to left, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+  }
+}
