@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useTransactionsRealtime } from "@/hooks/use-tx-realtime";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchAllTransactionsShared } from "@/lib/tx-fetch";
+import { useAllTransactions } from "@/hooks/use-tx-all";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
@@ -67,9 +67,6 @@ export type Tx = {
   association: string | null;
 };
 
-async function fetchAllTransactions(): Promise<Tx[]> {
-  return (await fetchAllTransactionsShared()) as unknown as Tx[];
-}
 
 
 function ReportsPage() {
