@@ -2,7 +2,7 @@ import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
   LayoutDashboard, Receipt, BarChart3, Settings as SettingsIcon, LogOut, ShieldCheck,
 } from "lucide-react";
-import { type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthUser, useUserRole } from "@/hooks/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
