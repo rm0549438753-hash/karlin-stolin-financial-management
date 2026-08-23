@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { hasLiveSession } from "@/lib/session-guard";
@@ -579,7 +579,10 @@ function TransactionsPage() {
   useEffect(() => {
     const hid = urlSearch.highlight;
     if (!hid) return;
-    if (!filteredIds.includes(hid)) return;
+    const hidx = filteredIds.indexOf(hid);
+    if (hidx < 0) return;
+    // Make sure the highlighted row is inside the rendered window.
+    setRenderLimit((n) => (hidx >= n ? hidx + 50 : n));
     const t = setTimeout(() => {
       const el = document.querySelector(`[data-tx-id="${hid}"]`) as HTMLElement | null;
       if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -892,7 +895,14 @@ function TransactionsPage() {
                   {!isLoading && filtered.length === 0 && (
                     <TableRow><TableCell colSpan={columns.length + 2} className="text-center py-12 text-muted-foreground">אין תנועות להצגה</TableCell></TableRow>
                   )}
-                  {!groups && filtered.map((r, idx) => renderRow(r, idx))}
+                  {!groups && visibleRows.map((r, idx) => renderRow(r, idx))}
+                  {hasMoreRows && (
+                    <TableRow ref={sentinelRef}>
+                      <TableCell colSpan={columns.length + 2} className="text-center py-4 text-xs text-muted-foreground">
+                        טוען עוד שורות… ({visibleRows.length.toLocaleString("he-IL")} מתוך {filtered.length.toLocaleString("he-IL")})
+                      </TableCell>
+                    </TableRow>
+                  )}
                   {groups && groups.map((g) => {
                     const collapsed = collapsedGroups.has(g.key);
                     return (
