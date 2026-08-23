@@ -1,3 +1,4 @@
+import { useAlertCounts } from "@/hooks/use-alert-counts";
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
