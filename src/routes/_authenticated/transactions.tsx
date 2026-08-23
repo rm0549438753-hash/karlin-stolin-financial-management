@@ -680,27 +680,26 @@ function TransactionsPage() {
       ) : (
         <div className="space-y-4">
           {/* Horizontal account tabs */}
-          <div className="rounded-2xl border bg-card p-1.5 scroll-x-hint no-print">
-            <div className="flex gap-1 min-w-max">
-              {accounts.map((a) => {
-                const active = a.id === account;
-                return (
-                  <button
-                    key={a.id}
-                    onClick={() => navigate({ to: "/transactions", search: { account: a.id }, replace: true })}
-                    className={
-                      "px-4 py-2 text-sm font-semibold rounded-xl whitespace-nowrap transition " +
-                      (active
-                        ? "bg-primary text-primary-foreground shadow"
-                        : "text-foreground/70 hover:bg-muted hover:text-foreground")
-                    }
-                  >
-                    {a.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <ScrollStrip className="rounded-2xl border bg-card p-1.5 no-print" innerClassName="gap-1">
+            {accounts.map((a) => {
+              const active = a.id === account;
+              return (
+                <button
+                  key={a.id}
+                  onClick={() => navigate({ to: "/transactions", search: { account: a.id }, replace: true })}
+                  className={
+                    "px-4 py-2 text-sm font-semibold rounded-xl whitespace-nowrap transition " +
+                    (active
+                      ? "bg-primary text-primary-foreground shadow"
+                      : "text-foreground/70 hover:bg-muted hover:text-foreground")
+                  }
+                >
+                  {a.name}
+                </button>
+              );
+            })}
+          </ScrollStrip>
+
 
           {uncatCount > 0 && (
             <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
