@@ -513,10 +513,10 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       </div>
 
       <Card>
-        <CardHeader className="flex-row items-center justify-between space-y-0">
-          <CardTitle>הכנסות מול הוצאות (חודשי)</CardTitle>
+        <CardHeader className="flex flex-col items-stretch gap-2 space-y-0 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle className="text-base sm:text-lg">הכנסות מול הוצאות (חודשי)</CardTitle>
           <Select value={barYear} onValueChange={setBarYear}>
-            <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-full sm:h-8 sm:w-28"><SelectValue /></SelectTrigger>
             <SelectContent>
               {(yearsAvailable.length ? yearsAvailable : [currentYear]).map((y) => (
                 <SelectItem key={y} value={y}>{y}</SelectItem>
@@ -525,55 +525,63 @@ function OverviewTab({ txs, lookups }: { txs: Tx[]; lookups: any }) {
           </Select>
         </CardHeader>
         <CardContent>
-          {(() => {
-            const yearTxCount = txs.filter((t) => t.transaction_date.startsWith(barYear)).length;
-            return null;
-          })()}
           {txs.filter((t) => t.transaction_date.startsWith(barYear)).length === 0 ? (
             <div className="text-center py-16 text-sm text-muted-foreground">
               אין תנועות בשנת {barYear} בטאב זה. בחר שנה אחרת מהבורר למעלה.
             </div>
           ) : (
-          <ResponsiveContainer width="100%" height={360}>
-            <BarChart data={monthly} margin={{ top: 20, right: 8, left: 8, bottom: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="label" fontSize={12} />
-              <YAxis fontSize={12} orientation="left" tickFormatter={compactFmt} />
-              <Tooltip formatter={(v: number) => formatCurrency(v)} />
-              <Legend />
-              <Bar dataKey="הכנסות" fill="hsl(155 65% 42%)" radius={[4, 4, 0, 0]} cursor="pointer"
-                onClick={(d: any) => openMonth(d.key, "income", d.label)}>
-                <LabelList dataKey="הכנסות" position="top" fontSize={11} fontWeight={600} fill="hsl(155 65% 30%)" formatter={(v: number) => v ? compactFmt(v) : ""} />
-              </Bar>
-              <Bar dataKey="הוצאות" fill="hsl(0 75% 55%)" radius={[4, 4, 0, 0]} cursor="pointer"
-                onClick={(d: any) => openMonth(d.key, "expense", d.label)}>
-                <LabelList dataKey="הוצאות" position="top" fontSize={11} fontWeight={600} fill="hsl(0 75% 40%)" formatter={(v: number) => v ? compactFmt(v) : ""} />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <>
+          {isMobile && (
+            <p className="text-[11px] text-muted-foreground mb-1">גלול הצידה כדי לראות את כל החודשים</p>
+          )}
+          {/* On a phone twelve month pairs cannot fit: give the chart a fixed
+              comfortable width and let the card scroll horizontally. */}
+          <div className={isMobile ? "overflow-x-auto -mx-2 px-2" : ""}>
+            <div style={isMobile ? { minWidth: 720 } : undefined}>
+              <ResponsiveContainer width="100%" height={isMobile ? 300 : 360}>
+                <BarChart data={monthly} margin={{ top: 20, right: 8, left: 8, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="label" fontSize={12} />
+                  <YAxis fontSize={12} orientation="left" tickFormatter={compactFmt} width={48} />
+                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                  <Legend />
+                  <Bar dataKey="הכנסות" fill="hsl(155 65% 42%)" radius={[4, 4, 0, 0]} cursor="pointer"
+                    onClick={(d: any) => openMonth(d.key, "income", d.label)}>
+                    <LabelList dataKey="הכנסות" position="top" fontSize={11} fontWeight={600} fill="hsl(155 65% 30%)" formatter={(v: number) => v ? compactFmt(v) : ""} />
+                  </Bar>
+                  <Bar dataKey="הוצאות" fill="hsl(0 75% 55%)" radius={[4, 4, 0, 0]} cursor="pointer"
+                    onClick={(d: any) => openMonth(d.key, "expense", d.label)}>
+                    <LabelList dataKey="הוצאות" position="top" fontSize={11} fontWeight={600} fill="hsl(0 75% 40%)" formatter={(v: number) => v ? compactFmt(v) : ""} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          </>
           )}
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-3">
-          <CardTitle>פילוח לפי סוג</CardTitle>
-          <div className="flex gap-2">
+        <CardHeader className="flex flex-col items-stretch gap-2 space-y-0 pb-3 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle className="text-base sm:text-lg">פילוח לפי סוג</CardTitle>
+          <div className="grid grid-cols-2 gap-2 sm:flex">
             <Select value={pieYear} onValueChange={setPieYear}>
-              <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-9 w-full sm:h-8 sm:w-28"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">כל השנים</SelectItem>
                 {yearsAvailable.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={pieMonth} onValueChange={setPieMonth}>
-              <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-9 w-full sm:h-8 sm:w-28"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {months.map((m) => <SelectItem key={m.v} value={m.v}>{m.l}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
         </CardHeader>
+
         <CardContent>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {renderPie(incomeTypeData, incomeTotal, "income", "פילוח הכנסות")}
