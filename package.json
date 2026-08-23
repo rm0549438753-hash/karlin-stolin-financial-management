@@ -12,6 +12,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@capacitor/app": "^7",
     "@fontsource/assistant": "^5.2.9",
     "@fontsource/heebo": "^5.2.8",
     "@hookform/resolvers": "^5.2.2",
