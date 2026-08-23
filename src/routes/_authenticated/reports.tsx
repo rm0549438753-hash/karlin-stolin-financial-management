@@ -76,13 +76,8 @@ function ReportsPage() {
   const { tab } = Route.useSearch();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { data: allTxs = [], isLoading } = useQuery({
-    queryKey: ["tx-all"],
-    queryFn: fetchAllTransactions,
-    staleTime: 5 * 60_000,
-    gcTime: 30 * 60_000,
-    refetchOnWindowFocus: false,
-  });
+  const { data: allTxs = [], isLoading } = useAllTransactions();
+
   // Every report except "no date" works on dated rows only.
   const txs = useMemo(
     () => (allTxs as Tx[]).filter((t) => t.transaction_date != null || t.value_date != null),
