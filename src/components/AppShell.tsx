@@ -181,12 +181,17 @@ export function AppShell({ children, title, actions }: { children: ReactNode; ti
               <h1 className="text-base md:text-2xl font-extrabold leading-tight tracking-tight truncate" style={{ color: GOLD }}>{title}</h1>
               <p className="text-white/60 text-xs md:text-sm font-medium mt-1 hidden sm:block">מרכז קארלין סטאלין · ניהול פיננסי</p>
             </div>
-            <div className="mr-auto flex items-center gap-1 md:gap-2 justify-end shrink-0">
+            <div className="mr-auto flex items-center gap-1 md:gap-2 justify-end min-w-0">
               <GlobalSearch />
               <NotificationBell />
               <ThemeToggle />
-              <div className="hidden md:flex items-center gap-2">{actions}</div>
+              {actions && (
+                <ScrollStrip className="hidden md:block min-w-0 max-w-[42vw] xl:max-w-[60vw]" innerClassName="justify-end">
+                  {actions}
+                </ScrollStrip>
+              )}
             </div>
+
 
           </header>
           {actions && (
