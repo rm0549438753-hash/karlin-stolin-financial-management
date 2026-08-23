@@ -60,7 +60,7 @@ export function SecurityAuditPanel() {
       else if (fixed > 0) toast.success(`תוקנו אוטומטית ${fixed} ממצאים${total > 0 ? ` — נותרו ${total} ממצאים` : " — הסריקה נקייה"}`);
       else if (total > 0) toast.warning(`נמצאו ${total} ממצאי אבטחה`);
       else toast.success("לא נמצאו ממצאי אבטחה");
-      qc.invalidateQueries({ queryKey: ["security_audit_runs"] });
+      qc.invalidateQueries({ queryKey: ["security_audit_runs"], refetchType: "active" });
     },
 
     onError: (e: any) => toast.error(e?.message ?? "שגיאה"),
@@ -71,7 +71,7 @@ export function SecurityAuditPanel() {
     mutationFn: async (id: string) => await del({ data: { id } }),
     onSuccess: () => {
       toast.success("נמחק");
-      qc.invalidateQueries({ queryKey: ["security_audit_runs"] });
+      qc.invalidateQueries({ queryKey: ["security_audit_runs"], refetchType: "active" });
     },
     onError: (e: any) => toast.error(e?.message ?? "שגיאה"),
   });
@@ -85,7 +85,7 @@ export function SecurityAuditPanel() {
       const applied: string[] = r?.applied ?? [];
       if (!applied.length) toast.info("אין ממצאים שניתן לתקן אוטומטית");
       else toast.success(`תוקנו ${applied.length} ממצאים אוטומטית`);
-      qc.invalidateQueries({ queryKey: ["security_audit_runs"] });
+      qc.invalidateQueries({ queryKey: ["security_audit_runs"], refetchType: "active" });
     },
     onError: (e: any) => toast.error(e?.message ?? "שגיאה"),
     onSettled: () => setFixing(false),

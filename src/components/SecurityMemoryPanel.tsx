@@ -35,7 +35,7 @@ export function SecurityMemoryCard() {
     onSuccess: () => {
       setDirty(false);
       toast.success("זיכרון האבטחה נשמר");
-      qc.invalidateQueries({ queryKey: ["security_memory"] });
+      qc.invalidateQueries({ queryKey: ["security_memory"], refetchType: "active" });
     },
     onError: (e: any) => toast.error(e?.message ?? "שגיאה"),
   });
@@ -107,7 +107,7 @@ export function AcceptedFindingsCard() {
       toast.success("נשמר");
       setAdding(false);
       setDraft({ finding_key: "", title: "", reason: "", severity: "low" });
-      qc.invalidateQueries({ queryKey: ["security_accepted_findings"] });
+      qc.invalidateQueries({ queryKey: ["security_accepted_findings"], refetchType: "active" });
     },
     onError: (e: any) => toast.error(e?.message ?? "שגיאה"),
   });
@@ -116,7 +116,7 @@ export function AcceptedFindingsCard() {
     mutationFn: async (id: string) => await del({ data: { id } }),
     onSuccess: () => {
       toast.success("הוסר — הממצא יופיע שוב כבעיה בסריקה הבאה");
-      qc.invalidateQueries({ queryKey: ["security_accepted_findings"] });
+      qc.invalidateQueries({ queryKey: ["security_accepted_findings"], refetchType: "active" });
     },
     onError: (e: any) => toast.error(e?.message ?? "שגיאה"),
   });

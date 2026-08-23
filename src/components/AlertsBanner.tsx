@@ -16,7 +16,7 @@ export function AlertsBanner() {
   // Keep the banner counts in step with the transaction screens: any insert,
   // edit, import or delete refreshes them (debounced for bulk operations).
   useTransactionsRealtime("alerts-banner-tx", () => {
-    qc.invalidateQueries({ queryKey: ["alerts-upcoming-checks"] });
+    qc.invalidateQueries({ queryKey: ["alerts-upcoming-checks"], refetchType: "active" });
     qc.invalidateQueries({ queryKey: ALERT_COUNTS_KEY, refetchType: "active" });
   });
 

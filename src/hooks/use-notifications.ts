@@ -36,7 +36,7 @@ export function useNotifications() {
 
 export function useNotificationActions() {
   const qc = useQueryClient();
-  const invalidate = () => qc.invalidateQueries({ queryKey: KEY });
+  const invalidate = () => qc.invalidateQueries({ queryKey: KEY, refetchType: "active" });
 
   const markRead = useMutation({
     mutationFn: async (id: string) => {

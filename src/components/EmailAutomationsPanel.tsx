@@ -145,7 +145,7 @@ export function EmailAutomationsPanel() {
     onSuccess: () => {
       toast.success("האוטומציה נשמרה");
       setEditing(null);
-      qc.invalidateQueries({ queryKey: ["email-automations"] });
+      qc.invalidateQueries({ queryKey: ["email-automations"], refetchType: "active" });
     },
     onError: (e: any) => toast.error(e?.message ?? "שמירה נכשלה"),
   });
@@ -155,7 +155,7 @@ export function EmailAutomationsPanel() {
       const { error } = await supabase.from("email_automations").update({ is_active }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["email-automations"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["email-automations"], refetchType: "active" }),
   });
 
   const remove = useMutation({
@@ -165,7 +165,7 @@ export function EmailAutomationsPanel() {
     },
     onSuccess: () => {
       toast.success("האוטומציה נמחקה");
-      qc.invalidateQueries({ queryKey: ["email-automations"] });
+      qc.invalidateQueries({ queryKey: ["email-automations"], refetchType: "active" });
     },
   });
 
@@ -191,8 +191,8 @@ export function EmailAutomationsPanel() {
       if (status === "sent") toast.success("המייל נשלח");
       else if (status === "skipped") toast.info("אין נתונים לשליחה — לא נשלח מייל");
       else toast.error(res?.results?.[0]?.error ?? "השליחה נכשלה");
-      qc.invalidateQueries({ queryKey: ["email-automation-runs"] });
-      qc.invalidateQueries({ queryKey: ["email-automations"] });
+      qc.invalidateQueries({ queryKey: ["email-automation-runs"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["email-automations"], refetchType: "active" });
     } catch (e: any) {
       toast.error(e?.message ?? "השליחה נכשלה");
     } finally {

@@ -42,9 +42,9 @@ export function RuleApplicationsDialog({
     mutationFn: (vars: { id?: string; ruleId?: string }) => revertFn({ data: vars }),
     onSuccess: (res: any) => {
       toast.success(`בוטלו ${res?.reverted ?? 0} סיווגים`);
-      qc.invalidateQueries({ queryKey: ["rule-applications", ruleId] });
-      qc.invalidateQueries({ queryKey: ["transactions"] });
-      qc.invalidateQueries({ queryKey: ["classification-rules"] });
+      qc.invalidateQueries({ queryKey: ["rule-applications", ruleId], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["transactions"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["classification-rules"], refetchType: "active" });
     },
     onError: (e: any) => toast.error(e?.message ?? "הביטול נכשל"),
   });

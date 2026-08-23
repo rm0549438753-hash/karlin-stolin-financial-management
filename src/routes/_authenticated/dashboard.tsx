@@ -73,7 +73,7 @@ function DashboardPage() {
 
   // Realtime: keep dashboard fresh when transactions change anywhere
   useTransactionsRealtime("dashboard-tx", () => {
-    qc.invalidateQueries({ queryKey: TX_ALL_KEY });
+    qc.invalidateQueries({ queryKey: TX_ALL_KEY, refetchType: "active" });
   });
 
   const { data: accounts = [] } = useAccounts();

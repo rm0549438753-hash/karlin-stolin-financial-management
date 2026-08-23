@@ -81,8 +81,8 @@ function ReportsPage() {
     [allTxs],
   );
   useTransactionsRealtime("reports-tx", () => {
-    qc.invalidateQueries({ queryKey: ["tx-all"] });
-    qc.invalidateQueries({ queryKey: ["alerts-no-date-count"] });
+    qc.invalidateQueries({ queryKey: ["tx-all"], refetchType: "active" });
+    qc.invalidateQueries({ queryKey: ["tx-alert-counts"], refetchType: "active" });
   });
   const { data: accounts = [] } = useAccounts();
   const { data: funds = [] } = useFunds();
@@ -545,10 +545,9 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     onSuccess: () => {
       toast.success(`${selectedIds.size} תנועות נמחקו`);
       setSelectedIds(new Set());
-      qc.invalidateQueries({ queryKey: ["transactions"] });
-      qc.invalidateQueries({ queryKey: ["tx-all"] });
-      qc.invalidateQueries({ queryKey: ["tx-all"] });
-      qc.invalidateQueries({ queryKey: ["uncategorized-count"] });
+      qc.invalidateQueries({ queryKey: ["transactions"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["tx-all"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["tx-alert-counts"], refetchType: "active" });
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאה"),
   });
@@ -776,7 +775,7 @@ function UncategorizedReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
         open={bulkEditOpen}
         onOpenChange={setBulkEditOpen}
         ids={Array.from(selectedIds)}
-        onDone={() => { setSelectedIds(new Set()); qc.invalidateQueries({ queryKey: ["tx-all"] }); qc.invalidateQueries({ queryKey: ["transactions"] }); }}
+        onDone={() => { setSelectedIds(new Set()); qc.invalidateQueries({ queryKey: ["tx-all"], refetchType: "active" }); qc.invalidateQueries({ queryKey: ["transactions"], refetchType: "active" }); }}
       />
 
       <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
@@ -853,10 +852,9 @@ function NoDateReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
     onSuccess: (_d, vars) => {
       toast.success("תאריך עודכן");
       setDrafts((d) => { const n = { ...d }; delete n[vars.id]; return n; });
-      qc.invalidateQueries({ queryKey: ["tx-all"] });
-      qc.invalidateQueries({ queryKey: ["tx-all"] });
-      qc.invalidateQueries({ queryKey: ["transactions"] });
-      qc.invalidateQueries({ queryKey: ["alerts-no-date-count"] });
+      qc.invalidateQueries({ queryKey: ["tx-all"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["transactions"], refetchType: "active" });
+      qc.invalidateQueries({ queryKey: ["tx-alert-counts"], refetchType: "active" });
     },
     onError: (e: any) => toast.error(e.message ?? "שגיאה"),
     onSettled: () => setSavingId(null),
