@@ -172,7 +172,7 @@ export function AppShell({ children, title, actions }: { children: ReactNode; ti
           >
             <SidebarTrigger className="text-white hover:bg-white/10 h-10 w-10 shrink-0" />
             <div
-              className="h-10 w-10 md:h-16 md:w-16 bg-white rounded-full flex items-center justify-center p-0 overflow-hidden shadow-inner shrink-0"
+              className="h-16 w-16 bg-white rounded-full flex items-center justify-center p-0 overflow-hidden shadow-inner shrink-0"
               style={{ border: `2px solid ${GOLD}` }}
             >
               <img src={logoAsset.url} alt="" className="h-[120%] w-[120%] object-contain scale-110" />
