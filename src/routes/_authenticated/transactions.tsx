@@ -1,4 +1,5 @@
 import { useAlertCounts } from "@/hooks/use-alert-counts";
+import { useIdbQueryCache } from "@/hooks/use-idb-query-cache";
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -248,8 +249,9 @@ function TransactionsPage() {
 
 
 
+  const txQueryKey = ["transactions", { account, category, subcategory, fund, expType, from, to }] as const;
   const { data: rows = [], isLoading } = useQuery({
-    queryKey: ["transactions", { account, category, subcategory, fund, expType, from, to }],
+    queryKey: txQueryKey,
     enabled: !!account,
     queryFn: async () => {
       if (!(await hasLiveSession())) return [] as TransactionRow[];
@@ -289,6 +291,9 @@ function TransactionsPage() {
     placeholderData: (prev: any) => prev,
 
   });
+
+  // Keep the last rows for this account/filter on the device for instant re-open.
+  useIdbQueryCache(txQueryKey, rows.length ? rows : undefined, !!account);
 
   // Per-account uncategorized count — served by the shared indexed counter call
   // instead of a full-table COUNT scan per screen.
