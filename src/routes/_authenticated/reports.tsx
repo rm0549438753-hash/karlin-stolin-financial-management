@@ -308,26 +308,32 @@ function FutureChecksReport({ txs, lookups }: { txs: Tx[]; lookups: any }) {
       </div>
 
       {monthly.length > 0 ? (
-        <div className="rounded-lg border bg-card p-4">
+        <div className="rounded-lg border bg-card p-3 sm:p-4">
           <p className="text-sm font-semibold mb-3">פריסה לפי חודש — לחץ לפירוט</p>
-          <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={monthly} margin={{ top: 24, right: 10, left: 10, bottom: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" fontSize={12} />
-              <YAxis fontSize={12} orientation="left" tickFormatter={compactFmt} />
-              <Tooltip formatter={(v: number) => formatCurrency(v)} />
-              <Bar
-                dataKey="סכום"
-                fill="hsl(35 90% 55%)"
-                radius={[4, 4, 0, 0]}
-                cursor="pointer"
-                onClick={(d: any) => setOpenMonth(d.month)}
-              >
-                <LabelList dataKey="סכום" position="top" fontSize={11} fontWeight={700} formatter={(v: number) => compactFmt(v)} />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          {/* Narrow screens scroll the chart instead of squeezing the months. */}
+          <div className="overflow-x-auto -mx-1 px-1">
+            <div style={{ minWidth: Math.max(320, monthly.length * 72) }}>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={monthly} margin={{ top: 24, right: 10, left: 10, bottom: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" fontSize={12} />
+                  <YAxis fontSize={12} orientation="left" tickFormatter={compactFmt} width={48} />
+                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                  <Bar
+                    dataKey="סכום"
+                    fill="hsl(35 90% 55%)"
+                    radius={[4, 4, 0, 0]}
+                    cursor="pointer"
+                    onClick={(d: any) => setOpenMonth(d.month)}
+                  >
+                    <LabelList dataKey="סכום" position="top" fontSize={11} fontWeight={700} formatter={(v: number) => compactFmt(v)} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         </div>
+
       ) : (
         <p className="text-center text-muted-foreground py-8">אין צ׳קים עתידיים</p>
       )}
