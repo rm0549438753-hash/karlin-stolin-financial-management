@@ -181,7 +181,7 @@ export function AppShell({ children, title, actions }: { children: ReactNode; ti
 
           </header>
           {actions && (
-            <div className="md:hidden flex items-center gap-2 overflow-x-auto whitespace-nowrap px-3 py-2 border-b bg-card/60 [&_button]:shrink-0 [&_a]:shrink-0">
+            <div className="md:hidden scroll-x-hint flex items-center gap-2 whitespace-nowrap px-3 py-2 border-b bg-card/60 [&_button]:shrink-0 [&_a]:shrink-0">
               {actions}
             </div>
           )}

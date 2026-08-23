@@ -38,7 +38,7 @@ function SettingsPage() {
   return (
     <AppShell title="הגדרות מערכת">
       <Tabs defaultValue="accounts" className="space-y-4">
-        <TabsList className="flex md:flex-wrap overflow-x-auto max-w-full justify-start [&>*]:shrink-0">
+        <TabsList className="flex md:flex-wrap scroll-x-hint max-w-full justify-start [&>*]:shrink-0">
           <TabsTrigger value="accounts">חשבונות</TabsTrigger>
           <TabsTrigger value="funds">קופות</TabsTrigger>
           <TabsTrigger value="expense_types">סוגי הוצאה</TabsTrigger>
@@ -151,9 +151,12 @@ function LookupCRUD({ table, label, hasKind, hasCategory }: { table: string; lab
         </div>
         <div className="border rounded-lg divide-y max-h-[60vh] overflow-y-auto">
           {(rows as any[]).map((r) => (
-            <div key={r.id} className="flex items-center justify-between p-2 hover:bg-muted/50">
-              <span>{r.name}{hasKind && <span className="text-xs text-muted-foreground mr-2">({r.kind})</span>}</span>
-              <div className="flex items-center gap-1">
+            <div key={r.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 p-2 hover:bg-muted/50">
+              <span className="min-w-0 break-words leading-snug">
+                {r.name}
+                {hasKind && <span className="text-xs text-muted-foreground mr-2 whitespace-nowrap">({r.kind})</span>}
+              </span>
+              <div className="flex items-center gap-1 shrink-0">
                 <Button size="icon" variant="ghost" onClick={() => { setEditing({ id: r.id, name: r.name }); setEditName(r.name); }} title="עריכת שם">
                   <Pencil className="w-4 h-4" />
                 </Button>
