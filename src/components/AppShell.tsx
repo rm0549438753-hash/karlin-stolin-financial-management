@@ -16,6 +16,8 @@ import logoAsset from "@/assets/karlin-logo.png.asset.json";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { NotificationBell } from "@/components/NotificationBell";
+import { ScrollStrip } from "@/components/ui/scroll-strip";
+
 
 import { useIdleLogout } from "@/hooks/use-idle-logout";
 
