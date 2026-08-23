@@ -110,18 +110,19 @@ export function CashBalanceCard() {
             </div>
           </div>
         </div>
-        <div className="flex gap-4 text-sm">
-          <div className="flex items-center gap-1.5">
-            <TrendingUp className="w-4 h-4 text-income" />
-            <span className="text-muted-foreground">נכנס {monthName}:</span>
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <TrendingUp className="w-4 h-4 text-income shrink-0" />
+            <span className="text-muted-foreground truncate">נכנס {monthName}:</span>
             <span className="font-bold tabular-nums text-income">{formatCurrency(monthIn)}</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <TrendingDown className="w-4 h-4 text-expense" />
-            <span className="text-muted-foreground">יצא {monthName}:</span>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <TrendingDown className="w-4 h-4 text-expense shrink-0" />
+            <span className="text-muted-foreground truncate">יצא {monthName}:</span>
             <span className="font-bold tabular-nums text-expense">{formatCurrency(monthOut)}</span>
           </div>
         </div>
+
       </CardContent>
     </Card>
   );

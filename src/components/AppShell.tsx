@@ -2,7 +2,7 @@ import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
   LayoutDashboard, Receipt, BarChart3, Settings as SettingsIcon, LogOut, ShieldCheck,
 } from "lucide-react";
-import { type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthUser, useUserRole } from "@/hooks/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
@@ -154,10 +154,17 @@ function UserMenu() {
 
 export function AppShell({ children, title, actions }: { children: ReactNode; title: string; actions?: ReactNode }) {
   useIdleLogout();
+  // Below ~1024px an open sidebar pushed the content wider than the screen
+  // (horizontal page scroll on tablets); start collapsed there instead.
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.innerWidth < 1024) setSidebarOpen(false);
+  }, []);
   return (
-    <SidebarProvider defaultOpen>
-      <div className="min-h-screen flex w-full bg-background" dir="rtl">
+    <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
+      <div className="min-h-screen flex w-full bg-background overflow-x-hidden" dir="rtl">
         <AppSidebar />
+
         <div className="flex-1 flex flex-col min-w-0">
           <header
             className="app-header min-h-16 md:min-h-24 bg-[#0d3b66] shadow-2xl flex items-center px-3 md:px-8 gap-2 md:gap-6 sticky top-0 z-10"
@@ -174,12 +181,17 @@ export function AppShell({ children, title, actions }: { children: ReactNode; ti
               <h1 className="text-base md:text-2xl font-extrabold leading-tight tracking-tight truncate" style={{ color: GOLD }}>{title}</h1>
               <p className="text-white/60 text-xs md:text-sm font-medium mt-1 hidden sm:block">מרכז קארלין סטאלין · ניהול פיננסי</p>
             </div>
-            <div className="mr-auto flex items-center gap-1 md:gap-2 justify-end shrink-0">
+            <div className="mr-auto flex items-center gap-1 md:gap-2 justify-end min-w-0">
               <GlobalSearch />
               <NotificationBell />
               <ThemeToggle />
-              <div className="hidden md:flex items-center gap-2">{actions}</div>
+              {actions && (
+                <ScrollStrip className="hidden md:block min-w-0 max-w-[42vw] xl:max-w-[60vw]" innerClassName="justify-end">
+                  {actions}
+                </ScrollStrip>
+              )}
             </div>
+
 
           </header>
           {actions && (
