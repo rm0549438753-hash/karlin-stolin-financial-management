@@ -52,6 +52,9 @@ jobs:
           print(s)
           PY
 
+      - name: Generate app icons from the system logo
+        run: npx --yes @capacitor/assets@3 generate --android --iconBackgroundColor '#0d3b66' --iconBackgroundColorDark '#0d3b66' --splashBackgroundColor '#0d3b66' --splashBackgroundColorDark '#0d3b66'
+
       - name: Sync Capacitor
         run: |
           mkdir -p android/app/src/main/assets/public
@@ -81,4 +84,4 @@ jobs:
       # Distribution goes only through the access-code protected download page
       # (/api/public/apk); a public release would bypass that control.
 
-# build trigger: 2026-08-09T10:25:00Z
+# build trigger: 2026-08-23T21:40:00Z
