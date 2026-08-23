@@ -172,11 +172,11 @@ function ActionHistoryPage() {
             <div className="flex flex-wrap gap-2 items-end">
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">מתאריך</label>
-                <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="bg-card w-[150px]" />
+                <Input type="date" lang="he-IL" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="bg-card w-[150px]" />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">עד תאריך</label>
-                <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="bg-card w-[150px]" />
+                <Input type="date" lang="he-IL" value={toDate} onChange={(e) => setToDate(e.target.value)} className="bg-card w-[150px]" />
               </div>
               {(fromDate || toDate) && (
                 <Button variant="ghost" size="sm" onClick={clearDates} className="mb-0.5">
@@ -190,7 +190,35 @@ function ActionHistoryPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Mobile: card list — the 7-column table cuts off "פרטים" at 390px */}
+          <div className="md:hidden divide-y">
+            {isLoading && <div className="p-8 text-center text-muted-foreground text-sm">טוען…</div>}
+            {!isLoading && filtered.length === 0 && <div className="p-10 text-center text-muted-foreground text-sm">אין פעולות להצגה</div>}
+            {filtered.map((row) => (
+              <div key={row.id} className="p-3 space-y-1.5">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+                  <div className="min-w-0">
+                    <div className="text-sm font-bold">
+                      {ACTION_LABELS[row.action]} · <span className="font-medium">{TABLE_LABELS[row.table_name] ?? row.table_name}</span>
+                    </div>
+                    <div className="text-[11px] text-muted-foreground tabular-nums">{new Date(row.created_at).toLocaleString("he-IL")}</div>
+                  </div>
+                  {row.undone_at
+                    ? <span className="text-[11px] text-muted-foreground shrink-0">בוטל</span>
+                    : <span className="text-[11px] text-income font-bold shrink-0">פעיל</span>}
+                </div>
+                <div className="text-xs text-foreground/90 break-words leading-snug">{describeRecord(row)}</div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-muted-foreground truncate">מבצע: {actorLabel(row.actor_id)}</span>
+                  <Button size="sm" variant="outline" className="shrink-0" disabled={!!row.undone_at} onClick={() => setPendingUndo(row)}>
+                    <RotateCcw className="w-3.5 h-3.5 ml-1" />בטל שינוי
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden md:block overflow-x-auto">
             <Table className="border-collapse">
               <TableHeader>
                 <TableRow className="bg-muted/30 hover:bg-muted/30">
