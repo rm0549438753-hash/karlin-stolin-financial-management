@@ -497,6 +497,28 @@ function TransactionsPage() {
     return { inc, exp, net: inc + exp, count: filtered.length };
   }, [filtered]);
 
+  // Progressive rendering: the table used to mount every filtered row at once
+  // (thousands of DOM nodes), which froze scrolling and filtering. We now
+  // render a window and extend it as the user reaches the bottom — same rows,
+  // same order, same design, just mounted on demand.
+  const RENDER_STEP = 250;
+  const [renderLimit, setRenderLimit] = useState(RENDER_STEP);
+  useEffect(() => { setRenderLimit(RENDER_STEP); }, [filtered, groupBy]);
+  const visibleRows = useMemo(() => filtered.slice(0, renderLimit), [filtered, renderLimit]);
+  const hasMoreRows = !groups && filtered.length > renderLimit;
+  const sentinelRef = useRef<HTMLTableRowElement | null>(null);
+  useEffect(() => {
+    if (!hasMoreRows || !sentinelRef.current || typeof IntersectionObserver === "undefined") return;
+    const el = sentinelRef.current;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        setRenderLimit((n) => n + RENDER_STEP);
+      }
+    }, { rootMargin: "600px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasMoreRows, renderLimit]);
+
   const del = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("transactions").delete().eq("id", id);
