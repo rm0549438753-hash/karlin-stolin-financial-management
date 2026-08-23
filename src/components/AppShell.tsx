@@ -154,10 +154,17 @@ function UserMenu() {
 
 export function AppShell({ children, title, actions }: { children: ReactNode; title: string; actions?: ReactNode }) {
   useIdleLogout();
+  // Below ~1024px an open sidebar pushed the content wider than the screen
+  // (horizontal page scroll on tablets); start collapsed there instead.
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.innerWidth < 1024) setSidebarOpen(false);
+  }, []);
   return (
-    <SidebarProvider defaultOpen>
-      <div className="min-h-screen flex w-full bg-background" dir="rtl">
+    <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
+      <div className="min-h-screen flex w-full bg-background overflow-x-hidden" dir="rtl">
         <AppSidebar />
+
         <div className="flex-1 flex flex-col min-w-0">
           <header
             className="app-header min-h-16 md:min-h-24 bg-[#0d3b66] shadow-2xl flex items-center px-3 md:px-8 gap-2 md:gap-6 sticky top-0 z-10"
