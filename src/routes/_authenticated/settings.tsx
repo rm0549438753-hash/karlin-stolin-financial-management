@@ -522,8 +522,8 @@ export function SheetsSyncPanel() {
           </div>
 
           {preview && (
-            <div className="border rounded-xl overflow-hidden">
-              <div className="grid grid-cols-[1fr_90px_90px_90px_90px] gap-2 p-3 bg-muted/50 font-medium text-sm">
+            <div className="border rounded-xl overflow-x-auto">
+              <div className="grid grid-cols-[minmax(140px,1fr)_90px_90px_90px_90px] min-w-[520px] gap-2 p-3 bg-muted/50 font-medium text-sm">
                 <div>חשבון</div>
                 <div className="text-center text-green-700">להוספה</div>
                 <div className="text-center text-amber-700">לעדכון</div>
@@ -533,7 +533,7 @@ export function SheetsSyncPanel() {
               {preview.perAccount.map((p: any) => (
                 <AccountDiffRow key={p.accountId} p={p} spreadsheetId={preview.spreadsheetId} />
               ))}
-              <div className="grid grid-cols-[1fr_90px_90px_90px_90px] gap-2 p-3 border-t bg-muted/30 text-sm font-bold">
+              <div className="grid grid-cols-[minmax(140px,1fr)_90px_90px_90px_90px] min-w-[520px] gap-2 p-3 border-t bg-muted/30 text-sm font-bold">
                 <div>סה״כ</div>
                 <div className="text-center text-green-700">{preview.perAccount.reduce((a: number, x: any) => a + x.toInsert, 0)}</div>
                 <div className="text-center text-amber-700">{preview.perAccount.reduce((a: number, x: any) => a + x.toUpdate, 0)}</div>
@@ -646,7 +646,7 @@ function AccountDiffRow({ p, spreadsheetId }: { p: any; spreadsheetId?: string }
     <>
       <div
         onClick={() => hasChanges && setOpen((v) => !v)}
-        className={`w-full grid grid-cols-[1fr_90px_90px_90px_90px] gap-2 p-3 border-t text-sm text-right ${hasChanges ? "hover:bg-muted/40 cursor-pointer" : "cursor-default"}`}
+        className={`w-full grid grid-cols-[minmax(140px,1fr)_90px_90px_90px_90px] min-w-[520px] gap-2 p-3 border-t text-sm text-right ${hasChanges ? "hover:bg-muted/40 cursor-pointer" : "cursor-default"}`}
       >
         <div className="truncate flex items-center gap-2">
           {hasChanges && <span className="text-xs">{open ? "▾" : "▸"}</span>}
