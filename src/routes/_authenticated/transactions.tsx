@@ -22,6 +22,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { ExportMenu } from "@/components/ExportMenu";
+import { ScrollStrip } from "@/components/ui/scroll-strip";
 import { exportRowsAsPdf } from "@/lib/export-pdf";
 import { useUserRole } from "@/hooks/use-auth";
 import { QuickEditCell } from "@/components/transactions/QuickEditCell";
