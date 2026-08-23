@@ -12,6 +12,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAndroidBack } from "@/hooks/use-android-back";
 
 function NotFoundComponent() {
   return (
@@ -106,6 +107,7 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+  useAndroidBack();
   useEffect(() => {
     // Theme: dark by default unless the user explicitly chose light.
     try {
