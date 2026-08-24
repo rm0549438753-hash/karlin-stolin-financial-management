@@ -136,8 +136,8 @@ export function PortabilityPanel() {
   async function exportSchema() {
     setBusy(true);
     try {
-      const schema = await schemaFn();
-      downloadBlob(JSON.stringify(schema, null, 2), `karlin-schema-${stamp()}.json`, "application/json");
+      const res = await schemaFn();
+      downloadBlob(JSON.stringify(JSON.parse(res.schema), null, 2), `karlin-schema-${stamp()}.json`, "application/json");
       toast.success("מבנה בסיס הנתונים ירד למחשב");
     } catch (err: any) {
       toast.error(`שגיאה: ${err?.message ?? err}`);
