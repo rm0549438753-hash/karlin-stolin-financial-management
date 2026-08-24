@@ -1,0 +1,63 @@
+// Client-safe list of the tables included in a full portability export.
+// Order matters: parents before children so a restore can run top-to-bottom.
+export const PORTABLE_TABLES = [
+  "profiles",
+  "user_roles",
+  "accounts",
+  "funds",
+  "expense_types",
+  "categories",
+  "subcategories",
+  "fund_opening_balances",
+  "import_batches",
+  "transactions",
+  "classification_rules",
+  "classification_applications",
+  "classification_suggestions",
+  "sync_ignores",
+  "notifications",
+  "email_automations",
+  "email_automation_runs",
+  "check_email_settings",
+  "check_email_runs",
+  "app_download_settings",
+  "backup_runs",
+  "security_memory",
+  "security_accepted_findings",
+  "security_audit_runs",
+  "action_history",
+  "action_history_archive",
+] as const;
+
+export type PortableTable = (typeof PORTABLE_TABLES)[number];
+
+export const TABLE_LABELS_HE: Record<string, string> = {
+  profiles: "משתמשים",
+  user_roles: "הרשאות",
+  accounts: "חשבונות",
+  funds: "קופות",
+  expense_types: "סוגי הוצאה",
+  categories: "קטגוריות",
+  subcategories: "תת־קטגוריות",
+  fund_opening_balances: "יתרות פתיחה",
+  import_batches: "ייבואים",
+  transactions: "תנועות",
+  classification_rules: "כללי סיווג",
+  classification_applications: "החלות כללי סיווג",
+  classification_suggestions: "הצעות סיווג",
+  sync_ignores: "חריגות סנכרון",
+  notifications: "התראות",
+  email_automations: "אוטומציות מייל",
+  email_automation_runs: "ריצות אוטומציה",
+  check_email_settings: "הגדרות מייל צ'קים",
+  check_email_runs: "ריצות מייל צ'קים",
+  app_download_settings: "הגדרות הורדת אפליקציה",
+  backup_runs: "ריצות גיבוי",
+  security_memory: "זיכרון אבטחה",
+  security_accepted_findings: "ממצאי אבטחה מאושרים",
+  security_audit_runs: "ריצות סריקת אבטחה",
+  action_history: "היסטוריית פעילות",
+  action_history_archive: "ארכיון היסטוריה",
+};
+
+export const EXPORT_PAGE_SIZE = 1000;

@@ -10,6 +10,7 @@ import { SecurityMemoryCard, AcceptedFindingsCard } from "@/components/SecurityM
 import { UsersPanel } from "@/routes/_authenticated/settings";
 import { SecurityAccessPanel } from "@/components/SecurityAccessPanel";
 import { EmailAutomationsPanel } from "@/components/EmailAutomationsPanel";
+import { PortabilityPanel } from "@/components/PortabilityPanel";
 
 
 export const Route = createFileRoute("/_authenticated/admin-settings")({
@@ -58,6 +59,7 @@ function AdminSettingsPage() {
           <TabsTrigger value="automations">אוטומציות מייל</TabsTrigger>
           <TabsTrigger value="security_audit">סריקת אבטחה</TabsTrigger>
           <TabsTrigger value="access">אבטחה וגישה</TabsTrigger>
+          <TabsTrigger value="portability">מוכנות למעבר</TabsTrigger>
         </TabsList>
         <TabsContent value="users"><UsersPanel /></TabsContent>
 
@@ -73,6 +75,8 @@ function AdminSettingsPage() {
         </TabsContent>
 
         <TabsContent value="access"><SecurityAccessPanel /></TabsContent>
+
+        <TabsContent value="portability"><PortabilityPanel /></TabsContent>
       </Tabs>
     </AppShell>
   );

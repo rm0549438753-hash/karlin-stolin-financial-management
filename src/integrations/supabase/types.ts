@@ -1231,6 +1231,7 @@ export type Database = {
         Returns: boolean
       }
       is_full_viewer: { Args: { _uid: string }; Returns: boolean }
+      portability_schema: { Args: never; Returns: Json }
       security_config_autofix: { Args: never; Returns: Json }
       security_config_findings: { Args: never; Returns: Json }
       tx_alert_counts: { Args: never; Returns: Json }
