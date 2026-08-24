@@ -12,7 +12,6 @@ import {
   SidebarMenu, SidebarMenuButton, SidebarMenuItem,
   SidebarProvider, SidebarTrigger, SidebarHeader, SidebarFooter,
 } from "@/components/ui/sidebar";
-import logoAsset from "@/assets/karlin-logo.png.asset.json";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -20,6 +19,8 @@ import { ScrollStrip } from "@/components/ui/scroll-strip";
 
 
 import { useIdleLogout } from "@/hooks/use-idle-logout";
+
+const LOGO_SRC = "/karlin-logo.svg";
 
 const GOLD = "#D4AF37";
 
@@ -38,7 +39,7 @@ function AppSidebar() {
             className="h-32 w-32 bg-white rounded-2xl flex items-center justify-center p-0 overflow-hidden shadow-xl mb-4 group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:mb-0"
             style={{ border: `3px solid ${GOLD}` }}
           >
-            <img src={logoAsset.url} alt="מרכז קארלין סטאלין" className="h-[115%] w-[115%] object-contain scale-110" />
+            <img src={LOGO_SRC} alt="מרכז קארלין סטאלין" className="h-[115%] w-[115%] object-contain scale-110" />
           </div>
           <div className="group-data-[collapsible=icon]:hidden">
             <h2 className="text-xl font-extrabold leading-tight tracking-tight" style={{ color: GOLD }}>
@@ -175,7 +176,7 @@ export function AppShell({ children, title, actions }: { children: ReactNode; ti
               className="h-16 w-16 bg-white rounded-full flex items-center justify-center p-0 overflow-hidden shadow-inner shrink-0"
               style={{ border: `2px solid ${GOLD}` }}
             >
-              <img src={logoAsset.url} alt="" className="h-[120%] w-[120%] object-contain scale-110" />
+              <img src={LOGO_SRC} alt="" className="h-[120%] w-[120%] object-contain scale-110" />
             </div>
             <div className="flex flex-col min-w-0 flex-1">
               <h1 className="text-base md:text-2xl font-extrabold leading-tight tracking-tight truncate" style={{ color: GOLD }}>{title}</h1>

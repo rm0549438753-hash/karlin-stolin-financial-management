@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import logoAsset from "@/assets/karlin-logo.png.asset.json";
+
+const LOGO_SRC = "/karlin-logo.svg";
 
 const GOLD = "#D4AF37";
 
@@ -34,7 +35,7 @@ export function LegalPage({
           className="h-14 w-14 bg-white rounded-full flex items-center justify-center overflow-hidden shrink-0"
           style={{ border: `2px solid ${GOLD}` }}
         >
-          <img src={logoAsset.url} alt="" className="h-[120%] w-[120%] object-contain scale-110" />
+          <img src={LOGO_SRC} alt="" className="h-[120%] w-[120%] object-contain scale-110" />
         </div>
         <div className="min-w-0">
           <h1 className="text-xl md:text-2xl font-extrabold leading-none" style={{ color: GOLD }}>

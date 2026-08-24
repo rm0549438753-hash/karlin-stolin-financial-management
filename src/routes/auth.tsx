@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import logoAsset from "@/assets/karlin-logo.png.asset.json";
 import { checkLoginLockout, reportFailedLogin, logLoginEvent, checkIpBlocked } from "@/lib/security.functions";
 import { getDeviceKey } from "@/lib/device-key";
+
+const LOGO_SRC = "/karlin-logo.svg";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -63,7 +64,7 @@ function AuthPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-secondary to-accent/30 p-4">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center space-y-2">
-          <img src={logoAsset.url} alt="מרכז קארלין סטאלין" className="mx-auto h-32 w-auto object-contain" />
+          <img src={LOGO_SRC} alt="מרכז קארלין סטאלין" className="mx-auto h-32 w-auto object-contain" />
           <CardTitle className="text-2xl">מרכז קארלין סטאלין</CardTitle>
           <CardDescription>ממשק ניהול פיננסי</CardDescription>
         </CardHeader>
