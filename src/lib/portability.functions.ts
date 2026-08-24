@@ -56,5 +56,5 @@ export const getPortabilitySchema = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin.rpc("portability_schema" as any);
     if (error) throw new Error(error.message);
-    return data as unknown;
+    return data as Record<string, unknown>;
   });
