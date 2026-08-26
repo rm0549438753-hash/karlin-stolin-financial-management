@@ -70,6 +70,8 @@ function AdminSettingsPage() {
           <EmailAutomationsPanel />
         </TabsContent>
 
+        <TabsContent value="push"><PushNotificationsPanel /></TabsContent>
+
         <TabsContent value="security_audit" className="space-y-6">
           <SecurityAuditPanel />
           <AcceptedFindingsCard />
