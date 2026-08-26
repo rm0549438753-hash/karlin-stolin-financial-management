@@ -11,6 +11,7 @@ import { UsersPanel } from "@/routes/_authenticated/settings";
 import { SecurityAccessPanel } from "@/components/SecurityAccessPanel";
 import { EmailAutomationsPanel } from "@/components/EmailAutomationsPanel";
 import { PortabilityPanel } from "@/components/PortabilityPanel";
+import { PushNotificationsPanel } from "@/components/PushNotificationsPanel";
 
 
 export const Route = createFileRoute("/_authenticated/admin-settings")({
