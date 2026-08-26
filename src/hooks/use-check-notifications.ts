@@ -191,4 +191,36 @@ export function useCheckNotifications() {
       cancelled = true;
     };
   }, []);
+
+  // Tapping the notification (or its action button) opens the linked screen.
+  useEffect(() => {
+    let disposers: Array<() => void> = [];
+    void (async () => {
+      try {
+        const { Capacitor } = await import("@capacitor/core");
+        if (!Capacitor.isNativePlatform?.()) return;
+        const { LocalNotifications } = await import("@capacitor/local-notifications");
+
+        const go = (link?: unknown) => {
+          const href = typeof link === "string" ? link.trim() : "";
+          if (!href.startsWith("/")) return;
+          const [pathname, search] = href.split("?");
+          router.navigate({ to: pathname!, search: Object.fromEntries(new URLSearchParams(search ?? "")) as never }).catch(() => {
+            window.location.assign(href);
+          });
+        };
+
+        const h1 = await LocalNotifications.addListener("localNotificationActionPerformed", (e) => {
+          go((e.notification?.extra as any)?.link);
+        });
+        disposers.push(() => void h1.remove());
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      disposers.forEach((d) => d());
+      disposers = [];
+    };
+  }, [router]);
 }
