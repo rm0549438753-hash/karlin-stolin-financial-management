@@ -23,6 +23,7 @@ export type PushRule = {
   title_template: string;
   body_template: string;
   link: string;
+  link_label?: string | null;
 };
 
 function fmtAmount(n: number): string {
