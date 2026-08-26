@@ -133,6 +133,7 @@ function UserMenu() {
   const { data: role } = useUserRole();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const isNative = useIsNativeApp();
   async function signOut() {
     const { logSessionEvent } = await import("@/lib/security.functions");
     const { getDeviceKey } = await import("@/lib/device-key");
@@ -150,8 +151,12 @@ function UserMenu() {
       </div>
       <div className="px-2 flex items-center gap-2 group-data-[collapsible=icon]:hidden">
         <Link to="/download" className="text-xs font-semibold underline hover:text-white/80">להורדת האפליקציה</Link>
-        <span className="text-white/40 text-xs">·</span>
-        <Link to="/about" className="text-xs font-semibold underline hover:text-white/80">אודות</Link>
+        {isNative && (
+          <>
+            <span className="text-white/40 text-xs">·</span>
+            <Link to="/about" className="text-xs font-semibold underline hover:text-white/80">אודות</Link>
+          </>
+        )}
       </div>
       <div className="px-2 flex items-center gap-2 text-[10px] text-white/60 group-data-[collapsible=icon]:hidden">
         <Link to="/privacy" className="underline hover:text-white">מדיניות פרטיות</Link>
