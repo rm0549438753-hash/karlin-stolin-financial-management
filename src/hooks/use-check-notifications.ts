@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useRouter } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { hasLiveSession } from "@/lib/session-guard";
 
@@ -23,6 +24,7 @@ export type PushRule = {
   title_template: string;
   body_template: string;
   link: string;
+  link_label?: string | null;
 };
 
 function fmtAmount(n: number): string {
@@ -43,7 +45,20 @@ function notifId(ruleIndex: number, dateKey: string): number {
   return 20000000 + ruleIndex * 100000 + (Number(dateKey.slice(4)) || 0);
 }
 
+// One action type per label text (ids must be stable & ascii-safe).
+const ACTION_IDS = new Map<string, string>();
+function actionTypeId(label: string): string {
+  let id = ACTION_IDS.get(label);
+  if (!id) {
+    id = "OPEN_" + (ACTION_IDS.size + 1);
+    ACTION_IDS.set(label, id);
+  }
+  return id;
+}
+
 export function useCheckNotifications() {
+  const router = useRouter();
+
   useEffect(() => {
     let cancelled = false;
 
@@ -71,7 +86,7 @@ export function useCheckNotifications() {
 
         const now = Date.now();
         const today = new Date().toISOString().slice(0, 10);
-        const planned: Array<{ id: number; title: string; body: string; at: Date; link: string }> = [];
+        const planned: Array<{ id: number; title: string; body: string; at: Date; link: string; label: string; ruleIndex: number }> = [];
 
         for (let i = 0; i < rules.length; i++) {
           const rule = rules[i]!;
@@ -110,6 +125,8 @@ export function useCheckNotifications() {
                 body: renderTemplate(rule.body_template, { count: e.count, total: fmtAmount(e.total), date: fmtDate(date) }),
                 at,
                 link: rule.link,
+                label: (rule.link_label || "").trim() || "לפירוט",
+                ruleIndex: i,
               });
             }
           } else if (rule.trigger_type === "uncategorized" || rule.trigger_type === "no_date") {
@@ -127,6 +144,8 @@ export function useCheckNotifications() {
               body: renderTemplate(rule.body_template, { count, total: "", date: fmtDate(at.toISOString().slice(0, 10)) }),
               at,
               link: rule.link,
+              label: (rule.link_label || "").trim() || "לפירוט",
+              ruleIndex: i,
             });
           }
         }
@@ -141,13 +160,28 @@ export function useCheckNotifications() {
         const list = planned.sort((a, b) => a.at.getTime() - b.at.getTime()).slice(0, 60);
         if (!list.length) return;
 
+        // Register one action type per distinct button label, so the
+        // notification shows a tappable word (e.g. "לפירוט") next to the text.
+        const labels = Array.from(new Set(list.map((n) => n.label)));
+        try {
+          await LocalNotifications.registerActionTypes({
+            types: labels.map((label) => ({
+              id: actionTypeId(label),
+              actions: [{ id: "open", title: label }],
+            })),
+          });
+        } catch {
+          /* older devices may not support action buttons — tap still works */
+        }
+
         await LocalNotifications.schedule({
-          notifications: list.map(({ id, title, body, at, link }) => ({
+          notifications: list.map(({ id, title, body, at, link, label }) => ({
             id,
             title,
             body,
             schedule: { at, allowWhileIdle: true },
             smallIcon: "ic_stat_icon_config_sample",
+            actionTypeId: actionTypeId(label),
             extra: { link },
           })),
         });
@@ -160,4 +194,36 @@ export function useCheckNotifications() {
       cancelled = true;
     };
   }, []);
+
+  // Tapping the notification (or its action button) opens the linked screen.
+  useEffect(() => {
+    let disposers: Array<() => void> = [];
+    void (async () => {
+      try {
+        const { Capacitor } = await import("@capacitor/core");
+        if (!Capacitor.isNativePlatform?.()) return;
+        const { LocalNotifications } = await import("@capacitor/local-notifications");
+
+        const go = (link?: unknown) => {
+          const href = typeof link === "string" ? link.trim() : "";
+          if (!href.startsWith("/")) return;
+          const [pathname, search] = href.split("?");
+          router.navigate({ to: pathname!, search: Object.fromEntries(new URLSearchParams(search ?? "")) as never }).catch(() => {
+            window.location.assign(href);
+          });
+        };
+
+        const h1 = await LocalNotifications.addListener("localNotificationActionPerformed", (e) => {
+          go((e.notification?.extra as any)?.link);
+        });
+        disposers.push(() => void h1.remove());
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      disposers.forEach((d) => d());
+      disposers = [];
+    };
+  }, [router]);
 }

@@ -1,0 +1,1 @@
+ALTER TABLE public.push_notification_rules ADD COLUMN IF NOT EXISTS link_label text NOT NULL DEFAULT 'לפירוט';
