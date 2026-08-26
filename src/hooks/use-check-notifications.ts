@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useRouter } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { hasLiveSession } from "@/lib/session-guard";
 
@@ -56,6 +57,8 @@ function actionTypeId(label: string): string {
 }
 
 export function useCheckNotifications() {
+  const router = useRouter();
+
   useEffect(() => {
     let cancelled = false;
 
