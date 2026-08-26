@@ -35,7 +35,7 @@ jobs:
           echo '<!doctype html><meta charset="utf-8"><title>Loading</title>' > dist/client/index.html
 
       - name: Install Capacitor CLI
-        run: npm install --no-save @capacitor/cli@^7 @capacitor/core@^7 @capacitor/android@^7 @capacitor/app@^7
+        run: npm install --no-save @capacitor/cli@^7 @capacitor/core@^7 @capacitor/android@^7 @capacitor/app@^7 @capacitor/local-notifications@^7
 
       - name: Add Android platform
         run: npx cap add android
@@ -59,6 +59,9 @@ jobs:
         run: |
           mkdir -p android/app/src/main/assets/public
           npx cap sync android
+
+      - name: Verify plugins are bundled
+        run: npx cap ls android
 
       - name: Build debug APK
         working-directory: android
@@ -84,4 +87,4 @@ jobs:
       # Distribution goes only through the access-code protected download page
       # (/api/public/apk); a public release would bypass that control.
 
-# build trigger: 2026-08-23T21:50:00Z
+# build trigger: 2026-08-26T22:30:00Z
