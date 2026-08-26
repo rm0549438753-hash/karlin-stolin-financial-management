@@ -139,8 +139,10 @@ function UserMenu() {
         <div className="text-xs font-bold truncate">{user?.email}</div>
         <div className="text-[10px] text-white/60">{role?.isFullViewer ? "אורח · צפייה בלבד" : role?.isAdmin ? "מנהל" : role?.roles?.includes("editor") ? "עורך" : "צופה"}</div>
       </div>
-      <div className="px-2 group-data-[collapsible=icon]:hidden">
+      <div className="px-2 flex items-center gap-2 group-data-[collapsible=icon]:hidden">
         <Link to="/download" className="text-xs font-semibold underline hover:text-white/80">להורדת האפליקציה</Link>
+        <span className="text-white/40 text-xs">·</span>
+        <Link to="/about" className="text-xs font-semibold underline hover:text-white/80">אודות</Link>
       </div>
       <div className="px-2 flex items-center gap-2 text-[10px] text-white/60 group-data-[collapsible=icon]:hidden">
         <Link to="/privacy" className="underline hover:text-white">מדיניות פרטיות</Link>
