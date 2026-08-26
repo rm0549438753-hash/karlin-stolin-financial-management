@@ -881,6 +881,60 @@ export type Database = {
         }
         Relationships: []
       }
+      push_notification_rules: {
+        Row: {
+          body_template: string
+          created_at: string
+          created_by: string | null
+          days_before: number
+          id: string
+          is_active: boolean
+          link: string
+          min_amount: number | null
+          name: string
+          send_hour: number
+          send_minute: number
+          sort_order: number
+          title_template: string
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          body_template?: string
+          created_at?: string
+          created_by?: string | null
+          days_before?: number
+          id?: string
+          is_active?: boolean
+          link?: string
+          min_amount?: number | null
+          name: string
+          send_hour?: number
+          send_minute?: number
+          sort_order?: number
+          title_template?: string
+          trigger_type?: string
+          updated_at?: string
+        }
+        Update: {
+          body_template?: string
+          created_at?: string
+          created_by?: string | null
+          days_before?: number
+          id?: string
+          is_active?: boolean
+          link?: string
+          min_amount?: number | null
+          name?: string
+          send_hour?: number
+          send_minute?: number
+          sort_order?: number
+          title_template?: string
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       security_accepted_findings: {
         Row: {
           accepted_by: string | null
