@@ -276,31 +276,46 @@ function TransactionsPage() {
       if (first.error) throw first.error;
       const all: TransactionRow[] = (first.data ?? []) as TransactionRow[];
       const total = first.count ?? all.length;
+      const keyId = JSON.stringify(txQueryKey);
       if (total > all.length) {
         const key = txQueryKey;
+        setPartial({ keyId, loaded: all.length, total });
         void (async () => {
-          try {
-            const reqs: any[] = [];
-            for (let offset = FIRST; offset < total; offset += PAGE) {
-              reqs.push(buildQ().range(offset, Math.min(offset + PAGE, total) - 1));
+          for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+              const reqs: any[] = [];
+              for (let offset = FIRST; offset < total; offset += PAGE) {
+                reqs.push(buildQ().range(offset, Math.min(offset + PAGE, total) - 1));
+              }
+              const results = await Promise.all(reqs);
+              const rest: TransactionRow[] = [];
+              let failed = false;
+              for (const r of results) {
+                if (r.error) { failed = true; break; }
+                rest.push(...((r.data ?? []) as TransactionRow[]));
+              }
+              if (failed) throw new Error("page error");
+              qc.setQueryData(key, (prev: TransactionRow[] | undefined) => {
+                const base = prev && prev.length >= all.length ? prev.slice(0, all.length) : all;
+                const seen = new Set(base.map((x: any) => x.id));
+                return [...base, ...rest.filter((x: any) => !seen.has(x.id))];
+              });
+              setPartial((p) => (p && p.keyId === keyId ? null : p));
+              return;
+            } catch {
+              // transient network hiccup — back off and retry
+              await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
             }
-            const results = await Promise.all(reqs);
-            const rest: TransactionRow[] = [];
-            for (const r of results) {
-              if (r.error) return;
-              rest.push(...((r.data ?? []) as TransactionRow[]));
-            }
-            qc.setQueryData(key, (prev: TransactionRow[] | undefined) => {
-              const base = prev && prev.length >= all.length ? prev.slice(0, all.length) : all;
-              const seen = new Set(base.map((x: any) => x.id));
-              return [...base, ...rest.filter((x: any) => !seen.has(x.id))];
-            });
-          } catch {
-            /* background fill is best-effort; the first page stays usable */
           }
+          // Still incomplete: keep the warning visible so totals/exports aren't
+          // mistaken for a full data set.
+          setPartial((p) => (p && p.keyId === keyId ? { ...p, failed: true } : p));
         })();
+      } else {
+        setPartial(null);
       }
       return all;
+
 
     },
     staleTime: 2 * 60_000,
