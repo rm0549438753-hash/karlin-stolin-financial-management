@@ -738,9 +738,24 @@ function TransactionsPage() {
           </ScrollStrip>
 
 
+          {partial?.failed && (
+            <div className="rounded-2xl border border-destructive/40 bg-destructive/10 px-4 py-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+              <p className="text-[13px] sm:text-sm text-destructive font-medium min-w-0 leading-snug">
+                נטענו <b>{rows.length}</b> מתוך <b>{partial.total}</b> תנועות — הטעינה נקטעה. הסיכומים, הייצוא וההדפסה חלקיים.
+              </p>
+              <button
+                className="text-xs sm:text-sm font-bold text-destructive hover:underline shrink-0 text-left"
+                onClick={() => { setPartial(null); qc.invalidateQueries({ queryKey: txQueryKey }); }}
+              >
+                נסה שוב
+              </button>
+            </div>
+          )}
+
           {uncatCount > 0 && (
             <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
               <div className="flex items-center gap-3 min-w-0">
+
                 <div className="w-9 h-9 rounded-full bg-amber-200 grid place-items-center text-amber-800 shrink-0">
                   <AlertTriangle className="w-4 h-4" />
                 </div>
