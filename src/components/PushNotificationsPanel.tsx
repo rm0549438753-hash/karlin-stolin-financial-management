@@ -287,7 +287,15 @@ export function PushNotificationsPanel() {
                 </div>
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-2">
+                <NotificationSimulator
+                  title={d.title_template}
+                  body={d.body_template}
+                  triggerType={d.trigger_type}
+                  daysBefore={d.days_before}
+                  sendHour={d.send_hour}
+                  sendMinute={d.send_minute}
+                />
                 <Button size="sm" disabled={!dirty} onClick={() => save(rule)}>
                   <Save className="w-4 h-4 ml-1" /> שמירה
                 </Button>
