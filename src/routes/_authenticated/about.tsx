@@ -34,10 +34,14 @@ function Row({ label, value, mono }: { label: string; value: string; mono?: bool
 function AboutPage() {
   const [native, setNative] = useState<NativeAppInfo | null>(null);
   const [loadedAt] = useState(() => new Date().toISOString());
+  const navigate = useNavigate();
 
   useEffect(() => {
-    getNativeAppInfo().then(setNative);
-  }, []);
+    getNativeAppInfo().then((info) => {
+      setNative(info);
+      if (!info.isNative) navigate({ to: "/", replace: true });
+    });
+  }, [navigate]);
 
   const summary = [
     `גרסת ממשק: ${APP_VERSION}`,
@@ -45,7 +49,18 @@ function AboutPage() {
     native?.isNative ? `אפליקציה: ${native.version ?? "?"} (build ${native.build ?? "?"})` : "פועל בדפדפן",
   ].join(" | ");
 
+  if (!native?.isNative) {
+    return (
+      <AppShell title="אודות המערכת">
+        <div className="mx-auto w-full max-w-2xl p-6 text-center text-sm text-muted-foreground">
+          מסך זה זמין רק באפליקציית האנדרואיד.
+        </div>
+      </AppShell>
+    );
+  }
+
   return (
+
     <AppShell title="אודות המערכת">
       <div className="mx-auto w-full max-w-2xl space-y-4">
         <Card className="relative overflow-hidden">
