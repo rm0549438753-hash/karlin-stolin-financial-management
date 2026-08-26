@@ -46,3 +46,10 @@ export async function getNativeAppInfo(): Promise<NativeAppInfo> {
     return { isNative: false };
   }
 }
+
+/** True only when running inside the installed Android/iOS app (Capacitor shell). */
+export function isNativeAppSync(): boolean {
+  if (typeof window === "undefined") return false;
+  const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+  return Boolean(cap?.isNativePlatform?.());
+}
