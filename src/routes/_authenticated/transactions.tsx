@@ -208,6 +208,10 @@ function TransactionsPage() {
   const [printOpen, setPrintOpen] = useState(false);
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // Tracks background paging of the remaining rows; when it ends incomplete we
+  // must tell the user, since totals/exports would otherwise look complete.
+  const [partial, setPartial] = useState<{ keyId: string; loaded: number; total: number; failed?: boolean } | null>(null);
+
 
   // Restore the last-used filters for this account. With no saved filters we
   // default to the current month so the table doesn't open with thousands of rows.
@@ -276,31 +280,46 @@ function TransactionsPage() {
       if (first.error) throw first.error;
       const all: TransactionRow[] = (first.data ?? []) as TransactionRow[];
       const total = first.count ?? all.length;
+      const keyId = JSON.stringify(txQueryKey);
       if (total > all.length) {
         const key = txQueryKey;
+        setPartial({ keyId, loaded: all.length, total });
         void (async () => {
-          try {
-            const reqs: any[] = [];
-            for (let offset = FIRST; offset < total; offset += PAGE) {
-              reqs.push(buildQ().range(offset, Math.min(offset + PAGE, total) - 1));
+          for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+              const reqs: any[] = [];
+              for (let offset = FIRST; offset < total; offset += PAGE) {
+                reqs.push(buildQ().range(offset, Math.min(offset + PAGE, total) - 1));
+              }
+              const results = await Promise.all(reqs);
+              const rest: TransactionRow[] = [];
+              let failed = false;
+              for (const r of results) {
+                if (r.error) { failed = true; break; }
+                rest.push(...((r.data ?? []) as TransactionRow[]));
+              }
+              if (failed) throw new Error("page error");
+              qc.setQueryData(key, (prev: TransactionRow[] | undefined) => {
+                const base = prev && prev.length >= all.length ? prev.slice(0, all.length) : all;
+                const seen = new Set(base.map((x: any) => x.id));
+                return [...base, ...rest.filter((x: any) => !seen.has(x.id))];
+              });
+              setPartial((p) => (p && p.keyId === keyId ? null : p));
+              return;
+            } catch {
+              // transient network hiccup — back off and retry
+              await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
             }
-            const results = await Promise.all(reqs);
-            const rest: TransactionRow[] = [];
-            for (const r of results) {
-              if (r.error) return;
-              rest.push(...((r.data ?? []) as TransactionRow[]));
-            }
-            qc.setQueryData(key, (prev: TransactionRow[] | undefined) => {
-              const base = prev && prev.length >= all.length ? prev.slice(0, all.length) : all;
-              const seen = new Set(base.map((x: any) => x.id));
-              return [...base, ...rest.filter((x: any) => !seen.has(x.id))];
-            });
-          } catch {
-            /* background fill is best-effort; the first page stays usable */
           }
+          // Still incomplete: keep the warning visible so totals/exports aren't
+          // mistaken for a full data set.
+          setPartial((p) => (p && p.keyId === keyId ? { ...p, failed: true } : p));
         })();
+      } else {
+        setPartial(null);
       }
       return all;
+
 
     },
     staleTime: 2 * 60_000,
@@ -719,9 +738,24 @@ function TransactionsPage() {
           </ScrollStrip>
 
 
+          {partial?.failed && (
+            <div className="rounded-2xl border border-destructive/40 bg-destructive/10 px-4 py-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+              <p className="text-[13px] sm:text-sm text-destructive font-medium min-w-0 leading-snug">
+                נטענו <b>{rows.length}</b> מתוך <b>{partial.total}</b> תנועות — הטעינה נקטעה. הסיכומים, הייצוא וההדפסה חלקיים.
+              </p>
+              <button
+                className="text-xs sm:text-sm font-bold text-destructive hover:underline shrink-0 text-left"
+                onClick={() => { setPartial(null); qc.invalidateQueries({ queryKey: txQueryKey }); }}
+              >
+                נסה שוב
+              </button>
+            </div>
+          )}
+
           {uncatCount > 0 && (
             <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
               <div className="flex items-center gap-3 min-w-0">
+
                 <div className="w-9 h-9 rounded-full bg-amber-200 grid place-items-center text-amber-800 shrink-0">
                   <AlertTriangle className="w-4 h-4" />
                 </div>

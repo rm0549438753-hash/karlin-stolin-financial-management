@@ -11,7 +11,11 @@ export const getRouter = () => {
         staleTime: 5 * 60 * 1000,
         gcTime: 30 * 60 * 1000,
         refetchOnWindowFocus: false,
-        refetchOnMount: false,
+        // Keep default refetchOnMount (true): fresh data is still served from
+        // cache thanks to staleTime, but a query invalidated while unmounted
+        // (e.g. lookups edited in Settings) refetches when the screen re-opens.
+        refetchOnMount: true,
+
         refetchOnReconnect: true,
         retry: 1,
       },
