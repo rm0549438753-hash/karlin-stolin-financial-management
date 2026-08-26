@@ -20,6 +20,15 @@ import { ScrollStrip } from "@/components/ui/scroll-strip";
 
 import { useIdleLogout } from "@/hooks/use-idle-logout";
 import { useCheckNotifications } from "@/hooks/use-check-notifications";
+import { isNativeAppSync } from "@/lib/build-info";
+
+function useIsNativeApp() {
+  const [isNative, setIsNative] = useState(false);
+  useEffect(() => {
+    setIsNative(isNativeAppSync());
+  }, []);
+  return isNative;
+}
 
 
 const LOGO_SRC = "/karlin-logo.svg";
