@@ -187,6 +187,7 @@ export function PushNotificationsPanel() {
           </CardDescription>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={sendInstantTest}><BellRing className="w-4 h-4 ml-1" /> שלח התראת ניסיון</Button>
           <Button variant="outline" size="sm" onClick={sendTest}><BellRing className="w-4 h-4 ml-1" /> בדיקת התראה</Button>
           <Button size="sm" onClick={addRule}><Plus className="w-4 h-4 ml-1" /> התראה חדשה</Button>
         </div>
