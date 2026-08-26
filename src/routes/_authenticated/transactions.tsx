@@ -208,6 +208,10 @@ function TransactionsPage() {
   const [printOpen, setPrintOpen] = useState(false);
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // Tracks background paging of the remaining rows; when it ends incomplete we
+  // must tell the user, since totals/exports would otherwise look complete.
+  const [partial, setPartial] = useState<{ keyId: string; loaded: number; total: number; failed?: boolean } | null>(null);
+
 
   // Restore the last-used filters for this account. With no saved filters we
   // default to the current month so the table doesn't open with thousands of rows.
