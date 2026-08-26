@@ -19,6 +19,8 @@ import { ScrollStrip } from "@/components/ui/scroll-strip";
 
 
 import { useIdleLogout } from "@/hooks/use-idle-logout";
+import { useCheckNotifications } from "@/hooks/use-check-notifications";
+
 
 const LOGO_SRC = "/karlin-logo.svg";
 
@@ -155,6 +157,9 @@ function UserMenu() {
 
 export function AppShell({ children, title, actions }: { children: ReactNode; title: string; actions?: ReactNode }) {
   useIdleLogout();
+  // Phone reminders for checks due tomorrow (native app only).
+  useCheckNotifications();
+
   // Below ~1024px an open sidebar pushed the content wider than the screen
   // (horizontal page scroll on tablets); start collapsed there instead.
   const [sidebarOpen, setSidebarOpen] = useState(true);

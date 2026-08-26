@@ -75,29 +75,26 @@ export async function collectSignals(admin: any): Promise<Signal[]> {
     });
   }
 
-  /* --- 2. Checks due in the next 3 days --------------------------------- */
+  /* --- 2. Checks due tomorrow (the day before payment only) -------------- */
   const checksAcc = accList.find((a) => a.schema_type === "checks");
   if (checksAcc) {
-    const limit = addDays(today, 3);
+    const tomorrow = addDays(today, 1);
     const due = rows.filter(
-      (r) =>
-        r.account_id === checksAcc.id &&
-        r.value_date &&
-        r.value_date >= today &&
-        r.value_date <= limit,
+      (r) => r.account_id === checksAcc.id && r.value_date === tomorrow,
     );
     if (due.length) {
       const total = due.reduce((s, r) => s + Math.abs(Number(r.amount) || 0), 0);
       signals.push({
         kind: "checks_due",
-        title: `${due.length} צ'קים לפירעון בשלושת הימים הקרובים`,
+        title: `${due.length} צ'קים לפירעון מחר`,
         body: `סה"כ ${fmtAmount(total)}. מומלץ לוודא כיסוי בחשבון.`,
         link: "/reports?tab=future-checks",
         severity: "warning",
-        dedupeKey: `checks-due-${today}`,
+        dedupeKey: `checks-due-${tomorrow}`,
       });
     }
   }
+
 
   /* Balance-level signals (negative balance / low cash) are intentionally not
      raised in the bell — managers asked for task and failure alerts only. */
