@@ -35,6 +35,7 @@ type Rule = {
   title_template: string;
   body_template: string;
   link: string;
+  link_label: string | null;
   sort_order: number;
 };
 
@@ -49,6 +50,7 @@ const EMPTY: Partial<Rule> = {
   title_template: "{count} צ׳קים לפירעון ב-{date}",
   body_template: 'סה"כ {total}. מומלץ לוודא כיסוי בחשבון.',
   link: "/reports?tab=future-checks",
+  link_label: "לפירוט",
 };
 
 function triggerLabel(v: string) {
@@ -82,6 +84,7 @@ export function PushNotificationsPanel() {
       title_template: editing.title_template ?? "",
       body_template: editing.body_template ?? "",
       link: editing.link ?? "",
+      link_label: (editing.link_label ?? "").trim() || "לפירוט",
       sort_order: editing.sort_order ?? rules.length,
     };
     const q = editing.id
@@ -249,7 +252,7 @@ export function PushNotificationsPanel() {
                           <TableCell colSpan={8} className="bg-muted/20 p-4">
                             <div className="grid gap-2 sm:grid-cols-2 text-sm">
                               <div><b>כותרת:</b> {r.title_template || "—"}</div>
-                              <div><b>קישור בלחיצה:</b> {r.link || "—"}</div>
+                              <div><b>קישור בלחיצה:</b> {r.link || "—"} {r.link_label ? `(${r.link_label})` : ""}</div>
                               <div className="sm:col-span-2"><b>תוכן:</b> {r.body_template || "—"}</div>
                               <div className="sm:col-span-2 text-muted-foreground text-xs">
                                 {TRIGGERS.find((t) => t.value === r.trigger_type)?.hint}
@@ -314,6 +317,12 @@ export function PushNotificationsPanel() {
                 <div className="space-y-1">
                   <Label>קישור בלחיצה</Label>
                   <Input value={editing.link ?? ""} onChange={(e) => setEditing({ ...editing, link: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <Label>מילת הקישור בהתראה</Label>
+                  <Input placeholder="לפירוט" value={editing.link_label ?? ""}
+                    onChange={(e) => setEditing({ ...editing, link_label: e.target.value })} />
+                  <p className="text-xs text-muted-foreground">המילה שתופיע ככפתור בתוך ההתראה בטלפון (למשל: לפירוט)</p>
                 </div>
                 <div className="space-y-1 sm:col-span-2">
                   <Label>כותרת ההתראה</Label>
