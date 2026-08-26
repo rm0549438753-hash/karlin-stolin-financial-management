@@ -15,6 +15,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { NotificationDiagnostics } from "@/components/NotificationDiagnostics";
+import { NotificationSimulator } from "@/components/NotificationSimulator";
 
 const TABLE = "push_notification_rules" as any;
 
