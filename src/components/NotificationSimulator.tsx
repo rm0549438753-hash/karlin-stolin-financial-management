@@ -12,6 +12,7 @@ type Props = {
   daysBefore: number;
   sendHour: number;
   sendMinute: number;
+  asIcon?: boolean;
 };
 
 function fill(tpl: string) {
@@ -47,9 +48,15 @@ export function NotificationSimulator(props: Props) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <PlayCircle className="w-4 h-4 ml-1" /> הדמיית התראה
-        </Button>
+        {props.asIcon ? (
+          <Button variant="ghost" size="icon" className="h-8 w-8" title="הדמיית התראה">
+            <PlayCircle className="w-4 h-4" />
+          </Button>
+        ) : (
+          <Button variant="outline" size="sm">
+            <PlayCircle className="w-4 h-4 ml-1" /> הדמיית התראה
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent dir="rtl" className="max-w-md">
         <DialogHeader>

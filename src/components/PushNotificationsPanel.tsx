@@ -1,20 +1,17 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Bell, Plus, Trash2, Save, BellRing } from "lucide-react";
+import { Bell, BellRing, ChevronDown, ChevronLeft, Pencil, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { NotificationDiagnostics } from "@/components/NotificationDiagnostics";
 import { NotificationSimulator } from "@/components/NotificationSimulator";
 
@@ -41,9 +38,27 @@ type Rule = {
   sort_order: number;
 };
 
+const EMPTY: Partial<Rule> = {
+  name: "התראה חדשה",
+  is_active: true,
+  trigger_type: "checks_due",
+  days_before: 1,
+  send_hour: 7,
+  send_minute: 0,
+  min_amount: null,
+  title_template: "{count} צ׳קים לפירעון ב-{date}",
+  body_template: 'סה"כ {total}. מומלץ לוודא כיסוי בחשבון.',
+  link: "/reports?tab=future-checks",
+};
+
+function triggerLabel(v: string) {
+  return TRIGGERS.find((t) => t.value === v)?.label ?? v;
+}
+
 export function PushNotificationsPanel() {
   const qc = useQueryClient();
-  const [drafts, setDrafts] = useState<Record<string, Partial<Rule>>>({});
+  const [editing, setEditing] = useState<Partial<Rule> | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const { data: rules = [], isLoading } = useQuery({
     queryKey: ["push-notification-rules"],
@@ -54,16 +69,27 @@ export function PushNotificationsPanel() {
     },
   });
 
-  function patch(id: string, values: Partial<Rule>) {
-    setDrafts((d) => ({ ...d, [id]: { ...d[id], ...values } }));
-  }
-
-  async function save(rule: Rule) {
-    const changes = drafts[rule.id];
-    if (!changes) return;
-    const { error } = await supabase.from(TABLE).update(changes as any).eq("id", rule.id);
+  async function saveEditing() {
+    if (!editing) return;
+    const payload = {
+      name: editing.name?.trim() || "התראה",
+      is_active: editing.is_active ?? true,
+      trigger_type: editing.trigger_type!,
+      days_before: Number(editing.days_before ?? 1),
+      send_hour: Number(editing.send_hour ?? 7),
+      send_minute: Number(editing.send_minute ?? 0),
+      min_amount: editing.min_amount ?? null,
+      title_template: editing.title_template ?? "",
+      body_template: editing.body_template ?? "",
+      link: editing.link ?? "",
+      sort_order: editing.sort_order ?? rules.length,
+    };
+    const q = editing.id
+      ? supabase.from(TABLE).update(payload as any).eq("id", editing.id)
+      : supabase.from(TABLE).insert(payload as any);
+    const { error } = await q;
     if (error) return toast.error("שמירה נכשלה: " + error.message);
-    setDrafts((d) => { const n = { ...d }; delete n[rule.id]; return n; });
+    setEditing(null);
     await qc.invalidateQueries({ queryKey: ["push-notification-rules"] });
     toast.success("ההתראה נשמרה");
   }
@@ -75,59 +101,11 @@ export function PushNotificationsPanel() {
     toast.success(is_active ? "ההתראה הופעלה" : "ההתראה כובתה");
   }
 
-  async function addRule() {
-    const { error } = await supabase.from(TABLE).insert({
-      name: "התראה חדשה",
-      trigger_type: "checks_due",
-      days_before: 1,
-      send_hour: 7,
-      send_minute: 0,
-      title_template: "{count} צ׳קים לפירעון ב-{date}",
-      body_template: 'סה"כ {total}. מומלץ לוודא כיסוי בחשבון.',
-      link: "/reports?tab=future-checks",
-      sort_order: rules.length,
-    } as any);
-    if (error) return toast.error("הוספה נכשלה: " + error.message);
-    await qc.invalidateQueries({ queryKey: ["push-notification-rules"] });
-    toast.success("נוספה התראה חדשה");
-  }
-
   async function remove(id: string) {
     const { error } = await supabase.from(TABLE).delete().eq("id", id);
     if (error) return toast.error("מחיקה נכשלה: " + error.message);
     await qc.invalidateQueries({ queryKey: ["push-notification-rules"] });
     toast.success("ההתראה נמחקה");
-  }
-
-  async function sendTest() {
-    try {
-      const { Capacitor } = await import("@capacitor/core");
-      if (!Capacitor.isNativePlatform?.()) {
-        toast.info("בדיקת התראה אפשרית רק באפליקציה המותקנת בטלפון");
-        return;
-      }
-      const { LocalNotifications } = await import("@capacitor/local-notifications");
-      const perm = await LocalNotifications.checkPermissions();
-      if (perm.display !== "granted") {
-        const req = await LocalNotifications.requestPermissions();
-        if (req.display !== "granted") {
-          toast.error("ההרשאה להתראות חסומה בהגדרות הטלפון");
-          return;
-        }
-      }
-      await LocalNotifications.schedule({
-        notifications: [{
-          id: 19999999,
-          title: "בדיקת התראה",
-          body: "אם קיבלת הודעה זו — ההתראות בטלפון פועלות כשורה.",
-          schedule: { at: new Date(Date.now() + 5000), allowWhileIdle: true },
-          smallIcon: "ic_stat_icon_config_sample",
-        }],
-      });
-      toast.success("התראת בדיקה תופיע בעוד כ-5 שניות");
-    } catch {
-      toast.error("שליחת התראת הבדיקה נכשלה");
-    }
   }
 
   async function sendInstantTest() {
@@ -179,131 +157,195 @@ export function PushNotificationsPanel() {
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-start justify-between gap-3 flex-wrap">
-        <div>
-          <CardTitle className="flex items-center gap-2"><Bell className="w-5 h-5" /> התראות לאפליקציה</CardTitle>
-          <CardDescription>
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="flex-row items-center justify-between gap-2 space-y-0">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Bell className="w-4 h-4" /> התראות לאפליקציה
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={sendInstantTest}>
+              <BellRing className="w-4 h-4 ml-1" /> שלח התראת ניסיון
+            </Button>
+            <Button size="sm" onClick={() => setEditing({ ...EMPTY })}>
+              <Plus className="w-4 h-4 ml-1" /> התראה חדשה
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
             התראות שנשלחות למכשיר הנייד (באפליקציה המותקנת). התזמון מתרענן בכל פתיחה של האפליקציה.
-            ניתן להשתמש בתגיות בנוסח: <code>{"{count}"}</code> · <code>{"{total}"}</code> · <code>{"{date}"}</code>
-          </CardDescription>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={sendInstantTest}><BellRing className="w-4 h-4 ml-1" /> שלח התראת ניסיון</Button>
-          <Button variant="outline" size="sm" onClick={sendTest}><BellRing className="w-4 h-4 ml-1" /> בדיקת התראה</Button>
-          <Button size="sm" onClick={addRule}><Plus className="w-4 h-4 ml-1" /> התראה חדשה</Button>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <NotificationDiagnostics />
-        {isLoading && <div className="text-sm text-muted-foreground">טוען…</div>}
-        {!isLoading && rules.length === 0 && (
-          <div className="text-sm text-muted-foreground">אין עדיין התראות מוגדרות.</div>
-        )}
-        {rules.map((rule) => {
-          const d = { ...rule, ...drafts[rule.id] } as Rule;
-          const dirty = !!drafts[rule.id];
-          const trigger = TRIGGERS.find((t) => t.value === d.trigger_type);
-          return (
-            <div key={rule.id} className="rounded-lg border p-4 space-y-4">
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <Input
-                  value={d.name}
-                  onChange={(e) => patch(rule.id, { name: e.target.value })}
-                  className="max-w-xs font-semibold"
-                />
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <Switch checked={d.is_active} onCheckedChange={(v) => toggle(rule, v)} />
-                    <span className="text-xs text-muted-foreground">{d.is_active ? "פעיל" : "כבוי"}</span>
-                  </div>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="text-destructive"><Trash2 className="w-4 h-4" /></Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent dir="rtl">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>למחוק את ההתראה?</AlertDialogTitle>
-                        <AlertDialogDescription>הפעולה תבטל את שליחת ההתראה הזו לטלפונים.</AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>ביטול</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => remove(rule.id)}>מחיקה</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </div>
+            אפשר להשתמש בתגיות <code className="text-xs">{"{count}"}</code>,{" "}
+            <code className="text-xs">{"{total}"}</code>, <code className="text-xs">{"{date}"}</code>.
+          </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                <div className="space-y-1 md:col-span-2">
-                  <Label className="text-xs">סוג ההתראה</Label>
-                  <Select value={d.trigger_type} onValueChange={(v) => patch(rule.id, { trigger_type: v })}>
+          <NotificationDiagnostics />
+
+          {isLoading ? (
+            <div className="py-8 text-center text-muted-foreground">טוען…</div>
+          ) : rules.length === 0 ? (
+            <div className="py-8 text-center text-muted-foreground">עדיין לא הוגדרו התראות.</div>
+          ) : null}
+
+          <div className="border rounded-lg overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-8" />
+                  <TableHead className="text-right">פעיל</TableHead>
+                  <TableHead className="text-right">שם</TableHead>
+                  <TableHead className="text-right">סוג</TableHead>
+                  <TableHead className="text-right">ימים מראש</TableHead>
+                  <TableHead className="text-right">שעה</TableHead>
+                  <TableHead className="text-right">סכום מינימלי</TableHead>
+                  <TableHead className="text-right">פעולות</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rules.map((r) => {
+                  const isOpen = openId === r.id;
+                  return (
+                    <Fragment key={r.id}>
+                      <TableRow>
+                        <TableCell className="px-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setOpenId(isOpen ? null : r.id)}>
+                            {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                          </Button>
+                        </TableCell>
+                        <TableCell>
+                          <Switch checked={r.is_active} onCheckedChange={(v) => toggle(r, v)} />
+                        </TableCell>
+                        <TableCell className="font-semibold">{r.name}</TableCell>
+                        <TableCell className="text-sm">{triggerLabel(r.trigger_type)}</TableCell>
+                        <TableCell className="text-sm">{r.trigger_type === "checks_due" ? r.days_before : "—"}</TableCell>
+                        <TableCell className="text-sm">
+                          {String(r.send_hour).padStart(2, "0")}:{String(r.send_minute).padStart(2, "0")}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {r.min_amount != null ? r.min_amount.toLocaleString("he-IL") : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" title="עריכה" onClick={() => setEditing(r)}>
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <NotificationSimulator
+                              asIcon
+                              title={r.title_template}
+                              body={r.body_template}
+                              triggerType={r.trigger_type}
+                              daysBefore={r.days_before}
+                              sendHour={r.send_hour}
+                              sendMinute={r.send_minute}
+                            />
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" title="מחיקה" onClick={() => remove(r.id)}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                      {isOpen && (
+                        <TableRow>
+                          <TableCell colSpan={8} className="bg-muted/20 p-4">
+                            <div className="grid gap-2 sm:grid-cols-2 text-sm">
+                              <div><b>כותרת:</b> {r.title_template || "—"}</div>
+                              <div><b>קישור בלחיצה:</b> {r.link || "—"}</div>
+                              <div className="sm:col-span-2"><b>תוכן:</b> {r.body_template || "—"}</div>
+                              <div className="sm:col-span-2 text-muted-foreground text-xs">
+                                {TRIGGERS.find((t) => t.value === r.trigger_type)?.hint}
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </Fragment>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Editor */}
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent dir="rtl" className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>{editing?.id ? "עריכת התראה" : "התראה חדשה"}</DialogTitle></DialogHeader>
+          {editing && (
+            <div className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label>שם</Label>
+                  <Input value={editing.name ?? ""} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
+                </div>
+                <div className="space-y-1">
+                  <Label>סוג ההתראה</Label>
+                  <Select value={editing.trigger_type} onValueChange={(v) => setEditing({ ...editing, trigger_type: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {TRIGGERS.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                  {trigger && <p className="text-[11px] text-muted-foreground">{trigger.hint}</p>}
                 </div>
-                {d.trigger_type === "checks_due" && (
+                {editing.trigger_type === "checks_due" && (
                   <div className="space-y-1">
-                    <Label className="text-xs">ימים לפני הפירעון</Label>
-                    <Input type="number" min={0} max={30} value={d.days_before}
-                      onChange={(e) => patch(rule.id, { days_before: Number(e.target.value) })} />
+                    <Label>ימים לפני הפירעון</Label>
+                    <Input type="number" min={0} max={30} value={editing.days_before ?? 1}
+                      onChange={(e) => setEditing({ ...editing, days_before: Number(e.target.value) })} />
                   </div>
                 )}
                 <div className="space-y-1">
-                  <Label className="text-xs">שעת שליחה</Label>
+                  <Label>שעת שליחה</Label>
                   <div className="flex items-center gap-1">
-                    <Input type="number" min={0} max={23} value={d.send_hour}
-                      onChange={(e) => patch(rule.id, { send_hour: Number(e.target.value) })} />
+                    <Input type="number" min={0} max={23} value={editing.send_hour ?? 7}
+                      onChange={(e) => setEditing({ ...editing, send_hour: Number(e.target.value) })} />
                     <span>:</span>
-                    <Input type="number" min={0} max={59} value={d.send_minute}
-                      onChange={(e) => patch(rule.id, { send_minute: Number(e.target.value) })} />
+                    <Input type="number" min={0} max={59} value={editing.send_minute ?? 0}
+                      onChange={(e) => setEditing({ ...editing, send_minute: Number(e.target.value) })} />
                   </div>
                 </div>
-                {d.trigger_type === "checks_due" && (
+                {editing.trigger_type === "checks_due" && (
                   <div className="space-y-1">
-                    <Label className="text-xs">סכום מינימלי (אופציונלי)</Label>
-                    <Input type="number" value={d.min_amount ?? ""}
-                      onChange={(e) => patch(rule.id, { min_amount: e.target.value === "" ? null : Number(e.target.value) })} />
+                    <Label>סכום מינימלי (אופציונלי)</Label>
+                    <Input type="number" value={editing.min_amount ?? ""}
+                      onChange={(e) => setEditing({ ...editing, min_amount: e.target.value === "" ? null : Number(e.target.value) })} />
                   </div>
                 )}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-xs">כותרת ההתראה</Label>
-                  <Input value={d.title_template} onChange={(e) => patch(rule.id, { title_template: e.target.value })} />
+                  <Label>קישור בלחיצה</Label>
+                  <Input value={editing.link ?? ""} onChange={(e) => setEditing({ ...editing, link: e.target.value })} />
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">קישור בלחיצה</Label>
-                  <Input value={d.link} onChange={(e) => patch(rule.id, { link: e.target.value })} />
+                <div className="space-y-1 sm:col-span-2">
+                  <Label>כותרת ההתראה</Label>
+                  <Input value={editing.title_template ?? ""} onChange={(e) => setEditing({ ...editing, title_template: e.target.value })} />
                 </div>
-                <div className="space-y-1 md:col-span-2">
-                  <Label className="text-xs">תוכן ההתראה</Label>
-                  <Textarea rows={2} value={d.body_template} onChange={(e) => patch(rule.id, { body_template: e.target.value })} />
+                <div className="space-y-1 sm:col-span-2">
+                  <Label>תוכן ההתראה</Label>
+                  <Textarea rows={2} value={editing.body_template ?? ""} onChange={(e) => setEditing({ ...editing, body_template: e.target.value })} />
                 </div>
               </div>
-
-              <div className="flex justify-end gap-2">
-                <NotificationSimulator
-                  title={d.title_template}
-                  body={d.body_template}
-                  triggerType={d.trigger_type}
-                  daysBefore={d.days_before}
-                  sendHour={d.send_hour}
-                  sendMinute={d.send_minute}
-                />
-                <Button size="sm" disabled={!dirty} onClick={() => save(rule)}>
-                  <Save className="w-4 h-4 ml-1" /> שמירה
-                </Button>
+              <div className="flex items-center gap-2">
+                <Switch checked={editing.is_active ?? true} onCheckedChange={(v) => setEditing({ ...editing, is_active: v })} />
+                <span className="text-sm text-muted-foreground">{editing.is_active ?? true ? "פעיל" : "כבוי"}</span>
               </div>
             </div>
-          );
-        })}
-      </CardContent>
-    </Card>
+          )}
+          <DialogFooter className="gap-2">
+            {editing && (
+              <NotificationSimulator
+                title={editing.title_template ?? ""}
+                body={editing.body_template ?? ""}
+                triggerType={editing.trigger_type ?? "checks_due"}
+                daysBefore={editing.days_before ?? 1}
+                sendHour={editing.send_hour ?? 7}
+                sendMinute={editing.send_minute ?? 0}
+              />
+            )}
+            <Button variant="outline" onClick={() => setEditing(null)}>ביטול</Button>
+            <Button onClick={saveEditing}>שמירה</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
