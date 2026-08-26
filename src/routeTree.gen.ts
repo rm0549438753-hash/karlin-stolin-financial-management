@@ -23,6 +23,7 @@ import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin-settings'
 import { Route as AuthenticatedActionHistoryRouteImport } from './routes/_authenticated/action-history'
+import { Route as AuthenticatedAboutRouteImport } from './routes/_authenticated/about'
 import { Route as ApiPublicApkRouteImport } from './routes/api/public/apk'
 import { Route as ApiPublicHooksHourlyAlertsRouteImport } from './routes/api/public/hooks/hourly-alerts'
 import { Route as ApiPublicHooksDailySecurityAuditRouteImport } from './routes/api/public/hooks/daily-security-audit'
@@ -102,6 +103,11 @@ const AuthenticatedActionHistoryRoute =
     path: '/action-history',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAboutRoute = AuthenticatedAboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const ApiPublicApkRoute = ApiPublicApkRouteImport.update({
   id: '/api/public/apk',
   path: '/api/public/apk',
@@ -139,6 +145,7 @@ export interface FileRoutesByFullPath {
   '/guest': typeof GuestRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/about': typeof AuthenticatedAboutRoute
   '/action-history': typeof AuthenticatedActionHistoryRoute
   '/admin-settings': typeof AuthenticatedAdminSettingsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -159,6 +166,7 @@ export interface FileRoutesByTo {
   '/guest': typeof GuestRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/about': typeof AuthenticatedAboutRoute
   '/action-history': typeof AuthenticatedActionHistoryRoute
   '/admin-settings': typeof AuthenticatedAdminSettingsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -181,6 +189,7 @@ export interface FileRoutesById {
   '/guest': typeof GuestRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/_authenticated/about': typeof AuthenticatedAboutRoute
   '/_authenticated/action-history': typeof AuthenticatedActionHistoryRoute
   '/_authenticated/admin-settings': typeof AuthenticatedAdminSettingsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -203,6 +212,7 @@ export interface FileRouteTypes {
     | '/guest'
     | '/privacy'
     | '/terms'
+    | '/about'
     | '/action-history'
     | '/admin-settings'
     | '/dashboard'
@@ -223,6 +233,7 @@ export interface FileRouteTypes {
     | '/guest'
     | '/privacy'
     | '/terms'
+    | '/about'
     | '/action-history'
     | '/admin-settings'
     | '/dashboard'
@@ -244,6 +255,7 @@ export interface FileRouteTypes {
     | '/guest'
     | '/privacy'
     | '/terms'
+    | '/_authenticated/about'
     | '/_authenticated/action-history'
     | '/_authenticated/admin-settings'
     | '/_authenticated/dashboard'
@@ -373,6 +385,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedActionHistoryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/about': {
+      id: '/_authenticated/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AuthenticatedAboutRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/apk': {
       id: '/api/public/apk'
       path: '/api/public/apk'
@@ -412,6 +431,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAboutRoute: typeof AuthenticatedAboutRoute
   AuthenticatedActionHistoryRoute: typeof AuthenticatedActionHistoryRoute
   AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -422,6 +442,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAboutRoute: AuthenticatedAboutRoute,
   AuthenticatedActionHistoryRoute: AuthenticatedActionHistoryRoute,
   AuthenticatedAdminSettingsRoute: AuthenticatedAdminSettingsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
