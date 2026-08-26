@@ -128,6 +128,54 @@ export function PushNotificationsPanel() {
     }
   }
 
+  async function sendInstantTest() {
+    const TEST_ID = 19999998;
+    try {
+      const { Capacitor } = await import("@capacitor/core");
+      if (!Capacitor.isNativePlatform?.()) {
+        toast.error("נכשל: התראות ניסיון נקלטות רק באפליקציה המותקנת בטלפון, לא בדפדפן");
+        return;
+      }
+      const { LocalNotifications } = await import("@capacitor/local-notifications");
+      const perm = await LocalNotifications.checkPermissions();
+      if (perm.display !== "granted") {
+        const req = await LocalNotifications.requestPermissions();
+        if (req.display !== "granted") {
+          toast.error("נכשל: ההרשאה להתראות חסומה בהגדרות הטלפון");
+          return;
+        }
+      }
+      await LocalNotifications.schedule({
+        notifications: [{
+          id: TEST_ID,
+          title: "התראת ניסיון",
+          body: "אם קיבלת הודעה זו — ההתראות בטלפון פועלות כשורה.",
+          schedule: { at: new Date(Date.now() + 1000), allowWhileIdle: true },
+          smallIcon: "ic_stat_icon_config_sample",
+        }],
+      });
+      const toastId = toast.loading("שולח התראת ניסיון… בודק קליטה בטלפון");
+      let delivered = false;
+      for (let i = 0; i < 8; i++) {
+        await new Promise((r) => setTimeout(r, 1000));
+        try {
+          const list = await LocalNotifications.getDeliveredNotifications();
+          if (list.notifications?.some((n: any) => n.id === TEST_ID)) { delivered = true; break; }
+        } catch { /* ignore polling error */ }
+      }
+      if (delivered) {
+        toast.success("ההתראה נקלטה בטלפון בהצלחה ✅", { id: toastId });
+      } else {
+        toast.error(
+          "ההתראה נשלחה אך לא אותרה כנקלטה. בדוק בהגדרות הטלפון: הרשאת התראות, ביטול חיסכון סוללה והרשאת תזכורות מדויקות.",
+          { id: toastId, duration: 8000 },
+        );
+      }
+    } catch (e: any) {
+      toast.error("שליחת התראת הניסיון נכשלה: " + (e?.message ?? "שגיאה לא ידועה"));
+    }
+  }
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-start justify-between gap-3 flex-wrap">
@@ -139,6 +187,7 @@ export function PushNotificationsPanel() {
           </CardDescription>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={sendInstantTest}><BellRing className="w-4 h-4 ml-1" /> שלח התראת ניסיון</Button>
           <Button variant="outline" size="sm" onClick={sendTest}><BellRing className="w-4 h-4 ml-1" /> בדיקת התראה</Button>
           <Button size="sm" onClick={addRule}><Plus className="w-4 h-4 ml-1" /> התראה חדשה</Button>
         </div>
