@@ -72,7 +72,7 @@ export function useCheckNotifications() {
 
         const now = Date.now();
         const today = new Date().toISOString().slice(0, 10);
-        const planned: Array<{ id: number; title: string; body: string; at: Date; link: string }> = [];
+        const planned: Array<{ id: number; title: string; body: string; at: Date; link: string; label: string; ruleIndex: number }> = [];
 
         for (let i = 0; i < rules.length; i++) {
           const rule = rules[i]!;
