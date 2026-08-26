@@ -19,6 +19,8 @@ import { ScrollStrip } from "@/components/ui/scroll-strip";
 
 
 import { useIdleLogout } from "@/hooks/use-idle-logout";
+import { useCheckNotifications } from "@/hooks/use-check-notifications";
+
 
 const LOGO_SRC = "/karlin-logo.svg";
 
