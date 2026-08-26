@@ -193,6 +193,7 @@ export function PushNotificationsPanel() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        <NotificationDiagnostics />
         {isLoading && <div className="text-sm text-muted-foreground">טוען…</div>}
         {!isLoading && rules.length === 0 && (
           <div className="text-sm text-muted-foreground">אין עדיין התראות מוגדרות.</div>
