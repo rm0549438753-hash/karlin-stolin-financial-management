@@ -15,6 +15,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { NotificationDiagnostics } from "@/components/NotificationDiagnostics";
+import { NotificationSimulator } from "@/components/NotificationSimulator";
 
 const TABLE = "push_notification_rules" as any;
 
@@ -193,6 +195,7 @@ export function PushNotificationsPanel() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        <NotificationDiagnostics />
         {isLoading && <div className="text-sm text-muted-foreground">טוען…</div>}
         {!isLoading && rules.length === 0 && (
           <div className="text-sm text-muted-foreground">אין עדיין התראות מוגדרות.</div>
@@ -284,7 +287,15 @@ export function PushNotificationsPanel() {
                 </div>
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-2">
+                <NotificationSimulator
+                  title={d.title_template}
+                  body={d.body_template}
+                  triggerType={d.trigger_type}
+                  daysBefore={d.days_before}
+                  sendHour={d.send_hour}
+                  sendMinute={d.send_minute}
+                />
                 <Button size="sm" disabled={!dirty} onClick={() => save(rule)}>
                   <Save className="w-4 h-4 ml-1" /> שמירה
                 </Button>
