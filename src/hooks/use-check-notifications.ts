@@ -44,6 +44,17 @@ function notifId(ruleIndex: number, dateKey: string): number {
   return 20000000 + ruleIndex * 100000 + (Number(dateKey.slice(4)) || 0);
 }
 
+// One action type per label text (ids must be stable & ascii-safe).
+const ACTION_IDS = new Map<string, string>();
+function actionTypeId(label: string): string {
+  let id = ACTION_IDS.get(label);
+  if (!id) {
+    id = "OPEN_" + (ACTION_IDS.size + 1);
+    ACTION_IDS.set(label, id);
+  }
+  return id;
+}
+
 export function useCheckNotifications() {
   useEffect(() => {
     let cancelled = false;
@@ -111,6 +122,8 @@ export function useCheckNotifications() {
                 body: renderTemplate(rule.body_template, { count: e.count, total: fmtAmount(e.total), date: fmtDate(date) }),
                 at,
                 link: rule.link,
+                label: (rule.link_label || "").trim() || "לפירוט",
+                ruleIndex: i,
               });
             }
           } else if (rule.trigger_type === "uncategorized" || rule.trigger_type === "no_date") {
@@ -128,6 +141,8 @@ export function useCheckNotifications() {
               body: renderTemplate(rule.body_template, { count, total: "", date: fmtDate(at.toISOString().slice(0, 10)) }),
               at,
               link: rule.link,
+              label: (rule.link_label || "").trim() || "לפירוט",
+              ruleIndex: i,
             });
           }
         }
@@ -142,13 +157,28 @@ export function useCheckNotifications() {
         const list = planned.sort((a, b) => a.at.getTime() - b.at.getTime()).slice(0, 60);
         if (!list.length) return;
 
+        // Register one action type per distinct button label, so the
+        // notification shows a tappable word (e.g. "לפירוט") next to the text.
+        const labels = Array.from(new Set(list.map((n) => n.label)));
+        try {
+          await LocalNotifications.registerActionTypes({
+            types: labels.map((label) => ({
+              id: actionTypeId(label),
+              actions: [{ id: "open", title: label }],
+            })),
+          });
+        } catch {
+          /* older devices may not support action buttons — tap still works */
+        }
+
         await LocalNotifications.schedule({
-          notifications: list.map(({ id, title, body, at, link }) => ({
+          notifications: list.map(({ id, title, body, at, link, label }) => ({
             id,
             title,
             body,
             schedule: { at, allowWhileIdle: true },
             smallIcon: "ic_stat_icon_config_sample",
+            actionTypeId: actionTypeId(label),
             extra: { link },
           })),
         });
