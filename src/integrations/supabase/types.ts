@@ -890,6 +890,7 @@ export type Database = {
           id: string
           is_active: boolean
           link: string
+          link_label: string
           min_amount: number | null
           name: string
           send_hour: number
@@ -907,6 +908,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           link?: string
+          link_label?: string
           min_amount?: number | null
           name: string
           send_hour?: number
@@ -924,6 +926,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           link?: string
+          link_label?: string
           min_amount?: number | null
           name?: string
           send_hour?: number
