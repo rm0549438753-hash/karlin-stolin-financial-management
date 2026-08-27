@@ -394,6 +394,11 @@ function TransactionsPage() {
   });
 
   const quickEdit = useQuickEditTransaction();
+  // Keep a stable reference: the mutation object changes identity on every
+  // mutation state change, which used to rebuild `ctx` and re-render the whole
+  // table after each quick edit.
+  const quickEditRef = useRef(quickEdit);
+  quickEditRef.current = quickEdit;
   const ctx: RenderCtx = useMemo(() => ({
     fundMap: new Map(funds.map((f) => [f.id, f.name])),
     expMap: new Map(expTypes.map((e) => [e.id, e.name])),
@@ -404,15 +409,22 @@ function TransactionsPage() {
     catList: categories,
     subList: subcats,
     canEdit: !!role?.isEditor,
-    onQuickEdit: (id, field, value) => quickEdit.mutate({ id, field, value }),
-  }), [funds, expTypes, categories, subcats, role?.isEditor, quickEdit]);
+    onQuickEdit: (id, field, value) => quickEditRef.current.mutate({ id, field, value }),
+  }), [funds, expTypes, categories, subcats, role?.isEditor]);
+
+  // Typing stays responsive: the (expensive) filtering runs against deferred
+  // values, so a keystroke never blocks on re-filtering thousands of rows.
+  const dSearchDesc = useDeferredValue(searchDesc);
+  const dSearchRef = useDeferredValue(searchRef);
+  const dSearchName = useDeferredValue(searchName);
+  const dSearchAmount = useDeferredValue(searchAmount);
 
   const filtered = useMemo(() => {
     let r: any[] = rows;
     if (onlyUncat) r = r.filter((x) => !x.fund_id && !x.expense_type_id);
-    const qDesc = searchDesc.trim().toLowerCase();
-    const qRef = searchRef.trim().toLowerCase();
-    const qName = searchName.trim().toLowerCase();
+    const qDesc = dSearchDesc.trim().toLowerCase();
+    const qRef = dSearchRef.trim().toLowerCase();
+    const qName = dSearchName.trim().toLowerCase();
     if (qDesc) {
       r = r.filter((x) =>
         (x.description ?? "").toLowerCase().includes(qDesc) ||
@@ -428,7 +440,7 @@ function TransactionsPage() {
         (x.association ?? "").toLowerCase().includes(qName),
       );
     }
-    const qAmt = searchAmount.trim().replace(/[,\s₪]/g, "");
+    const qAmt = dSearchAmount.trim().replace(/[,\s₪]/g, "");
     if (qAmt) {
       const n = Number(qAmt);
       if (!isNaN(n)) {
@@ -446,7 +458,8 @@ function TransactionsPage() {
       return dateSort === "asc" ? cmp : -cmp;
     });
     return r;
-  }, [rows, searchDesc, searchRef, searchName, searchAmount, onlyUncat, dateSort]);
+  }, [rows, dSearchDesc, dSearchRef, dSearchName, dSearchAmount, onlyUncat, dateSort]);
+
 
   const renderRow = (r: any, idx: number) => {
                     const isUncat = !r.fund_id && !r.expense_type_id;
