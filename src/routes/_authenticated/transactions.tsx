@@ -337,7 +337,10 @@ function TransactionsPage() {
     },
 
     staleTime: 2 * 60_000,
-    gcTime: 15 * 60_000,
+    // Shorter than before: with 14 accounts, keeping every visited account's
+    // rows alive for 15 minutes filled the device memory and made switching
+    // between accounts stutter.
+    gcTime: 5 * 60_000,
     refetchOnWindowFocus: false,
     placeholderData: (prev: any) => prev,
 
@@ -353,7 +356,11 @@ function TransactionsPage() {
 
 
   // Keep the last rows for this account/filter on the device for instant re-open.
-  useIdbQueryCache(txQueryKey, rows.length ? rows : undefined, !!account);
+  // Only for reasonably sized sets — cloning tens of thousands of rows into
+  // IndexedDB blocks the main thread, which is exactly the freeze we're fixing.
+  const IDB_MAX_ROWS = 1500;
+  useIdbQueryCache(txQueryKey, rows.length && rows.length <= IDB_MAX_ROWS ? rows : undefined, !!account);
+
 
   // Per-account uncategorized count — served by the shared indexed counter call
   // instead of a full-table COUNT scan per screen.
