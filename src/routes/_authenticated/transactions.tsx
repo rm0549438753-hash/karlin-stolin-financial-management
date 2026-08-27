@@ -465,19 +465,26 @@ function TransactionsPage() {
                         <TableCell className="w-7 px-0.5 text-center border-l border-border/60">
                           <Checkbox checked={isChecked} onCheckedChange={() => toggleOne(r.id)} aria-label="בחר תנועה" className="h-3.5 w-3.5" />
                         </TableCell>
-                        {columns.map((col) => (
-                          <TableCell
-                            key={col.header}
-                            className={
-                              "border-l border-border/60 last:border-l-0 px-1.5 py-1 text-[11px] align-middle leading-tight " +
-                              (col.align === "left" ? "text-left whitespace-nowrap " : col.align === "center" ? "text-center " : "text-right ") +
-                              "max-w-[110px] truncate"
-                            }
-                            title={typeof col.render(r as any, ctx) === "string" ? String(col.render(r as any, ctx)) : undefined}
-                          >
-                            {col.render(r as any, ctx)}
-                          </TableCell>
-                        ))}
+                        {columns.map((col) => {
+                          // Render each cell ONCE. This used to call col.render()
+                          // three times per cell (twice just to compute `title`),
+                          // which is what made scrolling stutter.
+                          const content = col.render(r as any, ctx);
+                          return (
+                            <TableCell
+                              key={col.header}
+                              className={
+                                "border-l border-border/60 last:border-l-0 px-1.5 py-1 text-[11px] align-middle leading-tight " +
+                                (col.align === "left" ? "text-left whitespace-nowrap " : col.align === "center" ? "text-center " : "text-right ") +
+                                "max-w-[110px] truncate"
+                              }
+                              title={typeof content === "string" ? content : undefined}
+                            >
+                              {content}
+                            </TableCell>
+                          );
+                        })}
+
                         <TableCell className="border-l border-border/60 last:border-l-0 px-0.5 py-1 w-16">
                           <div className="flex items-center justify-center gap-0.5">
                             {role?.isEditor && (
