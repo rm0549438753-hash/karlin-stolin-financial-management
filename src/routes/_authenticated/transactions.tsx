@@ -342,6 +342,15 @@ function TransactionsPage() {
 
   });
 
+  // Drop a stale "partial data" warning when the filter/account combination
+  // changes (a cached result never re-enters queryFn to clear it).
+  const txKeyId = JSON.stringify(txQueryKey);
+  useEffect(() => {
+    setPartial((p) => (p && p.keyId !== txKeyId ? null : p));
+  }, [txKeyId]);
+
+
+
   // Keep the last rows for this account/filter on the device for instant re-open.
   useIdbQueryCache(txQueryKey, rows.length ? rows : undefined, !!account);
 
