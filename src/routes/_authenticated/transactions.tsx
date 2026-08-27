@@ -667,7 +667,9 @@ function TransactionsPage() {
       }, 4000);
     }, 150);
     return () => clearTimeout(t);
-  }, [urlSearch.highlight, filteredIds.join(",")]);
+    // NOTE: depend on the list size, not on a joined string of every id —
+    // building that string on each render cost more than the effect itself.
+  }, [urlSearch.highlight, filteredIds.length]);
 
   function extractText(v: any): string {
     if (v == null || typeof v === "boolean") return "";
