@@ -282,18 +282,19 @@ function TransactionsPage() {
       const total = first.count ?? all.length;
       const keyId = JSON.stringify(txQueryKey);
       const fetchRest = async () => {
-        const reqs: any[] = [];
-        for (let offset = FIRST; offset < total; offset += PAGE) {
-          reqs.push(buildQ().range(offset, Math.min(offset + PAGE, total) - 1));
-        }
-        const results = await Promise.all(reqs);
+        // Sequential pages with a yield between them. Firing every page at once
+        // made the browser parse several MB of JSON in one blocking burst,
+        // which froze the screen right after switching accounts.
         const rest: TransactionRow[] = [];
-        for (const r of results) {
+        for (let offset = FIRST; offset < total; offset += PAGE) {
+          const r = await buildQ().range(offset, Math.min(offset + PAGE, total) - 1);
           if (r.error) throw r.error;
           rest.push(...((r.data ?? []) as TransactionRow[]));
+          await new Promise((res) => setTimeout(res, 0));
         }
         return rest;
       };
+
       if (total > all.length) {
         // If the screen already held the complete set (e.g. a background refetch
         // on re-open), never hand back a truncated 200-row array — finish the
