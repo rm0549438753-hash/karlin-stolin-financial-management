@@ -1,7 +1,7 @@
 import { useAlertCounts } from "@/hooks/use-alert-counts";
 import { useIdbQueryCache } from "@/hooks/use-idb-query-cache";
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { hasLiveSession } from "@/lib/session-guard";
