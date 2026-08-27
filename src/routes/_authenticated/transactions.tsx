@@ -45,6 +45,9 @@ const ALL = "__all__";
 
 type GroupBy = "none" | "month" | "fund" | "expType" | "category";
 
+/** Max rows mounted per group in grouped mode (keeps the DOM small). */
+const GROUP_ROW_CAP = 300;
+
 const GROUP_OPTIONS: { value: GroupBy; label: string }[] = [
   { value: "none", label: "ללא קיבוץ" },
   { value: "month", label: "קיבוץ לפי חודש" },
