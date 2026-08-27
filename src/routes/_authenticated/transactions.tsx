@@ -1,7 +1,7 @@
 import { useAlertCounts } from "@/hooks/use-alert-counts";
 import { useIdbQueryCache } from "@/hooks/use-idb-query-cache";
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { hasLiveSession } from "@/lib/session-guard";
@@ -44,6 +44,9 @@ export const Route = createFileRoute("/_authenticated/transactions")({
 const ALL = "__all__";
 
 type GroupBy = "none" | "month" | "fund" | "expType" | "category";
+
+/** Max rows mounted per group in grouped mode (keeps the DOM small). */
+const GROUP_ROW_CAP = 300;
 
 const GROUP_OPTIONS: { value: GroupBy; label: string }[] = [
   { value: "none", label: "ללא קיבוץ" },
@@ -282,18 +285,19 @@ function TransactionsPage() {
       const total = first.count ?? all.length;
       const keyId = JSON.stringify(txQueryKey);
       const fetchRest = async () => {
-        const reqs: any[] = [];
-        for (let offset = FIRST; offset < total; offset += PAGE) {
-          reqs.push(buildQ().range(offset, Math.min(offset + PAGE, total) - 1));
-        }
-        const results = await Promise.all(reqs);
+        // Sequential pages with a yield between them. Firing every page at once
+        // made the browser parse several MB of JSON in one blocking burst,
+        // which froze the screen right after switching accounts.
         const rest: TransactionRow[] = [];
-        for (const r of results) {
+        for (let offset = FIRST; offset < total; offset += PAGE) {
+          const r = await buildQ().range(offset, Math.min(offset + PAGE, total) - 1);
           if (r.error) throw r.error;
           rest.push(...((r.data ?? []) as TransactionRow[]));
+          await new Promise((res) => setTimeout(res, 0));
         }
         return rest;
       };
+
       if (total > all.length) {
         // If the screen already held the complete set (e.g. a background refetch
         // on re-open), never hand back a truncated 200-row array — finish the
@@ -336,7 +340,10 @@ function TransactionsPage() {
     },
 
     staleTime: 2 * 60_000,
-    gcTime: 15 * 60_000,
+    // Shorter than before: with 14 accounts, keeping every visited account's
+    // rows alive for 15 minutes filled the device memory and made switching
+    // between accounts stutter.
+    gcTime: 5 * 60_000,
     refetchOnWindowFocus: false,
     placeholderData: (prev: any) => prev,
 
@@ -352,7 +359,11 @@ function TransactionsPage() {
 
 
   // Keep the last rows for this account/filter on the device for instant re-open.
-  useIdbQueryCache(txQueryKey, rows.length ? rows : undefined, !!account);
+  // Only for reasonably sized sets — cloning tens of thousands of rows into
+  // IndexedDB blocks the main thread, which is exactly the freeze we're fixing.
+  const IDB_MAX_ROWS = 1500;
+  useIdbQueryCache(txQueryKey, rows.length && rows.length <= IDB_MAX_ROWS ? rows : undefined, !!account);
+
 
   // Per-account uncategorized count — served by the shared indexed counter call
   // instead of a full-table COUNT scan per screen.
@@ -394,6 +405,11 @@ function TransactionsPage() {
   });
 
   const quickEdit = useQuickEditTransaction();
+  // Keep a stable reference: the mutation object changes identity on every
+  // mutation state change, which used to rebuild `ctx` and re-render the whole
+  // table after each quick edit.
+  const quickEditRef = useRef(quickEdit);
+  quickEditRef.current = quickEdit;
   const ctx: RenderCtx = useMemo(() => ({
     fundMap: new Map(funds.map((f) => [f.id, f.name])),
     expMap: new Map(expTypes.map((e) => [e.id, e.name])),
@@ -404,15 +420,22 @@ function TransactionsPage() {
     catList: categories,
     subList: subcats,
     canEdit: !!role?.isEditor,
-    onQuickEdit: (id, field, value) => quickEdit.mutate({ id, field, value }),
-  }), [funds, expTypes, categories, subcats, role?.isEditor, quickEdit]);
+    onQuickEdit: (id, field, value) => quickEditRef.current.mutate({ id, field, value }),
+  }), [funds, expTypes, categories, subcats, role?.isEditor]);
+
+  // Typing stays responsive: the (expensive) filtering runs against deferred
+  // values, so a keystroke never blocks on re-filtering thousands of rows.
+  const dSearchDesc = useDeferredValue(searchDesc);
+  const dSearchRef = useDeferredValue(searchRef);
+  const dSearchName = useDeferredValue(searchName);
+  const dSearchAmount = useDeferredValue(searchAmount);
 
   const filtered = useMemo(() => {
     let r: any[] = rows;
     if (onlyUncat) r = r.filter((x) => !x.fund_id && !x.expense_type_id);
-    const qDesc = searchDesc.trim().toLowerCase();
-    const qRef = searchRef.trim().toLowerCase();
-    const qName = searchName.trim().toLowerCase();
+    const qDesc = dSearchDesc.trim().toLowerCase();
+    const qRef = dSearchRef.trim().toLowerCase();
+    const qName = dSearchName.trim().toLowerCase();
     if (qDesc) {
       r = r.filter((x) =>
         (x.description ?? "").toLowerCase().includes(qDesc) ||
@@ -428,7 +451,7 @@ function TransactionsPage() {
         (x.association ?? "").toLowerCase().includes(qName),
       );
     }
-    const qAmt = searchAmount.trim().replace(/[,\s₪]/g, "");
+    const qAmt = dSearchAmount.trim().replace(/[,\s₪]/g, "");
     if (qAmt) {
       const n = Number(qAmt);
       if (!isNaN(n)) {
@@ -446,7 +469,8 @@ function TransactionsPage() {
       return dateSort === "asc" ? cmp : -cmp;
     });
     return r;
-  }, [rows, searchDesc, searchRef, searchName, searchAmount, onlyUncat, dateSort]);
+  }, [rows, dSearchDesc, dSearchRef, dSearchName, dSearchAmount, onlyUncat, dateSort]);
+
 
   const renderRow = (r: any, idx: number) => {
                     const isUncat = !r.fund_id && !r.expense_type_id;
@@ -465,19 +489,26 @@ function TransactionsPage() {
                         <TableCell className="w-7 px-0.5 text-center border-l border-border/60">
                           <Checkbox checked={isChecked} onCheckedChange={() => toggleOne(r.id)} aria-label="בחר תנועה" className="h-3.5 w-3.5" />
                         </TableCell>
-                        {columns.map((col) => (
-                          <TableCell
-                            key={col.header}
-                            className={
-                              "border-l border-border/60 last:border-l-0 px-1.5 py-1 text-[11px] align-middle leading-tight " +
-                              (col.align === "left" ? "text-left whitespace-nowrap " : col.align === "center" ? "text-center " : "text-right ") +
-                              "max-w-[110px] truncate"
-                            }
-                            title={typeof col.render(r as any, ctx) === "string" ? String(col.render(r as any, ctx)) : undefined}
-                          >
-                            {col.render(r as any, ctx)}
-                          </TableCell>
-                        ))}
+                        {columns.map((col) => {
+                          // Render each cell ONCE. This used to call col.render()
+                          // three times per cell (twice just to compute `title`),
+                          // which is what made scrolling stutter.
+                          const content = col.render(r as any, ctx);
+                          return (
+                            <TableCell
+                              key={col.header}
+                              className={
+                                "border-l border-border/60 last:border-l-0 px-1.5 py-1 text-[11px] align-middle leading-tight " +
+                                (col.align === "left" ? "text-left whitespace-nowrap " : col.align === "center" ? "text-center " : "text-right ") +
+                                "max-w-[110px] truncate"
+                              }
+                              title={typeof content === "string" ? content : undefined}
+                            >
+                              {content}
+                            </TableCell>
+                          );
+                        })}
+
                         <TableCell className="border-l border-border/60 last:border-l-0 px-0.5 py-1 w-16">
                           <div className="flex items-center justify-center gap-0.5">
                             {role?.isEditor && (
@@ -639,7 +670,9 @@ function TransactionsPage() {
       }, 4000);
     }, 150);
     return () => clearTimeout(t);
-  }, [urlSearch.highlight, filteredIds.join(",")]);
+    // NOTE: depend on the list size, not on a joined string of every id —
+    // building that string on each render cost more than the effect itself.
+  }, [urlSearch.highlight, filteredIds.length]);
 
   function extractText(v: any): string {
     if (v == null || typeof v === "boolean") return "";
@@ -988,7 +1021,16 @@ function TransactionsPage() {
                             </button>
                           </TableCell>
                         </TableRow>
-                        {!collapsed && g.rows.map((r: any, idx: number) => renderRow(r, idx))}
+                        {/* Grouped mode used to mount every row of every group
+                            at once; cap it like the ungrouped view. */}
+                        {!collapsed && g.rows.slice(0, GROUP_ROW_CAP).map((r: any, idx: number) => renderRow(r, idx))}
+                        {!collapsed && g.rows.length > GROUP_ROW_CAP && (
+                          <TableRow>
+                            <TableCell colSpan={columns.length + 2} className="text-center py-2 text-[11px] text-muted-foreground">
+                              מוצגות {GROUP_ROW_CAP} מתוך {g.rows.length} שורות בקבוצה זו — צמצם את הסינון להצגת השאר
+                            </TableCell>
+                          </TableRow>
+                        )}
                       </Fragment>
                     );
                   })}
