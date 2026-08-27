@@ -281,26 +281,38 @@ function TransactionsPage() {
       const all: TransactionRow[] = (first.data ?? []) as TransactionRow[];
       const total = first.count ?? all.length;
       const keyId = JSON.stringify(txQueryKey);
+      const fetchRest = async () => {
+        const reqs: any[] = [];
+        for (let offset = FIRST; offset < total; offset += PAGE) {
+          reqs.push(buildQ().range(offset, Math.min(offset + PAGE, total) - 1));
+        }
+        const results = await Promise.all(reqs);
+        const rest: TransactionRow[] = [];
+        for (const r of results) {
+          if (r.error) throw r.error;
+          rest.push(...((r.data ?? []) as TransactionRow[]));
+        }
+        return rest;
+      };
       if (total > all.length) {
+        // If the screen already held the complete set (e.g. a background refetch
+        // on re-open), never hand back a truncated 200-row array — finish the
+        // paging first so totals/exports stay complete.
+        const prev = qc.getQueryData<TransactionRow[]>(txQueryKey);
+        if (prev && prev.length > all.length) {
+          const rest = await fetchRest();
+          const seen = new Set(all.map((x: any) => x.id));
+          setPartial(null);
+          return [...all, ...rest.filter((x: any) => !seen.has(x.id))];
+        }
         const key = txQueryKey;
         setPartial({ keyId, loaded: all.length, total });
         void (async () => {
           for (let attempt = 0; attempt < 3; attempt++) {
             try {
-              const reqs: any[] = [];
-              for (let offset = FIRST; offset < total; offset += PAGE) {
-                reqs.push(buildQ().range(offset, Math.min(offset + PAGE, total) - 1));
-              }
-              const results = await Promise.all(reqs);
-              const rest: TransactionRow[] = [];
-              let failed = false;
-              for (const r of results) {
-                if (r.error) { failed = true; break; }
-                rest.push(...((r.data ?? []) as TransactionRow[]));
-              }
-              if (failed) throw new Error("page error");
-              qc.setQueryData(key, (prev: TransactionRow[] | undefined) => {
-                const base = prev && prev.length >= all.length ? prev.slice(0, all.length) : all;
+              const rest = await fetchRest();
+              qc.setQueryData(key, (prevRows: TransactionRow[] | undefined) => {
+                const base = prevRows && prevRows.length >= all.length ? prevRows.slice(0, all.length) : all;
                 const seen = new Set(base.map((x: any) => x.id));
                 return [...base, ...rest.filter((x: any) => !seen.has(x.id))];
               });
@@ -322,12 +334,22 @@ function TransactionsPage() {
 
 
     },
+
     staleTime: 2 * 60_000,
     gcTime: 15 * 60_000,
     refetchOnWindowFocus: false,
     placeholderData: (prev: any) => prev,
 
   });
+
+  // Drop a stale "partial data" warning when the filter/account combination
+  // changes (a cached result never re-enters queryFn to clear it).
+  const txKeyId = JSON.stringify(txQueryKey);
+  useEffect(() => {
+    setPartial((p) => (p && p.keyId !== txKeyId ? null : p));
+  }, [txKeyId]);
+
+
 
   // Keep the last rows for this account/filter on the device for instant re-open.
   useIdbQueryCache(txQueryKey, rows.length ? rows : undefined, !!account);
