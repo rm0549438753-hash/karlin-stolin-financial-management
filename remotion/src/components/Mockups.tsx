@@ -48,7 +48,7 @@ export const DashboardBody: React.FC = () => {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18, height: "100%" }}>
       <div style={{ display: "flex", gap: 8 }}>
-        {["מרכז קרלין סטולין", "בית הכנסת - גבעת זאב", "דו\"ח קופות"].map((t, i) => (
+        {["ניהול שוטף", "פרויקט בנייה", "דו\"ח קופות"].map((t, i) => (
           <div
             key={t}
             style={{
