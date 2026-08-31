@@ -1,6 +1,6 @@
 import React from "react";
 import { useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
-import { FONT, GOLD, INK, NAVY } from "../theme";
+import { FONT, GOLD, INK, MUTED } from "../theme";
 
 export const useVertical = () => {
   const { width, height } = useVideoConfig();
@@ -18,14 +18,6 @@ export function useRise(delay: number, distance = 60) {
   };
 }
 
-export function useOut(startFrame: number, len = 12) {
-  const frame = useCurrentFrame();
-  return interpolate(frame, [startFrame, startFrame + len], [1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-}
-
 export const GoldRule: React.FC<{ width?: number; delay?: number; height?: number }> = ({
   width = 220,
   delay = 0,
@@ -40,7 +32,7 @@ export const GoldRule: React.FC<{ width?: number; delay?: number; height?: numbe
         width: width * s,
         height,
         borderRadius: height,
-        background: `linear-gradient(90deg, ${GOLD}, #F2DE9B)`,
+        background: `linear-gradient(90deg, ${GOLD}, #F0DFAE)`,
       }}
     />
   );
@@ -52,8 +44,8 @@ export const Title: React.FC<{
   color?: string;
   delay?: number;
   style?: React.CSSProperties;
-}> = ({ children, size = 96, color = "#fff", delay = 0, style }) => {
-  const rise = useRise(delay, 40);
+}> = ({ children, size = 96, color = INK, delay = 0, style }) => {
+  const rise = useRise(delay, 34);
   return (
     <div
       style={{
@@ -79,8 +71,8 @@ export const Sub: React.FC<{
   color?: string;
   delay?: number;
   style?: React.CSSProperties;
-}> = ({ children, size = 40, color = "rgba(255,255,255,0.72)", delay = 0, style }) => {
-  const rise = useRise(delay, 26);
+}> = ({ children, size = 40, color = MUTED, delay = 0, style }) => {
+  const rise = useRise(delay, 22);
   return (
     <div
       style={{
@@ -94,49 +86,6 @@ export const Sub: React.FC<{
         ...style,
       }}
     >
-      {children}
-    </div>
-  );
-};
-
-/** A window chrome wrapper that makes mockups read as an app screen. */
-export const AppFrame: React.FC<{
-  children: React.ReactNode;
-  title: string;
-  style?: React.CSSProperties;
-}> = ({ children, title, style }) => {
-  return (
-    <div
-      style={{
-        borderRadius: 26,
-        overflow: "hidden",
-        background: "#fff",
-        boxShadow: "0 50px 120px rgba(0,0,0,0.45)",
-        border: `2px solid rgba(212,175,55,0.55)`,
-        direction: "rtl",
-        fontFamily: FONT,
-        color: INK,
-        ...style,
-      }}
-    >
-      <div
-        style={{
-          background: NAVY,
-          padding: "18px 26px",
-          display: "flex",
-          alignItems: "center",
-          gap: 16,
-          borderBottom: `4px solid ${GOLD}`,
-        }}
-      >
-        <div style={{ width: 34, height: 34, borderRadius: 999, background: "#fff", border: `2px solid ${GOLD}` }} />
-        <div style={{ color: GOLD, fontWeight: 900, fontSize: 26 }}>{title}</div>
-        <div style={{ marginInlineStart: "auto", display: "flex", gap: 8 }}>
-          {[0, 1, 2].map((i) => (
-            <div key={i} style={{ width: 12, height: 12, borderRadius: 999, background: "rgba(255,255,255,0.35)" }} />
-          ))}
-        </div>
-      </div>
       {children}
     </div>
   );
