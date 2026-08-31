@@ -566,6 +566,13 @@ function TransactionsPage() {
       next.has(k) ? next.delete(k) : next.add(k);
       return next;
     });
+  // Progressive reveal per group (instead of a hard cap)
+  const [groupLimits, setGroupLimits] = useState<Record<string, number>>({});
+  useEffect(() => { setGroupLimits({}); }, [filtered, groupBy]);
+  const showMoreInGroup = (k: string) =>
+    setGroupLimits((prev) => ({ ...prev, [k]: (prev[k] ?? GROUP_ROW_CAP) + GROUP_ROW_CAP }));
+
+
 
 
   const totals = useMemo(() => {
