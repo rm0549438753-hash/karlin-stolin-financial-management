@@ -32,6 +32,8 @@ function useIsNativeApp() {
 
 
 const LOGO_SRC = "/karlin-logo.svg";
+const MARK_SRC = "/karlin-mark.svg";
+
 
 const GOLD = "#D4AF37";
 
