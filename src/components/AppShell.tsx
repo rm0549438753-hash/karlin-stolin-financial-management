@@ -203,11 +203,12 @@ export function AppShell({ children, title, actions }: { children: ReactNode; ti
           >
             <SidebarTrigger className="text-white hover:bg-white/10 h-10 w-10 shrink-0" />
             <div
-              className="h-16 w-16 bg-white rounded-full flex items-center justify-center p-0 overflow-hidden shadow-inner shrink-0"
+              className="h-16 w-16 bg-white rounded-full flex items-center justify-center p-2 shadow-inner shrink-0"
               style={{ border: `2px solid ${GOLD}` }}
             >
-              <img src={LOGO_SRC} alt="" className="h-[120%] w-[120%] object-contain scale-110" />
+              <img src={MARK_SRC} alt="" className="h-full w-full object-contain" />
             </div>
+
             <div className="flex flex-col min-w-0 flex-1">
               <h1 className="text-base md:text-2xl font-extrabold leading-tight tracking-tight truncate" style={{ color: GOLD }}>{title}</h1>
               <p className="text-white/60 text-xs md:text-sm font-medium mt-1 hidden sm:block">מרכז קארלין סטאלין · ניהול פיננסי</p>
