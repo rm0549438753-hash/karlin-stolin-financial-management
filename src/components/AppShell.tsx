@@ -47,11 +47,18 @@ function AppSidebar() {
       <SidebarHeader className="p-0 bg-gradient-to-b from-[#144a7a] to-[#0d3b66]">
         <Link to="/dashboard" className="flex flex-col items-center text-center px-6 py-7 border-b border-white/10 group-data-[collapsible=icon]:py-3 group-data-[collapsible=icon]:px-2">
           <div
-            className="h-32 w-32 bg-white rounded-2xl flex items-center justify-center p-0 overflow-hidden shadow-xl mb-4 group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:mb-0"
+            className="w-full max-w-[220px] bg-white rounded-2xl flex items-center justify-center px-4 py-4 shadow-xl mb-4 group-data-[collapsible=icon]:hidden"
             style={{ border: `3px solid ${GOLD}` }}
           >
-            <img src={LOGO_SRC} alt="מרכז קארלין סטאלין" className="h-[115%] w-[115%] object-contain scale-110" />
+            <img src={LOGO_SRC} alt="מרכז קארלין סטאלין" className="w-full h-auto object-contain" />
           </div>
+          <div
+            className="hidden group-data-[collapsible=icon]:flex h-9 w-9 bg-white rounded-xl items-center justify-center p-1 shadow-md"
+            style={{ border: `2px solid ${GOLD}` }}
+          >
+            <img src={MARK_SRC} alt="מרכז קארלין סטאלין" className="h-full w-full object-contain" />
+          </div>
+
           <div className="group-data-[collapsible=icon]:hidden">
             <h2 className="text-xl font-extrabold leading-tight tracking-tight" style={{ color: GOLD }}>
               מרכז קארלין סטאלין
