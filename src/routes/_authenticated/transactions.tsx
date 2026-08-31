@@ -1028,16 +1028,22 @@ function TransactionsPage() {
                             </button>
                           </TableCell>
                         </TableRow>
-                        {/* Grouped mode used to mount every row of every group
-                            at once; cap it like the ungrouped view. */}
-                        {!collapsed && g.rows.slice(0, GROUP_ROW_CAP).map((r: any, idx: number) => renderRow(r, idx))}
-                        {!collapsed && g.rows.length > GROUP_ROW_CAP && (
+                        {/* Grouped rows reveal progressively, in chunks */}
+                        {!collapsed && g.rows.slice(0, groupLimits[g.key] ?? GROUP_ROW_CAP).map((r: any, idx: number) => renderRow(r, idx))}
+                        {!collapsed && g.rows.length > (groupLimits[g.key] ?? GROUP_ROW_CAP) && (
                           <TableRow>
                             <TableCell colSpan={columns.length + 2} className="text-center py-2 text-[11px] text-muted-foreground">
-                              מוצגות {GROUP_ROW_CAP} מתוך {g.rows.length} שורות בקבוצה זו — צמצם את הסינון להצגת השאר
+                              <button
+                                type="button"
+                                onClick={() => showMoreInGroup(g.key)}
+                                className="underline text-primary hover:opacity-80"
+                              >
+                                מוצגות {groupLimits[g.key] ?? GROUP_ROW_CAP} מתוך {g.rows.length} שורות — הצג עוד {GROUP_ROW_CAP}
+                              </button>
                             </TableCell>
                           </TableRow>
                         )}
+
                       </Fragment>
                     );
                   })}
