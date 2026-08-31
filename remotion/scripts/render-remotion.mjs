@@ -36,7 +36,8 @@ if (stillFrame) {
     codec: "h264",
     outputLocation: out,
     puppeteerInstance: browser,
-    muted: true,
+    muted: false,
+    audioCodec: "aac",
     concurrency: 1,
   });
 }
