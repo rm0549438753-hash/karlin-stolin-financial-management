@@ -7,15 +7,24 @@ const { fontFamily } = loadFont("normal", {
 
 export const FONT = fontFamily;
 
-export const NAVY = "#0d3b66";
-export const NAVY_DEEP = "#082a4c";
-export const NAVY_SOFT = "#144a7a";
-export const GOLD = "#D4AF37";
-export const GOLD_SOFT = "#E9CC72";
-export const CREAM = "#F6F1E4";
-export const INK = "#122032";
+/** Light palette: white + soft gold. */
+export const PAPER = "#FDFBF6";
+export const PAPER_2 = "#F5EFE2";
+export const PANEL = "#FFFFFF";
+export const GOLD = "#C9A84C";
+export const GOLD_SOFT = "#E7D3A0";
+export const GOLD_DEEP = "#A9862F";
+export const BLUE = "#2B4A6F";
+export const BLUE_SOFT = "#5C7FA6";
+export const INK = "#22303F";
+export const MUTED = "rgba(34,48,63,0.55)";
+export const LINE = "rgba(34,48,63,0.10)";
 export const GREEN = "#2E9E6B";
-export const RED = "#C6503C";
+export const RED = "#C4553F";
 
-export const bgGradient = `radial-gradient(120% 90% at 80% 0%, ${NAVY_SOFT} 0%, ${NAVY} 45%, ${NAVY_DEEP} 100%)`;
-export const creamGradient = `radial-gradient(110% 90% at 20% 0%, #FFFDF7 0%, ${CREAM} 60%, #EBE2CD 100%)`;
+export const bgGradient = `radial-gradient(120% 100% at 75% 0%, #FFFFFF 0%, ${PAPER} 45%, ${PAPER_2} 100%)`;
+export const creamGradient = bgGradient;
+
+/** Design canvas for every app screen; scaled to the video frame. */
+export const DW = 1600;
+export const DH = 900;
