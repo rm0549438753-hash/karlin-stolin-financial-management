@@ -21,6 +21,7 @@ export const TOTAL_FRAMES = SCENE_FRAMES.reduce((a, b) => a + b, 0) - T * 5;
 export const MainVideo: React.FC = () => {
   return (
     <AbsoluteFill style={{ background: NAVY_DEEP }}>
+      <Audio src={staticFile("audio/promo-music.mp3")} volume={0.55} />
       <TransitionSeries>
         <TransitionSeries.Sequence durationInFrames={SCENE_FRAMES[0]}>
           <IntroScene />
