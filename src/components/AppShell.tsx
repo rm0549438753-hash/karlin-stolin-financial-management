@@ -32,6 +32,8 @@ function useIsNativeApp() {
 
 
 const LOGO_SRC = "/karlin-logo.svg";
+const MARK_SRC = "/karlin-mark.svg";
+
 
 const GOLD = "#D4AF37";
 
@@ -47,11 +49,18 @@ function AppSidebar() {
       <SidebarHeader className="p-0 bg-gradient-to-b from-[#144a7a] to-[#0d3b66]">
         <Link to="/dashboard" className="flex flex-col items-center text-center px-6 py-7 border-b border-white/10 group-data-[collapsible=icon]:py-3 group-data-[collapsible=icon]:px-2">
           <div
-            className="h-32 w-32 bg-white rounded-2xl flex items-center justify-center p-0 overflow-hidden shadow-xl mb-4 group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:mb-0"
+            className="w-full max-w-[220px] bg-white rounded-2xl flex items-center justify-center px-4 py-4 shadow-xl mb-4 group-data-[collapsible=icon]:hidden"
             style={{ border: `3px solid ${GOLD}` }}
           >
-            <img src={LOGO_SRC} alt="מרכז קארלין סטאלין" className="h-[115%] w-[115%] object-contain scale-110" />
+            <img src={LOGO_SRC} alt="מרכז קארלין סטאלין" className="w-full h-auto object-contain" />
           </div>
+          <div
+            className="hidden group-data-[collapsible=icon]:flex h-9 w-9 bg-white rounded-xl items-center justify-center p-1 shadow-md"
+            style={{ border: `2px solid ${GOLD}` }}
+          >
+            <img src={MARK_SRC} alt="מרכז קארלין סטאלין" className="h-full w-full object-contain" />
+          </div>
+
           <div className="group-data-[collapsible=icon]:hidden">
             <h2 className="text-xl font-extrabold leading-tight tracking-tight" style={{ color: GOLD }}>
               מרכז קארלין סטאלין
@@ -194,11 +203,12 @@ export function AppShell({ children, title, actions }: { children: ReactNode; ti
           >
             <SidebarTrigger className="text-white hover:bg-white/10 h-10 w-10 shrink-0" />
             <div
-              className="h-16 w-16 bg-white rounded-full flex items-center justify-center p-0 overflow-hidden shadow-inner shrink-0"
+              className="h-16 w-16 bg-white rounded-full flex items-center justify-center p-2 shadow-inner shrink-0"
               style={{ border: `2px solid ${GOLD}` }}
             >
-              <img src={LOGO_SRC} alt="" className="h-[120%] w-[120%] object-contain scale-110" />
+              <img src={MARK_SRC} alt="" className="h-full w-full object-contain" />
             </div>
+
             <div className="flex flex-col min-w-0 flex-1">
               <h1 className="text-base md:text-2xl font-extrabold leading-tight tracking-tight truncate" style={{ color: GOLD }}>{title}</h1>
               <p className="text-white/60 text-xs md:text-sm font-medium mt-1 hidden sm:block">מרכז קארלין סטאלין · ניהול פיננסי</p>
