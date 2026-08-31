@@ -12,7 +12,7 @@ export const IntroScene: React.FC = () => {
     <AbsoluteFill style={{ overflow: "hidden" }}>
       <Background />
       <div style={{ position: "absolute", top: vertical ? 220 : 170, right: vertical ? 70 : 150, width: vertical ? 130 : 190, height: vertical ? 130 : 190, borderRadius: 999, border: `2px solid rgba(212,175,55,${flare * 0.5})`, boxShadow: `0 0 100px rgba(212,175,55,${flare * 0.22})` }} />
-      <div style={{ position: "absolute", bottom: vertical ? 230 : 140, left: vertical ? 70 : 150, width: vertical ? 8 : 12, height: vertical ? 220 : 320, borderRadius: 12, background: `linear-gradient(180deg, transparent, ${GOLD}, transparent)`, opacity: 0.65 }} />
+      <div style={{ position: "absolute", bottom: vertical ? 200 : 60, left: vertical ? 40 : 60, width: vertical ? 7 : 10, height: vertical ? 180 : 240, borderRadius: 12, background: `linear-gradient(180deg, transparent, ${GOLD}, transparent)`, opacity: 0.65 }} />
       <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: vertical ? "center" : "flex-start", justifyContent: "center", padding: vertical ? "0 70px" : "0 150px", textAlign: vertical ? "center" : "right" }}>
         <div style={{ fontFamily: FONT, color: GOLD, fontWeight: 900, fontSize: vertical ? 34 : 42, opacity: interpolate(frame, [0, 25], [0, 1], { extrapolateRight: "clamp" }), direction: "rtl" }}>רוזנטל מערכות ניהול פיננסיים</div>
         <div style={{ marginTop: 30 }}><GoldRule width={vertical ? 190 : 280} delay={12} height={vertical ? 7 : 9} /></div>

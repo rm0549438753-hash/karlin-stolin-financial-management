@@ -5,10 +5,10 @@ import { Sub, Title, useVertical } from "../components/ui";
 import { CREAM, FONT, GOLD, INK, NAVY } from "../theme";
 
 const sheets = [
-  { label: "בנק_ראשי.xlsx", x: 9, y: 18, rotate: -9, tone: "#E7F0F7" },
-  { label: "צ'קים_עתידיים.xlsx", x: 58, y: 12, rotate: 7, tone: "#FFF0CE" },
-  { label: "קופת_מזומן.xlsx", x: 16, y: 59, rotate: 8, tone: "#E7F3E8" },
-  { label: "סיכום_חודשי.xlsx", x: 63, y: 57, rotate: -6, tone: "#F8E7E1" },
+  { label: "בנק_ראשי.xlsx", x: 7, y: 37, rotate: -7, tone: "#E7F0F7" },
+  { label: "צ'קים_עתידיים.xlsx", x: 55, y: 34, rotate: 6, tone: "#FFF0CE" },
+  { label: "קופת_מזומן.xlsx", x: 13, y: 62, rotate: 7, tone: "#E7F3E8" },
+  { label: "סיכום_חודשי.xlsx", x: 60, y: 64, rotate: -5, tone: "#F8E7E1" },
 ];
 
 export const ChaosScene: React.FC = () => {
@@ -27,7 +27,7 @@ export const ChaosScene: React.FC = () => {
         const s = spring({ frame: frame - 18 - i * 7, fps, config: { damping: 14, stiffness: 120 } });
         const wobble = Math.sin(frame / 12 + i) * (1.5 + i);
         return (
-          <div key={sheet.label} style={{ position: "absolute", left: `${vertical ? 13 + (i % 2) * 49 : sheet.x}%`, top: `${vertical ? 29 + Math.floor(i / 2) * 29 : sheet.y}%`, width: vertical ? "74%" : 570, height: vertical ? 260 : 250, background: sheet.tone, border: "1px solid rgba(18,32,50,0.16)", borderRadius: 18, padding: 20, transform: `rotate(${sheet.rotate + wobble}deg) scale(${interpolate(s, [0, 1], [0.7, 1])})`, opacity: s, boxShadow: "0 22px 45px rgba(18,32,50,0.16)", fontFamily: FONT, direction: "rtl" }}>
+          <div key={sheet.label} style={{ position: "absolute", left: `${vertical ? 8 + (i % 2) * 47 : sheet.x}%`, top: `${vertical ? 38 + Math.floor(i / 2) * 24 : sheet.y}%`, width: vertical ? "43%" : 570, height: vertical ? 230 : 235, background: sheet.tone, border: "1px solid rgba(18,32,50,0.16)", borderRadius: 18, padding: 20, transform: `rotate(${sheet.rotate + wobble}deg) scale(${interpolate(s, [0, 1], [0.7, 1])})`, opacity: s, boxShadow: "0 22px 45px rgba(18,32,50,0.16)", fontFamily: FONT, direction: "rtl" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, color: NAVY, fontWeight: 900, fontSize: vertical ? 23 : 27 }}><span style={{ width: 16, height: 16, borderRadius: 4, background: "#59A86A" }} />{sheet.label}</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 7, marginTop: 22 }}>
               {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((cell) => <div key={cell} style={{ height: 15, background: cell % 3 === 0 ? "rgba(13,59,102,0.20)" : "rgba(18,32,50,0.08)", borderRadius: 3 }} />)}
