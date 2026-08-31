@@ -64,7 +64,10 @@ function AuthPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-secondary to-accent/30 p-4">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center space-y-2">
-          <img src={LOGO_SRC} alt="מרכז קארלין סטאלין" className="mx-auto w-full max-w-[300px] h-auto object-contain" />
+          <div className="mx-auto w-full max-w-[320px] rounded-2xl bg-white px-6 py-5 shadow-lg ring-2 ring-[#D4AF37]">
+            <img src={LOGO_SRC} alt="מרכז קארלין סטאלין" className="w-full h-auto object-contain" />
+          </div>
+
           <CardTitle className="text-2xl">מרכז קארלין סטאלין</CardTitle>
           <CardDescription>ממשק ניהול פיננסי</CardDescription>
         </CardHeader>
