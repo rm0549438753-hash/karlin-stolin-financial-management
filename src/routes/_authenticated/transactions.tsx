@@ -166,6 +166,12 @@ const COLUMNS_BY_SCHEMA: Record<SchemaType, ColumnDef[]> = {
   ],
 };
 
+// Stable empty arrays: a fresh `[]` fallback on every render would change the
+// identity of every derived memo and re-trigger the reset effects forever
+// ("Maximum update depth exceeded").
+const EMPTY_ROWS: TransactionRow[] = [];
+const EMPTY_BATCHES: any[] = [];
+
 function TransactionsPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
