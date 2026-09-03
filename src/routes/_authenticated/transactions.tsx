@@ -166,6 +166,12 @@ const COLUMNS_BY_SCHEMA: Record<SchemaType, ColumnDef[]> = {
   ],
 };
 
+// Stable empty arrays: a fresh `[]` fallback on every render would change the
+// identity of every derived memo and re-trigger the reset effects forever
+// ("Maximum update depth exceeded").
+const EMPTY_ROWS: TransactionRow[] = [];
+const EMPTY_BATCHES: any[] = [];
+
 function TransactionsPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -258,7 +264,7 @@ function TransactionsPage() {
 
 
   const txQueryKey = ["transactions", { account, category, subcategory, fund, expType, from, to }] as const;
-  const { data: rows = [], isLoading } = useQuery({
+  const { data: rows = EMPTY_ROWS, isLoading } = useQuery({
     queryKey: txQueryKey,
     enabled: !!account,
     queryFn: async () => {
@@ -371,7 +377,7 @@ function TransactionsPage() {
   const uncatCount = (account && alertCounts?.by_account?.[account]) || 0;
 
 
-  const { data: batches = [] } = useQuery({
+  const { data: batches = EMPTY_BATCHES } = useQuery({
     queryKey: ["import-batches", account],
     enabled: !!account,
     queryFn: async () => {
@@ -568,7 +574,7 @@ function TransactionsPage() {
     });
   // Progressive reveal per group (instead of a hard cap)
   const [groupLimits, setGroupLimits] = useState<Record<string, number>>({});
-  useEffect(() => { setGroupLimits({}); }, [filtered, groupBy]);
+  useEffect(() => { setGroupLimits((p) => (Object.keys(p).length ? {} : p)); }, [filtered, groupBy]);
   const showMoreInGroup = (k: string) =>
     setGroupLimits((prev) => ({ ...prev, [k]: (prev[k] ?? GROUP_ROW_CAP) + GROUP_ROW_CAP }));
 
