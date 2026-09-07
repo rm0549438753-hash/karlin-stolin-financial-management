@@ -305,42 +305,32 @@ function TransactionsPage() {
       };
 
       if (total > all.length) {
-        // If the screen already held the complete set (e.g. a background refetch
-        // on re-open), never hand back a truncated 200-row array — finish the
-        // paging first so totals/exports stay complete.
-        const prev = qc.getQueryData<TransactionRow[]>(txQueryKey);
-        if (prev && prev.length > all.length) {
-          const rest = await fetchRest();
-          const seen = new Set(all.map((x: any) => x.id));
-          setPartial(null);
-          return [...all, ...rest.filter((x: any) => !seen.has(x.id))];
-        }
-        const key = txQueryKey;
+        // Paint the first page immediately, then finish paging *inside* the
+        // query function so the resolved value is always the complete set.
+        // (Previously the rest was appended in a detached task, which could be
+        // overwritten by this function's own 200-row return value — that is why
+        // some accounts kept showing only part of their rows.)
         setPartial({ keyId, loaded: all.length, total });
-        void (async () => {
-          for (let attempt = 0; attempt < 3; attempt++) {
-            try {
-              const rest = await fetchRest();
-              qc.setQueryData(key, (prevRows: TransactionRow[] | undefined) => {
-                const base = prevRows && prevRows.length >= all.length ? prevRows.slice(0, all.length) : all;
-                const seen = new Set(base.map((x: any) => x.id));
-                return [...base, ...rest.filter((x: any) => !seen.has(x.id))];
-              });
-              setPartial((p) => (p && p.keyId === keyId ? null : p));
-              return;
-            } catch {
-              // transient network hiccup — back off and retry
-              await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
-            }
+        qc.setQueryData(txQueryKey, all);
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            const rest = await fetchRest();
+            const seen = new Set(all.map((x: any) => x.id));
+            setPartial(null);
+            return [...all, ...rest.filter((x: any) => !seen.has(x.id))];
+          } catch {
+            // transient network hiccup — back off and retry
+            await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
           }
-          // Still incomplete: keep the warning visible so totals/exports aren't
-          // mistaken for a full data set.
-          setPartial((p) => (p && p.keyId === keyId ? { ...p, failed: true } : p));
-        })();
+        }
+        // Still incomplete: keep the warning visible so totals/exports aren't
+        // mistaken for a full data set.
+        setPartial((p) => (p && p.keyId === keyId ? { ...p, failed: true } : p));
       } else {
         setPartial(null);
       }
       return all;
+
 
 
     },
