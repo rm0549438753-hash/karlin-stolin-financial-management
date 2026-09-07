@@ -56,12 +56,6 @@ const GROUP_OPTIONS: { value: GroupBy; label: string }[] = [
   { value: "category", label: "קיבוץ לפי קטגוריה" },
 ];
 
-/** First day of the current month, as YYYY-MM-DD. */
-function startOfCurrentMonth() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
-}
-
 type SchemaType = Account["schema_type"];
 
 type ColumnDef = {
@@ -222,12 +216,12 @@ function TransactionsPage() {
   const [partial, setPartial] = useState<{ keyId: string; loaded: number; total: number; failed?: boolean } | null>(null);
 
 
-  // Restore the last-used filters for this account. With no saved filters we
-  // default to the current month so the table doesn't open with thousands of rows.
+  // Restore the last-used filters for this account. New accounts open without a
+  // date restriction; progressive rendering keeps large result sets responsive.
   useEffect(() => {
     setSelectedIds(new Set());
     const saved = account ? loadFilters(account) : null;
-    const f = saved ?? { ...EMPTY_FILTERS, from: startOfCurrentMonth() };
+    const f = saved ?? EMPTY_FILTERS;
     setOnlyUncat(f.onlyUncat);
     setSearchDesc(f.searchDesc); setSearchRef(f.searchRef); setSearchName(f.searchName); setSearchAmount(f.searchAmount);
     setCategory(f.category); setSubcategory(f.subcategory); setFund(f.fund); setExpType(f.expType);

@@ -21,7 +21,9 @@ export const EMPTY_FILTERS: TxFilters = {
   dateSort: "desc", onlyUncat: false,
 };
 
-const FILTERS_KEY = "tx-filters-v1";
+// v2 removes the former automatic "current month" date restriction. Changing
+// the key also clears that already-persisted restriction for existing devices.
+const FILTERS_KEY = "tx-filters-v2";
 const VIEWS_KEY = "tx-saved-views-v1";
 
 function readJSON<T>(key: string, fallback: T): T {
