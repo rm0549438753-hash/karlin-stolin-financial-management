@@ -301,11 +301,13 @@ function TransactionsPage() {
       if (total > all.length) {
         // Paint the first page immediately, then finish paging *inside* the
         // query function so the resolved value is always the complete set.
-        // (Previously the rest was appended in a detached task, which could be
-        // overwritten by this function's own 200-row return value — that is why
-        // some accounts kept showing only part of their rows.)
-        setPartial({ keyId, loaded: all.length, total });
-        qc.setQueryData(txQueryKey, all);
+        // A previously loaded complete set is never replaced by this partial
+        // one — otherwise reopening the screen would shrink the table to 200
+        // rows (and keep it there if the remaining pages fail).
+        const prev = qc.getQueryData<TransactionRow[]>(txQueryKey);
+        const prevComplete = Array.isArray(prev) && prev.length >= total ? prev : null;
+        setPartial({ keyId, loaded: prevComplete ? total : all.length, total });
+        if (!prevComplete) qc.setQueryData(txQueryKey, all);
         for (let attempt = 0; attempt < 3; attempt++) {
           try {
             const rest = await fetchRest();
@@ -317,13 +319,19 @@ function TransactionsPage() {
             await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
           }
         }
-        // Still incomplete: keep the warning visible so totals/exports aren't
+        // Still incomplete: fall back to the last complete set when we have
+        // one, otherwise keep the warning visible so totals/exports aren't
         // mistaken for a full data set.
+        if (prevComplete) {
+          setPartial(null);
+          return prevComplete;
+        }
         setPartial((p) => (p && p.keyId === keyId ? { ...p, failed: true } : p));
       } else {
         setPartial(null);
       }
       return all;
+
 
 
 
