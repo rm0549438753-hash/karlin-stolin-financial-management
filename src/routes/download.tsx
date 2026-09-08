@@ -26,6 +26,7 @@ function DownloadPage() {
   const [code, setCode] = useState("");
   const [unlocked, setUnlocked] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const { data: status } = useQuery({
     queryKey: ["download-code-status"],
     queryFn: () => getDownloadCodeStatus(),
@@ -43,6 +44,34 @@ function DownloadPage() {
       toast.error("קוד שגוי");
     }
   }
+
+  async function startDownload() {
+    setDownloading(true);
+    try {
+      const url = required ? `${APK_URL}?code=${encodeURIComponent(code.trim())}` : APK_URL;
+      const res = await fetch(url);
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        toast.error(text || `ההורדה נכשלה (${res.status})`);
+        return;
+      }
+      const blob = await res.blob();
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objUrl;
+      a.download = "karlin-stolin.apk";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(objUrl), 60_000);
+      toast.success("ההורדה החלה");
+    } catch {
+      toast.error("ההורדה נכשלה — בדוק את החיבור לאינטרנט ונסה שוב");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
 
   return (
     <div dir="rtl" className="min-h-screen bg-background flex items-center justify-center p-6">
