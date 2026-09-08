@@ -48,6 +48,19 @@ function withSecurityHeaders(response: Response, request: Request) {
   h.set("Permissions-Policy", "geolocation=(), microphone=(), camera=(), payment=(), usb=()");
   h.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   h.set("Cross-Origin-Opener-Policy", "same-origin");
+  // Clickjacking protection. frame-ancestors is the modern replacement for
+  // X-Frame-Options and, unlike it, supports an allow-list — the Lovable editor
+  // must keep rendering the app in an iframe.
+  h.set(
+    "Content-Security-Policy",
+    "frame-ancestors 'self' https://lovable.dev https://*.lovable.dev https://*.lovable.app",
+  );
+  // Legacy header for older browsers that ignore frame-ancestors.
+  // SAMEORIGIN has no allow-list, so only set it where the editor never frames us.
+  const host = new URL(request.url).hostname;
+  if (!host.endsWith(".lovable.app") && !host.endsWith(".lovable.dev")) {
+    h.set("X-Frame-Options", "SAMEORIGIN");
+  }
   const path = new URL(request.url).pathname;
   // Nothing but the legal pages should ever be indexed or cached by crawlers.
   if (path !== "/privacy" && path !== "/terms") {
