@@ -105,14 +105,14 @@ function DownloadPage() {
             </button>
           </div>
         ) : (
-          <a
-            href={required ? `${APK_URL}?code=${encodeURIComponent(code.trim())}` : APK_URL}
-            download
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-4 text-lg font-semibold text-primary-foreground shadow transition hover:opacity-90"
+          <button
+            onClick={startDownload}
+            disabled={downloading}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-4 text-lg font-semibold text-primary-foreground shadow transition hover:opacity-90 disabled:opacity-50"
           >
             <Download className="h-5 w-5" />
-            הורדת האפליקציה
-          </a>
+            {downloading ? "מוריד..." : "הורדת האפליקציה"}
+          </button>
         )}
 
         <ol className="text-right text-sm text-muted-foreground space-y-2 list-decimal pr-5">
