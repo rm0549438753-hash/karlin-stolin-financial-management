@@ -25,6 +25,7 @@ import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authen
 import { Route as AuthenticatedActionHistoryRouteImport } from './routes/_authenticated/action-history'
 import { Route as AuthenticatedAboutRouteImport } from './routes/_authenticated/about'
 import { Route as ApiPublicApkRouteImport } from './routes/api/public/apk'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as ApiPublicHooksHourlyAlertsRouteImport } from './routes/api/public/hooks/hourly-alerts'
 import { Route as ApiPublicHooksDailySecurityAuditRouteImport } from './routes/api/public/hooks/daily-security-audit'
 import { Route as ApiPublicHooksDailyChecksEmailRouteImport } from './routes/api/public/hooks/daily-checks-email'
@@ -113,6 +114,11 @@ const ApiPublicApkRoute = ApiPublicApkRouteImport.update({
   path: '/api/public/apk',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksHourlyAlertsRoute =
   ApiPublicHooksHourlyAlertsRouteImport.update({
     id: '/api/public/hooks/hourly-alerts',
@@ -153,6 +159,7 @@ export interface FileRoutesByFullPath {
   '/security-audit': typeof AuthenticatedSecurityAuditRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/transactions': typeof AuthenticatedTransactionsRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/api/public/apk': typeof ApiPublicApkRoute
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
   '/api/public/hooks/daily-checks-email': typeof ApiPublicHooksDailyChecksEmailRoute
@@ -174,6 +181,7 @@ export interface FileRoutesByTo {
   '/security-audit': typeof AuthenticatedSecurityAuditRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/transactions': typeof AuthenticatedTransactionsRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/api/public/apk': typeof ApiPublicApkRoute
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
   '/api/public/hooks/daily-checks-email': typeof ApiPublicHooksDailyChecksEmailRoute
@@ -197,6 +205,7 @@ export interface FileRoutesById {
   '/_authenticated/security-audit': typeof AuthenticatedSecurityAuditRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/transactions': typeof AuthenticatedTransactionsRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/api/public/apk': typeof ApiPublicApkRoute
   '/api/public/hooks/daily-backup': typeof ApiPublicHooksDailyBackupRoute
   '/api/public/hooks/daily-checks-email': typeof ApiPublicHooksDailyChecksEmailRoute
@@ -220,6 +229,7 @@ export interface FileRouteTypes {
     | '/security-audit'
     | '/settings'
     | '/transactions'
+    | '/.lovable/oauth/consent'
     | '/api/public/apk'
     | '/api/public/hooks/daily-backup'
     | '/api/public/hooks/daily-checks-email'
@@ -241,6 +251,7 @@ export interface FileRouteTypes {
     | '/security-audit'
     | '/settings'
     | '/transactions'
+    | '/.lovable/oauth/consent'
     | '/api/public/apk'
     | '/api/public/hooks/daily-backup'
     | '/api/public/hooks/daily-checks-email'
@@ -263,6 +274,7 @@ export interface FileRouteTypes {
     | '/_authenticated/security-audit'
     | '/_authenticated/settings'
     | '/_authenticated/transactions'
+    | '/.lovable/oauth/consent'
     | '/api/public/apk'
     | '/api/public/hooks/daily-backup'
     | '/api/public/hooks/daily-checks-email'
@@ -278,6 +290,7 @@ export interface RootRouteChildren {
   GuestRoute: typeof GuestRoute
   PrivacyRoute: typeof PrivacyRoute
   TermsRoute: typeof TermsRoute
+  DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   ApiPublicApkRoute: typeof ApiPublicApkRoute
   ApiPublicHooksDailyBackupRoute: typeof ApiPublicHooksDailyBackupRoute
   ApiPublicHooksDailyChecksEmailRoute: typeof ApiPublicHooksDailyChecksEmailRoute
@@ -399,6 +412,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicApkRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/hourly-alerts': {
       id: '/api/public/hooks/hourly-alerts'
       path: '/api/public/hooks/hourly-alerts'
@@ -463,6 +483,7 @@ const rootRouteChildren: RootRouteChildren = {
   GuestRoute: GuestRoute,
   PrivacyRoute: PrivacyRoute,
   TermsRoute: TermsRoute,
+  DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   ApiPublicApkRoute: ApiPublicApkRoute,
   ApiPublicHooksDailyBackupRoute: ApiPublicHooksDailyBackupRoute,
   ApiPublicHooksDailyChecksEmailRoute: ApiPublicHooksDailyChecksEmailRoute,
