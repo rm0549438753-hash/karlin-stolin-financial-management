@@ -72,6 +72,8 @@ function AuthPage() {
       await logLoginEvent({ data: { deviceKey: getDeviceKey() } }).catch(() => null);
       setLoading(false);
       toast.success("התחברת בהצלחה");
+      const next = safeNext();
+      if (next) { window.location.href = next; return; }
       navigate({ to: "/dashboard" });
     } catch (err: any) {
       setLoading(false);
