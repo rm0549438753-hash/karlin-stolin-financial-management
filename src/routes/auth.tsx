@@ -11,11 +11,30 @@ import { getDeviceKey } from "@/lib/device-key";
 
 const LOGO_SRC = "/karlin-logo.svg";
 
+// Where to land after sign-in. Only same-origin paths are honoured, so an
+// OAuth consent page can send the user back to the exact authorization URL.
+function safeNext(): string | null {
+  if (typeof window === "undefined") return null;
+  const raw = new URL(window.location.href).searchParams.get("next");
+  if (!raw) return null;
+  try {
+    const url = new URL(raw, window.location.origin);
+    if (url.origin !== window.location.origin) return null;
+    return url.pathname + url.search + url.hash;
+  } catch {
+    return null;
+  }
+}
+
 export const Route = createFileRoute("/auth")({
   ssr: false,
   beforeLoad: async () => {
     const { data } = await supabase.auth.getSession();
-    if (data.session?.user) throw redirect({ to: "/dashboard" });
+    if (data.session?.user) {
+      const next = safeNext();
+      if (next) throw redirect({ href: next } as any);
+      throw redirect({ to: "/dashboard" });
+    }
   },
   component: AuthPage,
 });
@@ -53,6 +72,8 @@ function AuthPage() {
       await logLoginEvent({ data: { deviceKey: getDeviceKey() } }).catch(() => null);
       setLoading(false);
       toast.success("התחברת בהצלחה");
+      const next = safeNext();
+      if (next) { window.location.href = next; return; }
       navigate({ to: "/dashboard" });
     } catch (err: any) {
       setLoading(false);
