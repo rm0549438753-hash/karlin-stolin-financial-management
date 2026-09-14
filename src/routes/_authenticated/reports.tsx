@@ -85,6 +85,20 @@ function ReportsPage() {
 
   const lookups = { accounts, funds, expenseTypes, categories, subcategories };
 
+  // Each tab pulls only the rows it needs, and only while it is open.
+  const checksAccId = useMemo(
+    () => (accounts as any[]).find((a) => a.schema_type === "checks")?.id as string | undefined,
+    [accounts],
+  );
+  const checksQ = useReportRows("future-checks", tab === "future-checks", checksAccId);
+  const uncatQ = useReportRows("uncategorized", tab === "uncategorized");
+  const noDateQ = useReportRows("no-date", tab === "no-date");
+  const payeesQ = useReportRows("payees", tab === "payees");
+  const isLoading = checksQ.isLoading || uncatQ.isLoading || noDateQ.isLoading || payeesQ.isLoading;
+  const dated = (rows: any[] | undefined) =>
+    ((rows ?? []) as Tx[]).filter((t) => t.transaction_date != null || t.value_date != null);
+
+
   return (
     <AppShell title="דוחות">
       <Tabs
