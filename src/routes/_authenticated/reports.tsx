@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useTransactionsRealtime } from "@/hooks/use-tx-realtime";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useAllTransactions } from "@/hooks/use-tx-all";
+import { useReportRows } from "@/lib/report-rows";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
@@ -73,15 +73,8 @@ function ReportsPage() {
   const { tab } = Route.useSearch();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { data: allTxs = [], isLoading } = useAllTransactions();
-
-  // Every report except "no date" works on dated rows only.
-  const txs = useMemo(
-    () => (allTxs as Tx[]).filter((t) => t.transaction_date != null || t.value_date != null),
-    [allTxs],
-  );
   useTransactionsRealtime("reports-tx", () => {
-    qc.invalidateQueries({ queryKey: ["tx-all"], refetchType: "active" });
+    qc.invalidateQueries({ queryKey: ["report-rows"], refetchType: "active" });
     qc.invalidateQueries({ queryKey: ["tx-alert-counts"], refetchType: "active" });
   });
   const { data: accounts = [] } = useAccounts();
@@ -91,6 +84,20 @@ function ReportsPage() {
   const { data: subcategories = [] } = useSubcategories();
 
   const lookups = { accounts, funds, expenseTypes, categories, subcategories };
+
+  // Each tab pulls only the rows it needs, and only while it is open.
+  const checksAccId = useMemo(
+    () => (accounts as any[]).find((a) => a.schema_type === "checks")?.id as string | undefined,
+    [accounts],
+  );
+  const checksQ = useReportRows("future-checks", tab === "future-checks", checksAccId);
+  const uncatQ = useReportRows("uncategorized", tab === "uncategorized");
+  const noDateQ = useReportRows("no-date", tab === "no-date");
+  const payeesQ = useReportRows("payees", tab === "payees");
+  const isLoading = checksQ.isLoading || uncatQ.isLoading || noDateQ.isLoading || payeesQ.isLoading;
+  const dated = (rows: any[] | undefined) =>
+    ((rows ?? []) as Tx[]).filter((t) => t.transaction_date != null || t.value_date != null);
+
 
   return (
     <AppShell title="דוחות">
@@ -123,12 +130,12 @@ function ReportsPage() {
 
         {isLoading && <p className="text-sm text-muted-foreground">טוען…</p>}
 
-        <TabsContent value="future-checks"><FutureChecksReport txs={txs} lookups={lookups} /></TabsContent>
-        <TabsContent value="uncategorized"><UncategorizedReport txs={txs} lookups={lookups} /></TabsContent>
-        <TabsContent value="no-date"><NoDateReport txs={allTxs as Tx[]} lookups={lookups} /></TabsContent>
+        <TabsContent value="future-checks"><FutureChecksReport txs={dated(checksQ.data)} lookups={lookups} /></TabsContent>
+        <TabsContent value="uncategorized"><UncategorizedReport txs={dated(uncatQ.data)} lookups={lookups} /></TabsContent>
+        <TabsContent value="no-date"><NoDateReport txs={(noDateQ.data ?? []) as Tx[]} lookups={lookups} /></TabsContent>
         <TabsContent value="fund-opening"><FundOpeningBalancesReport /></TabsContent>
         <TabsContent value="cash-balance"><CashBalanceReport /></TabsContent>
-        <TabsContent value="payees"><PayeesReport txs={txs} lookups={lookups} /></TabsContent>
+        <TabsContent value="payees"><PayeesReport txs={dated(payeesQ.data)} lookups={lookups} /></TabsContent>
 
       </Tabs>
     </AppShell>
