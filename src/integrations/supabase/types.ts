@@ -369,6 +369,13 @@ export type Database = {
             foreignKeyName: "classification_applications_transaction_id_fkey"
             columns: ["transaction_id"]
             isOneToOne: false
+            referencedRelation: "dashboard_tx"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "classification_applications_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
             referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
@@ -507,6 +514,13 @@ export type Database = {
             columns: ["rule_id"]
             isOneToOne: false
             referencedRelation: "classification_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "classification_suggestions_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "dashboard_tx"
             referencedColumns: ["id"]
           },
           {
@@ -1266,7 +1280,63 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      dashboard_tx: {
+        Row: {
+          account_id: string | null
+          amount: number | null
+          association: string | null
+          category_id: string | null
+          credit: number | null
+          debit: number | null
+          description: string | null
+          eff_date: string | null
+          expense_type_id: string | null
+          fund_id: string | null
+          id: string | null
+          note: string | null
+          payee: string | null
+          reference: string | null
+          subcategory_id: string | null
+          tab: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_expense_type_id_fkey"
+            columns: ["expense_type_id"]
+            isOneToOne: false
+            referencedRelation: "expense_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_fund_id_fkey"
+            columns: ["fund_id"]
+            isOneToOne: false
+            referencedRelation: "funds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_subcategory_id_fkey"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "subcategories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       actor_names: {
@@ -1277,8 +1347,36 @@ export type Database = {
         }[]
       }
       archive_old_action_history: { Args: never; Returns: number }
+      dashboard_drill: {
+        Args: {
+          p_expense_type?: string
+          p_from?: string
+          p_fund?: string
+          p_kind?: string
+          p_tab: string
+          p_to?: string
+        }
+        Returns: {
+          account_id: string
+          amount: number
+          association: string
+          category_id: string
+          credit: number
+          debit: number
+          description: string
+          expense_type_id: string
+          fund_id: string
+          id: string
+          note: string
+          payee: string
+          reference: string
+          subcategory_id: string
+          transaction_date: string
+        }[]
+      }
       dashboard_rows: { Args: never; Returns: Json }
       dashboard_rows_compact: { Args: never; Returns: Json }
+      dashboard_summary: { Args: never; Returns: Json }
       get_cron_hook_secret: { Args: never; Returns: string }
       has_role: {
         Args: {
