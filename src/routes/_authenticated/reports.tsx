@@ -130,12 +130,12 @@ function ReportsPage() {
 
         {isLoading && <p className="text-sm text-muted-foreground">טוען…</p>}
 
-        <TabsContent value="future-checks"><FutureChecksReport txs={txs} lookups={lookups} /></TabsContent>
-        <TabsContent value="uncategorized"><UncategorizedReport txs={txs} lookups={lookups} /></TabsContent>
-        <TabsContent value="no-date"><NoDateReport txs={allTxs as Tx[]} lookups={lookups} /></TabsContent>
+        <TabsContent value="future-checks"><FutureChecksReport txs={dated(checksQ.data)} lookups={lookups} /></TabsContent>
+        <TabsContent value="uncategorized"><UncategorizedReport txs={dated(uncatQ.data)} lookups={lookups} /></TabsContent>
+        <TabsContent value="no-date"><NoDateReport txs={(noDateQ.data ?? []) as Tx[]} lookups={lookups} /></TabsContent>
         <TabsContent value="fund-opening"><FundOpeningBalancesReport /></TabsContent>
         <TabsContent value="cash-balance"><CashBalanceReport /></TabsContent>
-        <TabsContent value="payees"><PayeesReport txs={txs} lookups={lookups} /></TabsContent>
+        <TabsContent value="payees"><PayeesReport txs={dated(payeesQ.data)} lookups={lookups} /></TabsContent>
 
       </Tabs>
     </AppShell>
