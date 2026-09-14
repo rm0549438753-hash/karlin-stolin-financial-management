@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useTransactionsRealtime } from "@/hooks/use-tx-realtime";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useAllTransactions } from "@/hooks/use-tx-all";
+import { useReportRows } from "@/lib/report-rows";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
