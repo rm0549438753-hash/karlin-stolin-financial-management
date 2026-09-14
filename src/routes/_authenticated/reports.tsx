@@ -73,15 +73,8 @@ function ReportsPage() {
   const { tab } = Route.useSearch();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { data: allTxs = [], isLoading } = useAllTransactions();
-
-  // Every report except "no date" works on dated rows only.
-  const txs = useMemo(
-    () => (allTxs as Tx[]).filter((t) => t.transaction_date != null || t.value_date != null),
-    [allTxs],
-  );
   useTransactionsRealtime("reports-tx", () => {
-    qc.invalidateQueries({ queryKey: ["tx-all"], refetchType: "active" });
+    qc.invalidateQueries({ queryKey: ["report-rows"], refetchType: "active" });
     qc.invalidateQueries({ queryKey: ["tx-alert-counts"], refetchType: "active" });
   });
   const { data: accounts = [] } = useAccounts();
