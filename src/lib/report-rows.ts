@@ -10,7 +10,7 @@ import { hasLiveSession } from "@/lib/session-guard";
  */
 const PAGE = 1000;
 const TX_SELECT =
-  "id, transaction_date, value_date, amount, account_id, fund_id, expense_type_id, category_id, subcategory_id, description, note, credit, debit, payee, balance, reference, fee, channel, association";
+  "id, transaction_date, value_date, amount, account_id, fund_id, expense_type_id, category_id, subcategory_id, description, note, credit, debit, payee, balance, reference, fee, channel, association, payer_name";
 
 export type ReportSlice = "future-checks" | "uncategorized" | "no-date" | "payees";
 
@@ -59,12 +59,11 @@ async function fetchSlice(slice: ReportSlice, checksAccountId?: string) {
     );
   }
 
-  // payees
+  // payees — every row: names are also derived from description/reference/note
   return fetchAllPages(() =>
     supabase
       .from("transactions")
       .select(TX_SELECT)
-      .not("payee", "is", null)
       .order("transaction_date", { ascending: false }),
   );
 }
