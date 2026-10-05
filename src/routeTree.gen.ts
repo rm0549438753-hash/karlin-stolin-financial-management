@@ -9,49 +9,30 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as DownloadRouteImport } from './routes/download'
-import { Route as GuestRouteImport } from './routes/guest'
-import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as TermsRouteImport } from './routes/terms'
-import { Route as AuthenticatedAboutRouteImport } from './routes/_authenticated/about'
-import { Route as AuthenticatedActionHistoryRouteImport } from './routes/_authenticated/action-history'
-import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin-settings'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
-import { Route as AuthenticatedSecurityAuditRouteImport } from './routes/_authenticated/security-audit'
-import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as GuestRouteImport } from './routes/guest'
+import { Route as DownloadRouteImport } from './routes/download'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedTransactionsRouteImport } from './routes/_authenticated/transactions'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedSecurityAuditRouteImport } from './routes/_authenticated/security-audit'
+import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin-settings'
+import { Route as AuthenticatedActionHistoryRouteImport } from './routes/_authenticated/action-history'
+import { Route as AuthenticatedAboutRouteImport } from './routes/_authenticated/about'
 import { Route as ApiPublicApkRouteImport } from './routes/api/public/apk'
-import { Route as ApiPublicHooksDailyBackupRouteImport } from './routes/api/public/hooks/daily-backup'
-import { Route as ApiPublicHooksDailyChecksEmailRouteImport } from './routes/api/public/hooks/daily-checks-email'
-import { Route as ApiPublicHooksDailySecurityAuditRouteImport } from './routes/api/public/hooks/daily-security-audit'
 import { Route as ApiPublicHooksHourlyAlertsRouteImport } from './routes/api/public/hooks/hourly-alerts'
+import { Route as ApiPublicHooksDailySecurityAuditRouteImport } from './routes/api/public/hooks/daily-security-audit'
+import { Route as ApiPublicHooksDailyChecksEmailRouteImport } from './routes/api/public/hooks/daily-checks-email'
+import { Route as ApiPublicHooksDailyBackupRouteImport } from './routes/api/public/hooks/daily-backup'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
-  id: '/_authenticated',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DownloadRoute = DownloadRouteImport.update({
-  id: '/download',
-  path: '/download',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GuestRoute = GuestRouteImport.update({
-  id: '/guest',
-  path: '/guest',
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -59,36 +40,39 @@ const PrivacyRoute = PrivacyRouteImport.update({
   path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TermsRoute = TermsRouteImport.update({
-  id: '/terms',
-  path: '/terms',
+const GuestRoute = GuestRouteImport.update({
+  id: '/guest',
+  path: '/guest',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedAboutRoute = AuthenticatedAboutRouteImport.update({
-  id: '/about',
-  path: '/about',
-  getParentRoute: () => AuthenticatedRouteRoute,
+const DownloadRoute = DownloadRouteImport.update({
+  id: '/download',
+  path: '/download',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedActionHistoryRoute =
-  AuthenticatedActionHistoryRouteImport.update({
-    id: '/action-history',
-    path: '/action-history',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedTransactionsRoute =
+  AuthenticatedTransactionsRouteImport.update({
+    id: '/transactions',
+    path: '/transactions',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAdminSettingsRoute =
-  AuthenticatedAdminSettingsRouteImport.update({
-    id: '/admin-settings',
-    path: '/admin-settings',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedSecurityAuditRoute =
@@ -97,32 +81,42 @@ const AuthenticatedSecurityAuditRoute =
     path: '/security-audit',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
+const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedTransactionsRoute =
-  AuthenticatedTransactionsRouteImport.update({
-    id: '/transactions',
-    path: '/transactions',
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAdminSettingsRoute =
+  AuthenticatedAdminSettingsRouteImport.update({
+    id: '/admin-settings',
+    path: '/admin-settings',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedActionHistoryRoute =
+  AuthenticatedActionHistoryRouteImport.update({
+    id: '/action-history',
+    path: '/action-history',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAboutRoute = AuthenticatedAboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const ApiPublicApkRoute = ApiPublicApkRouteImport.update({
   id: '/api/public/apk',
   path: '/api/public/apk',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicHooksDailyBackupRoute =
-  ApiPublicHooksDailyBackupRouteImport.update({
-    id: '/api/public/hooks/daily-backup',
-    path: '/api/public/hooks/daily-backup',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicHooksDailyChecksEmailRoute =
-  ApiPublicHooksDailyChecksEmailRouteImport.update({
-    id: '/api/public/hooks/daily-checks-email',
-    path: '/api/public/hooks/daily-checks-email',
+const ApiPublicHooksHourlyAlertsRoute =
+  ApiPublicHooksHourlyAlertsRouteImport.update({
+    id: '/api/public/hooks/hourly-alerts',
+    path: '/api/public/hooks/hourly-alerts',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicHooksDailySecurityAuditRoute =
@@ -131,10 +125,16 @@ const ApiPublicHooksDailySecurityAuditRoute =
     path: '/api/public/hooks/daily-security-audit',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicHooksHourlyAlertsRoute =
-  ApiPublicHooksHourlyAlertsRouteImport.update({
-    id: '/api/public/hooks/hourly-alerts',
-    path: '/api/public/hooks/hourly-alerts',
+const ApiPublicHooksDailyChecksEmailRoute =
+  ApiPublicHooksDailyChecksEmailRouteImport.update({
+    id: '/api/public/hooks/daily-checks-email',
+    path: '/api/public/hooks/daily-checks-email',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksDailyBackupRoute =
+  ApiPublicHooksDailyBackupRouteImport.update({
+    id: '/api/public/hooks/daily-backup',
+    path: '/api/public/hooks/daily-backup',
     getParentRoute: () => rootRouteImport,
   } as any)
 
@@ -287,39 +287,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated': {
-      id: '/_authenticated'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/download': {
-      id: '/download'
-      path: '/download'
-      fullPath: '/download'
-      preLoaderRoute: typeof DownloadRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/guest': {
-      id: '/guest'
-      path: '/guest'
-      fullPath: '/guest'
-      preLoaderRoute: typeof GuestRouteImport
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -329,53 +301,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/terms': {
-      id: '/terms'
-      path: '/terms'
-      fullPath: '/terms'
-      preLoaderRoute: typeof TermsRouteImport
+    '/guest': {
+      id: '/guest'
+      path: '/guest'
+      fullPath: '/guest'
+      preLoaderRoute: typeof GuestRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/about': {
-      id: '/_authenticated/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AuthenticatedAboutRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/download': {
+      id: '/download'
+      path: '/download'
+      fullPath: '/download'
+      preLoaderRoute: typeof DownloadRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/action-history': {
-      id: '/_authenticated/action-history'
-      path: '/action-history'
-      fullPath: '/action-history'
-      preLoaderRoute: typeof AuthenticatedActionHistoryRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/admin-settings': {
-      id: '/_authenticated/admin-settings'
-      path: '/admin-settings'
-      fullPath: '/admin-settings'
-      preLoaderRoute: typeof AuthenticatedAdminSettingsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/reports': {
-      id: '/_authenticated/reports'
-      path: '/reports'
-      fullPath: '/reports'
-      preLoaderRoute: typeof AuthenticatedReportsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/security-audit': {
-      id: '/_authenticated/security-audit'
-      path: '/security-audit'
-      fullPath: '/security-audit'
-      preLoaderRoute: typeof AuthenticatedSecurityAuditRouteImport
+    '/_authenticated/transactions': {
+      id: '/_authenticated/transactions'
+      path: '/transactions'
+      fullPath: '/transactions'
+      preLoaderRoute: typeof AuthenticatedTransactionsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/settings': {
@@ -385,11 +350,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/transactions': {
-      id: '/_authenticated/transactions'
-      path: '/transactions'
-      fullPath: '/transactions'
-      preLoaderRoute: typeof AuthenticatedTransactionsRouteImport
+    '/_authenticated/security-audit': {
+      id: '/_authenticated/security-audit'
+      path: '/security-audit'
+      fullPath: '/security-audit'
+      preLoaderRoute: typeof AuthenticatedSecurityAuditRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/reports': {
+      id: '/_authenticated/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AuthenticatedReportsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin-settings': {
+      id: '/_authenticated/admin-settings'
+      path: '/admin-settings'
+      fullPath: '/admin-settings'
+      preLoaderRoute: typeof AuthenticatedAdminSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/action-history': {
+      id: '/_authenticated/action-history'
+      path: '/action-history'
+      fullPath: '/action-history'
+      preLoaderRoute: typeof AuthenticatedActionHistoryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/about': {
+      id: '/_authenticated/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AuthenticatedAboutRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/public/apk': {
@@ -399,18 +399,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicApkRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/hooks/daily-backup': {
-      id: '/api/public/hooks/daily-backup'
-      path: '/api/public/hooks/daily-backup'
-      fullPath: '/api/public/hooks/daily-backup'
-      preLoaderRoute: typeof ApiPublicHooksDailyBackupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/hooks/daily-checks-email': {
-      id: '/api/public/hooks/daily-checks-email'
-      path: '/api/public/hooks/daily-checks-email'
-      fullPath: '/api/public/hooks/daily-checks-email'
-      preLoaderRoute: typeof ApiPublicHooksDailyChecksEmailRouteImport
+    '/api/public/hooks/hourly-alerts': {
+      id: '/api/public/hooks/hourly-alerts'
+      path: '/api/public/hooks/hourly-alerts'
+      fullPath: '/api/public/hooks/hourly-alerts'
+      preLoaderRoute: typeof ApiPublicHooksHourlyAlertsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/hooks/daily-security-audit': {
@@ -420,11 +413,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksDailySecurityAuditRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/hooks/hourly-alerts': {
-      id: '/api/public/hooks/hourly-alerts'
-      path: '/api/public/hooks/hourly-alerts'
-      fullPath: '/api/public/hooks/hourly-alerts'
-      preLoaderRoute: typeof ApiPublicHooksHourlyAlertsRouteImport
+    '/api/public/hooks/daily-checks-email': {
+      id: '/api/public/hooks/daily-checks-email'
+      path: '/api/public/hooks/daily-checks-email'
+      fullPath: '/api/public/hooks/daily-checks-email'
+      preLoaderRoute: typeof ApiPublicHooksDailyChecksEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/daily-backup': {
+      id: '/api/public/hooks/daily-backup'
+      path: '/api/public/hooks/daily-backup'
+      fullPath: '/api/public/hooks/daily-backup'
+      preLoaderRoute: typeof ApiPublicHooksDailyBackupRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
