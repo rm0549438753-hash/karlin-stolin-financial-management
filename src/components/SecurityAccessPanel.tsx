@@ -138,7 +138,12 @@ export function SecurityAccessPanel() {
         [r.city, r.country].filter(Boolean).join(" "),
         (r.user_agent ?? "").replace(/[",\n]/g, " "),
       ]
-        .map((c) => `"${String(c).replace(/"/g, '""')}"`)
+        // Neutralise spreadsheet formulas (=, +, -, @, tab, CR) in every cell.
+        .map((c) => {
+          let v = String(c);
+          if (/^[=+\-@\t\r]/.test(v)) v = "'" + v;
+          return `"${v.replace(/"/g, '""')}"`;
+        })
         .join(","),
     );
     const csv = "\uFEFF" + [header.join(","), ...lines].join("\n");
