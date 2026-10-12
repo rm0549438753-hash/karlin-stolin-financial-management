@@ -124,14 +124,18 @@ async function decryptText(cipher: string): Promise<string | null> {
 const LOCK_WINDOW_MIN = 15;
 const MAX_FAILS = 5;
 
-export async function isLockedOut(email: string) {
+// Lockouts are keyed by email + caller IP, so a stranger cannot lock a real
+// user out of their own account by submitting wrong passwords for their email.
+export async function isLockedOut(email: string, ip: string | null) {
   const admin = adminClient();
   const since = new Date(Date.now() - LOCK_WINDOW_MIN * 60_000).toISOString();
-  const { count } = await admin
+  let q = admin
     .from("failed_login_attempts")
     .select("id", { count: "exact", head: true })
     .eq("email", email.trim().toLowerCase())
     .gte("created_at", since);
+  q = ip ? q.eq("ip", ip) : q.is("ip", null);
+  const { count } = await q;
   const fails = count ?? 0;
   return { locked: fails >= MAX_FAILS, fails, remaining: Math.max(0, MAX_FAILS - fails), windowMinutes: LOCK_WINDOW_MIN };
 }
@@ -140,7 +144,7 @@ export async function recordFailedLogin(email: string, ip: string | null) {
   const admin = adminClient();
   const clean = email.trim().toLowerCase();
   await admin.from("failed_login_attempts").insert({ email: clean, ip });
-  const status = await isLockedOut(clean);
+  const status = await isLockedOut(clean, ip);
   if (status.fails === MAX_FAILS) {
     await admin.from("login_events").insert({
       email: clean,

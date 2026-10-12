@@ -50,6 +50,14 @@ export const Route = createFileRoute("/api/public/apk")({
         if (body.byteLength === 0) {
           return new Response("Empty body", { status: 400 });
         }
+        // An APK is a ZIP archive: cap the size and require the ZIP signature.
+        if (body.byteLength > 200 * 1024 * 1024) {
+          return new Response("File too large", { status: 413 });
+        }
+        const sig = new Uint8Array(body, 0, 4);
+        if (!(sig[0] === 0x50 && sig[1] === 0x4b && sig[2] === 0x03 && sig[3] === 0x04)) {
+          return new Response("Not an APK file", { status: 415 });
+        }
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { error } = await supabaseAdmin.storage

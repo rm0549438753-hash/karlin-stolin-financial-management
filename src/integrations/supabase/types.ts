@@ -1378,6 +1378,7 @@ export type Database = {
       dashboard_rows_compact: { Args: never; Returns: Json }
       dashboard_summary: { Args: never; Returns: Json }
       get_cron_hook_secret: { Args: never; Returns: string }
+      has_any_app_role: { Args: { _uid: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
