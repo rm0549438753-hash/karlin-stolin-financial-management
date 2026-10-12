@@ -201,9 +201,21 @@ export const adminSendPasswordReset = createServerFn({ method: "POST" })
   .inputValidator(z.object({ email: z.string().email(), redirectTo: z.string().url() }))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
+    // Recovery links may only point back to this app.
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const reqOrigin = new URL(getRequest().url).origin;
+    const target = new URL(data.redirectTo);
+    const allowedHost = (h: string) =>
+      h === new URL(reqOrigin).hostname || h.endsWith(".lovable.app") || h === "localhost";
+    if (target.protocol !== "https:" && target.hostname !== "localhost") throw new Error("כתובת חזרה לא חוקית");
+    if (!allowedHost(target.hostname)) throw new Error("כתובת חזרה לא חוקית");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.auth.resetPasswordForEmail(data.email, {
-      redirectTo: data.redirectTo,
+    // Only existing system users may receive a reset email.
+    const email = data.email.trim().toLowerCase();
+    const { data: prof } = await supabaseAdmin.from("profiles").select("id").ilike("email", email).maybeSingle();
+    if (!prof) throw new Error("המשתמש לא נמצא במערכת");
+    const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
+      redirectTo: target.toString(),
     });
     if (error) throw new Error(error.message);
     return { ok: true };

@@ -35,7 +35,9 @@ export const checkLoginLockout = createServerFn({ method: "POST" })
   .inputValidator(z.object({ email: z.string().email() }))
   .handler(async ({ data }) => {
     const { isLockedOut } = await import("@/lib/security.server");
-    return await isLockedOut(data.email);
+    const r = await isLockedOut(data.email, clientIp());
+    // Only the yes/no answer leaves the server — never attempt counts.
+    return { locked: r.locked, windowMinutes: r.windowMinutes };
   });
 
 /** Public: record a failed sign-in attempt. */
@@ -43,7 +45,8 @@ export const reportFailedLogin = createServerFn({ method: "POST" })
   .inputValidator(z.object({ email: z.string().email() }))
   .handler(async ({ data }) => {
     const { recordFailedLogin } = await import("@/lib/security.server");
-    return await recordFailedLogin(data.email, clientIp());
+    const r = await recordFailedLogin(data.email, clientIp());
+    return { locked: r.locked, remaining: r.remaining, windowMinutes: r.windowMinutes };
   });
 
 export const listLoginEvents = createServerFn({ method: "GET" })
