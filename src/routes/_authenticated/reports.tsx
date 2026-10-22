@@ -1,7 +1,7 @@
 import { EMPTY_ARRAY } from "@/lib/empty";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useTransactionsRealtime } from "@/hooks/use-tx-realtime";
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useReportRows } from "@/lib/report-rows";
 import { format } from "date-fns";
@@ -18,9 +18,11 @@ import { useAccounts, useCategories, useExpenseTypes, useFunds, useSubcategories
 import { TransactionDialog, type TransactionRow } from "@/components/TransactionDialog";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { CalendarClock, AlertTriangle, Download, Printer, Search, Pencil, X, Trash2, CalendarX, Save, Wallet, Coins, Users } from "lucide-react";
-import { FundOpeningBalancesReport } from "@/components/FundOpeningBalancesReport";
-import { CashBalanceReport } from "@/components/CashBalanceReport";
-import { PayeesReport } from "@/components/reports/PayeesReport";
+// Secondary report tabs load their code only when opened.
+const FundOpeningBalancesReport = lazy(() => import("@/components/FundOpeningBalancesReport").then((m) => ({ default: m.FundOpeningBalancesReport })));
+const CashBalanceReport = lazy(() => import("@/components/CashBalanceReport").then((m) => ({ default: m.CashBalanceReport })));
+const PayeesReport = lazy(() => import("@/components/reports/PayeesReport").then((m) => ({ default: m.PayeesReport })));
+const TabFallback = () => <div className="py-12 text-center text-sm text-muted-foreground">טוען…</div>;
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { PrintDialog } from "@/components/PrintDialog";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -134,9 +136,9 @@ function ReportsPage() {
         <TabsContent value="future-checks"><FutureChecksReport txs={dated(checksQ.data)} lookups={lookups} /></TabsContent>
         <TabsContent value="uncategorized"><UncategorizedReport txs={dated(uncatQ.data)} lookups={lookups} /></TabsContent>
         <TabsContent value="no-date"><NoDateReport txs={(noDateQ.data ?? []) as Tx[]} lookups={lookups} /></TabsContent>
-        <TabsContent value="fund-opening"><FundOpeningBalancesReport /></TabsContent>
-        <TabsContent value="cash-balance"><CashBalanceReport /></TabsContent>
-        <TabsContent value="payees"><PayeesReport txs={dated(payeesQ.data)} lookups={lookups} /></TabsContent>
+        <TabsContent value="fund-opening"><Suspense fallback={<TabFallback />}><FundOpeningBalancesReport /></Suspense></TabsContent>
+        <TabsContent value="cash-balance"><Suspense fallback={<TabFallback />}><CashBalanceReport /></Suspense></TabsContent>
+        <TabsContent value="payees"><Suspense fallback={<TabFallback />}><PayeesReport txs={dated(payeesQ.data)} lookups={lookups} /></Suspense></TabsContent>
 
       </Tabs>
     </AppShell>

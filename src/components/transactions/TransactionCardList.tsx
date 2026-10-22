@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -35,12 +36,19 @@ export function TransactionCardList({
   canDelete?: boolean;
   highlightId?: string | null;
 }) {
+  // Show cards in steps instead of mounting thousands at once.
+  const STEP = 150;
+  const [limit, setLimit] = useState(STEP);
+  useEffect(() => {
+    const hi = highlightId ? rows.findIndex((r) => r.id === highlightId) : -1;
+    setLimit(hi >= STEP ? hi + 20 : STEP);
+  }, [rows, highlightId]);
   if (rows.length === 0) {
     return <div className="text-center py-12 text-muted-foreground text-sm">אין תנועות להצגה</div>;
   }
   return (
     <div className="space-y-2 p-2">
-      {rows.map((r) => {
+      {rows.slice(0, limit).map((r) => {
         const amt = rowAmount(r);
         const isChecked = selectedIds.has(r.id);
         const isHighlighted = highlightId === r.id;
@@ -96,6 +104,11 @@ export function TransactionCardList({
           </div>
         );
       })}
+      {rows.length > limit && (
+        <Button variant="outline" className="w-full" onClick={() => setLimit((n) => n + STEP)}>
+          הצג עוד ({limit.toLocaleString("he-IL")} מתוך {rows.length.toLocaleString("he-IL")})
+        </Button>
+      )}
     </div>
   );
 }

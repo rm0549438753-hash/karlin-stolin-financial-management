@@ -14,7 +14,8 @@ import { supabase } from "@/integrations/supabase/client";
  *    The public API is unchanged, so call sites keep working as before.
  */
 
-type Listener = () => void;
+type Listener = (accountIds: Set<string>) => void;
+let pending = new Set<string>();
 
 const listeners = new Set<Listener>();
 let channel: ReturnType<typeof supabase.channel> | null = null;
@@ -25,13 +26,17 @@ function ensureChannel() {
   if (channel) return;
   channel = supabase
     .channel("tx-shared")
-    .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, () => {
+    .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, (payload: any) => {
+      const a = payload?.new?.account_id ?? payload?.old?.account_id;
+      if (a) pending.add(a); else pending.add("*");
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
         timer = null;
+        const ids = pending;
+        pending = new Set();
         listeners.forEach((fn) => {
           try {
-            fn();
+            fn(ids);
           } catch {
             /* one bad listener must not break the others */
           }
@@ -51,13 +56,13 @@ function teardownIfIdle() {
   channel = null;
 }
 
-export function useTransactionsRealtime(_channelName: string, onChange: () => void, delay = 4000) {
+export function useTransactionsRealtime(_channelName: string, onChange: (accountIds: Set<string>) => void, delay = 4000) {
   const cbRef = useRef(onChange);
   cbRef.current = onChange;
 
   useEffect(() => {
     delayMs = Math.min(delayMs, delay);
-    const listener: Listener = () => cbRef.current();
+    const listener: Listener = (ids) => cbRef.current(ids);
     listeners.add(listener);
     ensureChannel();
     return () => {

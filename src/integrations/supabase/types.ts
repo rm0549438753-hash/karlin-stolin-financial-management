@@ -1347,6 +1347,14 @@ export type Database = {
         }[]
       }
       archive_old_action_history: { Args: never; Returns: number }
+      cash_summary: {
+        Args: { p_account: string; p_month_start: string }
+        Returns: {
+          balance: number
+          month_in: number
+          month_out: number
+        }[]
+      }
       dashboard_drill: {
         Args: {
           p_expense_type?: string

@@ -14,14 +14,21 @@ const TX_SELECT =
 
 export type ReportSlice = "future-checks" | "uncategorized" | "no-date" | "payees";
 
-async function fetchAllPages(build: () => any) {
-  const out: any[] = [];
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await build().range(from, from + PAGE - 1);
-    if (error) throw error;
-    const rows = data ?? [];
-    out.push(...rows);
-    if (rows.length < PAGE) break;
+// First page carries the total count; the remaining pages are then fetched
+// in small parallel batches instead of one-by-one.
+async function fetchAllPages(build: (count?: boolean) => any) {
+  const first = await build(true).range(0, PAGE - 1);
+  if (first.error) throw first.error;
+  const out: any[] = [...(first.data ?? [])];
+  const total = first.count ?? out.length;
+  const offsets: number[] = [];
+  for (let o = PAGE; o < total; o += PAGE) offsets.push(o);
+  for (let i = 0; i < offsets.length; i += 3) {
+    const res = await Promise.all(offsets.slice(i, i + 3).map((o) => build().range(o, o + PAGE - 1)));
+    for (const r of res) {
+      if (r.error) throw r.error;
+      out.push(...(r.data ?? []));
+    }
   }
   return out;
 }
@@ -32,10 +39,10 @@ async function fetchSlice(slice: ReportSlice, checksAccountId?: string) {
 
   if (slice === "future-checks") {
     if (!checksAccountId) return [];
-    return fetchAllPages(() =>
+    return fetchAllPages((c?: boolean) =>
       supabase
         .from("transactions")
-        .select(TX_SELECT)
+        .select(TX_SELECT, c ? { count: "exact" } : undefined)
         .eq("account_id", checksAccountId)
         .or(`value_date.gt.${today},and(value_date.is.null,transaction_date.gt.${today})`)
         .order("value_date", { ascending: true }),
@@ -43,10 +50,10 @@ async function fetchSlice(slice: ReportSlice, checksAccountId?: string) {
   }
 
   if (slice === "uncategorized") {
-    return fetchAllPages(() =>
+    return fetchAllPages((c?: boolean) =>
       supabase
         .from("transactions")
-        .select(TX_SELECT)
+        .select(TX_SELECT, c ? { count: "exact" } : undefined)
         .is("fund_id", null)
         .is("expense_type_id", null)
         .order("transaction_date", { ascending: false }),
@@ -54,16 +61,16 @@ async function fetchSlice(slice: ReportSlice, checksAccountId?: string) {
   }
 
   if (slice === "no-date") {
-    return fetchAllPages(() =>
-      supabase.from("transactions").select(TX_SELECT).is("transaction_date", null).is("value_date", null),
+    return fetchAllPages((c?: boolean) =>
+      supabase.from("transactions").select(TX_SELECT, c ? { count: "exact" } : undefined).is("transaction_date", null).is("value_date", null),
     );
   }
 
   // payees — every row: names are also derived from description/reference/note
-  return fetchAllPages(() =>
+  return fetchAllPages((c?: boolean) =>
     supabase
       .from("transactions")
-      .select(TX_SELECT)
+      .select(TX_SELECT, c ? { count: "exact" } : undefined)
       .order("transaction_date", { ascending: false }),
   );
 }

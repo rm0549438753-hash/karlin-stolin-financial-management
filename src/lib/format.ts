@@ -15,10 +15,13 @@ export function formatCurrency(n: number | null | undefined, _decimals = true) {
   return ILS.format(n);
 }
 
+// Creating a date formatter is expensive; build it once and reuse it.
+const DATE_FMT = new Intl.DateTimeFormat("he-IL", { year: "numeric", month: "2-digit", day: "2-digit" });
 export function formatDate(d: string | Date | null | undefined) {
   if (!d) return "";
   const date = typeof d === "string" ? new Date(d) : d;
-  return new Intl.DateTimeFormat("he-IL", { year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
+  if (isNaN(date.getTime())) return "";
+  return DATE_FMT.format(date);
 }
 
 export function monthLabel(d: Date) {
