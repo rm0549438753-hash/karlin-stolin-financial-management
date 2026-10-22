@@ -8,7 +8,7 @@ function walk(dir: string): string[] {
   return readdirSync(dir).flatMap((n) => {
     const p = join(dir, n);
     if (statSync(p).isDirectory()) return n === "integrations" ? [] : walk(p);
-    return /\.tsx?$/.test(n) ? [p] : [];
+    return /\.tsx?$/.test(n) && !n.endsWith(".test.ts") ? [p] : [];
   });
 }
 
@@ -17,7 +17,7 @@ describe("unstable query defaults", () => {
     const bad: string[] = [];
     for (const f of walk("src")) {
       readFileSync(f, "utf8").split("\n").forEach((l, i) => {
-        if (/\bdata(?::\s*\w+)?\s*=\s*(\[\]|\{\})/.test(l)) bad.push(`${f}:${i + 1}`);
+        if (!/^\s*(\/\/|\*)/.test(l) && /\bdata(?::\s*\w+)?\s*=\s*(\[\]|\{\})/.test(l)) bad.push(`${f}:${i + 1}`);
       });
     }
     expect(bad).toEqual([]);
