@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,11 +70,16 @@ export function FundOpeningBalancesReport() {
   useEffect(() => { setDirty(new Set()); }, [year]);
 
   // Fill from saved values without wiping rows the user is editing
+  const dirtyRef = useRef(dirty);
+  dirtyRef.current = dirty;
+  const fillKey =
+    relevantFunds.map((f) => f.id).join(",") + "|" +
+    balances.map((b) => `${b.fund_id}:${b.amount}:${b.note ?? ""}`).join(",");
   useEffect(() => {
     setDrafts((prev) => {
       const next: Record<string, Draft> = {};
       relevantFunds.forEach((f) => {
-        if (dirty.has(f.id) && prev[f.id]) { next[f.id] = prev[f.id]; return; }
+        if (dirtyRef.current.has(f.id) && prev[f.id]) { next[f.id] = prev[f.id]; return; }
         const b = byFund.get(f.id);
         const a = b ? Number(b.amount) : 0;
         next[f.id] = {
@@ -85,7 +90,8 @@ export function FundOpeningBalancesReport() {
       });
       return next;
     });
-  }, [relevantFunds, byFund, dirty]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fillKey]);
 
   function edit(fundId: string, patch: Partial<Draft>) {
     setDrafts((prev) => ({ ...prev, [fundId]: { ...prev[fundId], ...patch } }));
