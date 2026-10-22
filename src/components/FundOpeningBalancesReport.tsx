@@ -14,6 +14,19 @@ import { Save } from "lucide-react";
 
 const IRRELEVANT_FUND = "לא רלוונטי";
 const EMPTY: any[] = [];
+function fmtInput(v: string) {
+  if (!v) return "";
+  const [i, d] = v.split(".");
+  const int = i ? Number(i).toLocaleString("en-US") : "0";
+  return d !== undefined ? `${int}.${d}` : int;
+}
+function cleanInput(v: string) {
+  let c = v.replace(/[^\d.]/g, "");
+  const p = c.indexOf(".");
+  if (p >= 0) c = c.slice(0, p + 1) + c.slice(p + 1).replace(/\./g, "").slice(0, 2);
+  return c;
+}
+
 
 export type FundOpeningBalance = {
   id: string;
@@ -242,14 +255,14 @@ export function FundOpeningBalancesReport() {
                   <TableRow key={f.id} className={isDirty ? "bg-warning/10" : undefined}>
                     <TableCell className="text-right font-medium">{f.name}{isDirty && " •"}</TableCell>
                     <TableCell>
-                      <Input type="number" step="0.01" min="0" inputMode="decimal" disabled={!canEdit}
-                        value={d.debit} placeholder="—" className="tabular-nums text-right"
-                        onChange={(e) => edit(f.id, { debit: e.target.value, credit: e.target.value ? "" : d.credit })} />
+                      <div className="relative"><Input type="text" inputMode="decimal" disabled={!canEdit}
+                        value={fmtInput(d.debit)} placeholder="—" className="tabular-nums text-right pl-8"
+                        onChange={(e) => edit(f.id, { debit: cleanInput(e.target.value), credit: e.target.value ? "" : d.credit })}/><span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₪</span></div>
                     </TableCell>
                     <TableCell>
-                      <Input type="number" step="0.01" min="0" inputMode="decimal" disabled={!canEdit}
-                        value={d.credit} placeholder="—" className="tabular-nums text-right"
-                        onChange={(e) => edit(f.id, { credit: e.target.value, debit: e.target.value ? "" : d.debit })} />
+                      <div className="relative"><Input type="text" inputMode="decimal" disabled={!canEdit}
+                        value={fmtInput(d.credit)} placeholder="—" className="tabular-nums text-right pl-8"
+                        onChange={(e) => edit(f.id, { credit: cleanInput(e.target.value), debit: e.target.value ? "" : d.debit })}/><span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₪</span></div>
                     </TableCell>
                     <TableCell>
                       <Input disabled={!canEdit} value={d.note} placeholder="הערה (אופציונלי)"
