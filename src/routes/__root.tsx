@@ -135,8 +135,21 @@ function RootComponent() {
       sessionStorage.setItem(SESSION_FLAG, "1");
     } catch { /* storage unavailable */ }
 
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+    // Refresh everything only when the signed-in person actually changes.
+    // SIGNED_IN also fires on tab return / session restore for the same user,
+    // which used to reload every screen's data for nothing.
+    let lastUserId: string | null | undefined;
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      const uid = session?.user?.id ?? null;
+      if (event === "INITIAL_SESSION") { lastUserId = uid; return; }
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+      if (event === "USER_UPDATED") {
+        queryClient.invalidateQueries({ queryKey: ["user-role"] });
+        queryClient.invalidateQueries({ queryKey: ["profile"] });
+        return;
+      }
+      if (uid === lastUserId) return;
+      lastUserId = uid;
       router.invalidate();
       if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
     });

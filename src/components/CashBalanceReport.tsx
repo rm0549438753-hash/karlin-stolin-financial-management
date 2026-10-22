@@ -62,8 +62,10 @@ export function useCashBalance() {
   });
 
   // Keep in sync when transactions change
-  useTransactionsRealtime("cash-balance-tx", () => {
+  useTransactionsRealtime("cash-balance-tx", (ids) => {
     if (!cashAccount?.id) return;
+    if (!ids.has("*") && !ids.has(cashAccount.id)) return;
+    qc.invalidateQueries({ queryKey: ["cash-summary", cashAccount.id], refetchType: "active" });
     qc.invalidateQueries({ queryKey: ["cash-transactions", cashAccount.id], refetchType: "active" });
   });
 
@@ -71,24 +73,30 @@ export function useCashBalance() {
 }
 
 /* ============ Compact card for the dashboard ============ */
+// The card only needs three numbers, so the server adds them up instead of
+// downloading the whole cash history.
 export function CashBalanceCard() {
   const navigate = useNavigate();
-  const { cashAccount, transactions } = useCashBalance();
-
-  const { balance, monthIn, monthOut } = useMemo(() => {
-    const now = new Date();
-    const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    let bal = 0, mi = 0, mo = 0;
-    for (const t of transactions) {
-      const a = Number(t.amount);
-      bal += a;
-      if (t.transaction_date?.startsWith(ym)) {
-        if (a > 0) mi += a;
-        else mo += -a;
-      }
-    }
-    return { balance: bal, monthIn: mi, monthOut: mo };
-  }, [transactions]);
+  const qc = useQueryClient();
+  const { data: accounts = EMPTY_ARRAY } = useAccounts();
+  const cashAccount = useMemo(() => accounts.find((a: any) => a.schema_type === "cash"), [accounts]);
+  const now = new Date();
+  const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+  const { data: sum } = useQuery({
+    queryKey: ["cash-summary", cashAccount?.id, monthStart],
+    enabled: !!cashAccount?.id,
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("cash_summary", { p_account: cashAccount!.id, p_month_start: monthStart });
+      if (error) throw error;
+      return (data as any[])?.[0] ?? null;
+    },
+  });
+  useTransactionsRealtime("cash-card-tx", (ids) => {
+    if (cashAccount?.id && (ids.has("*") || ids.has(cashAccount.id)))
+      qc.invalidateQueries({ queryKey: ["cash-summary", cashAccount.id], refetchType: "active" });
+  });
+  const balance = Number(sum?.balance ?? 0), monthIn = Number(sum?.month_in ?? 0), monthOut = Number(sum?.month_out ?? 0);
 
   if (!cashAccount) return null;
 

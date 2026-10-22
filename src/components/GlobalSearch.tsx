@@ -45,11 +45,17 @@ export function GlobalSearch() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Wait until typing pauses before searching, and cancel outdated searches.
+  const [dq, setDq] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDq(q), 300);
+    return () => clearTimeout(t);
+  }, [q]);
   const { data: hits = EMPTY_ARRAY, isFetching } = useQuery({
-    queryKey: ["global-search", q],
-    enabled: open && q.trim().length >= 2,
-    queryFn: async () => {
-      const term = q.trim();
+    queryKey: ["global-search", dq],
+    enabled: open && dq.trim().length >= 2,
+    queryFn: async ({ signal }) => {
+      const term = dq.trim();
       const asNum = Number(term.replace(/[,\s]/g, ""));
       // PostgREST uses commas/parens as delimiters in .or(). Wrap the whole
       // filter value in double quotes so punctuation inside the term is treated
@@ -60,7 +66,8 @@ export function GlobalSearch() {
         .from("transactions")
         .select("id, transaction_date, amount, account_id, description, note, payee, reference")
         .order("transaction_date", { ascending: false, nullsFirst: false })
-        .limit(50);
+        .limit(50)
+        .abortSignal(signal);
       if (!isNaN(asNum) && asNum !== 0) {
         query = query.or(`description.ilike.${pat},note.ilike.${pat},payee.ilike.${pat},reference.ilike.${pat},amount.eq.${asNum},amount.eq.${-asNum}`);
       } else {

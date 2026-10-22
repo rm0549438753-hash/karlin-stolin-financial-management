@@ -1,3 +1,4 @@
+import { useAccounts } from "@/hooks/use-lookups";
 import { EMPTY_ARRAY } from "@/lib/empty";
 import { UserPasswordActions } from "@/components/UserPasswordActions";
 import { createFileRoute } from "@tanstack/react-router";
@@ -381,10 +382,7 @@ export function SheetsSyncPanel() {
     queryFn: async () => await listIgnoresFn(),
   });
 
-  const { data: accountsList = EMPTY_ARRAY } = useQuery({
-    queryKey: ["accounts", "for-ignores"],
-    queryFn: async () => (await supabase.from("accounts").select("id,name").order("name")).data ?? [],
-  });
+  const { data: accountsList = EMPTY_ARRAY } = useAccounts();
   const accountName = (id: string) => (accountsList as any[]).find((a) => a.id === id)?.name ?? id;
 
   function extractId(u: string): string | null {

@@ -264,8 +264,8 @@ function TransactionsPage() {
     enabled: !!account,
     queryFn: async () => {
       if (!(await hasLiveSession())) return [] as TransactionRow[];
-      const buildQ = () => {
-        let q = supabase.from("transactions").select("*", { count: "exact" }).eq("account_id", account).order("transaction_date", { ascending: false });
+      const buildQ = (withCount = false) => {
+        let q = supabase.from("transactions").select("*", withCount ? { count: "exact" } : undefined).eq("account_id", account).order("transaction_date", { ascending: false });
         if (category.length) q = q.in("category_id", category);
         if (subcategory.length) q = q.in("subcategory_id", subcategory);
         if (fund.length) q = q.in("fund_id", fund);
@@ -280,7 +280,7 @@ function TransactionsPage() {
       // thousands of rows and the data/logic downstream is unchanged.
       const FIRST = 200;
       const PAGE = 1000;
-      const first = await buildQ().range(0, FIRST - 1);
+      const first = await buildQ(true).range(0, FIRST - 1);
       if (first.error) throw first.error;
       const all: TransactionRow[] = (first.data ?? []) as TransactionRow[];
       const total = first.count ?? all.length;
@@ -590,7 +590,31 @@ function TransactionsPage() {
   const RENDER_STEP = 250;
   const [renderLimit, setRenderLimit] = useState(RENDER_STEP);
   useEffect(() => { setRenderLimit(RENDER_STEP); }, [filtered, groupBy]);
-  const visibleRows = useMemo(() => filtered.slice(0, renderLimit), [filtered, renderLimit]);
+  // Windowing: rows that scrolled far above the viewport are replaced by one
+  // spacer row, so the number of mounted rows stays small however far you scroll.
+  const tableRef = useRef<HTMLTableElement | null>(null);
+  const rowHRef = useRef(30);
+  const [winStart, setWinStart] = useState(0);
+  useEffect(() => { setWinStart(0); }, [filtered, groupBy]);
+  useEffect(() => {
+    const box = tableRef.current?.parentElement;
+    if (!box || groups) return;
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const first = tableRef.current?.querySelector("tbody tr[data-tx-id]") as HTMLElement | null;
+        if (first && first.offsetHeight > 0) rowHRef.current = first.offsetHeight;
+        const OVERSCAN = 120;
+        const next = Math.max(0, Math.floor(box.scrollTop / rowHRef.current) - OVERSCAN);
+        const snapped = next - (next % 40);
+        setWinStart((cur) => (cur === snapped ? cur : snapped));
+      });
+    };
+    box.addEventListener("scroll", onScroll, { passive: true });
+    return () => { box.removeEventListener("scroll", onScroll); cancelAnimationFrame(raf); };
+  }, [groups, filtered]);
+  const visibleRows = useMemo(() => filtered.slice(winStart, renderLimit), [filtered, winStart, renderLimit]);
   const hasMoreRows = !groups && filtered.length > renderLimit;
   const sentinelRef = useRef<HTMLTableRowElement | null>(null);
   useEffect(() => {
@@ -953,6 +977,7 @@ function TransactionsPage() {
               </div>
 
               <Table
+                ref={tableRef}
                 className="border-collapse w-full table-auto text-[11px] hidden md:table"
                 containerClassName="max-h-[calc(100vh-8rem)] overflow-auto overscroll-contain hidden md:block"
               >
@@ -995,11 +1020,14 @@ function TransactionsPage() {
                   {!isLoading && filtered.length === 0 && (
                     <TableRow><TableCell colSpan={columns.length + 2} className="text-center py-12 text-muted-foreground">אין תנועות להצגה</TableCell></TableRow>
                   )}
-                  {!groups && visibleRows.map((r, idx) => renderRow(r, idx))}
+                  {!groups && winStart > 0 && (
+                    <tr aria-hidden style={{ height: winStart * rowHRef.current }} />
+                  )}
+                  {!groups && visibleRows.map((r, idx) => renderRow(r, winStart + idx))}
                   {hasMoreRows && (
                     <TableRow ref={sentinelRef}>
                       <TableCell colSpan={columns.length + 2} className="text-center py-4 text-xs text-muted-foreground">
-                        טוען עוד שורות… ({visibleRows.length.toLocaleString("he-IL")} מתוך {filtered.length.toLocaleString("he-IL")})
+                        טוען עוד שורות… ({Math.min(renderLimit, filtered.length).toLocaleString("he-IL")} מתוך {filtered.length.toLocaleString("he-IL")})
                       </TableCell>
                     </TableRow>
                   )}

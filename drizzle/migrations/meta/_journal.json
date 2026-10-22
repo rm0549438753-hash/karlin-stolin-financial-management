@@ -8,6 +8,13 @@
       "when": 1792663715374,
       "tag": "0000_fund_activity_by_year",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792665289572,
+      "tag": "0001_cash_summary",
+      "breakpoints": true
     }
   ]
 }
