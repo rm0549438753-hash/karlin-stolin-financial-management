@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Save } from "lucide-react";
 
 const IRRELEVANT_FUND = "לא רלוונטי";
+const EMPTY: any[] = [];
 
 export type FundOpeningBalance = {
   id: string;
@@ -42,10 +43,10 @@ export function useFundOpeningBalances(year: number) {
 export function FundOpeningBalancesReport() {
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState<number>(2026);
-  const { data: funds = [] } = useFunds();
+  const { data: funds = EMPTY } = useFunds();
   const { data: role } = useUserRole();
   const canEdit = !!role?.canEdit;
-  const { data: balances = [] } = useFundOpeningBalances(year);
+  const { data: balances = EMPTY as FundOpeningBalance[] } = useFundOpeningBalances(year);
   const qc = useQueryClient();
 
   const relevantFunds = useMemo(
@@ -69,11 +70,16 @@ export function FundOpeningBalancesReport() {
   useEffect(() => { setDirty(new Set()); }, [year]);
 
   // Fill from saved values without wiping rows the user is editing
+  const dirtyRef = useRef(dirty);
+  dirtyRef.current = dirty;
+  const fillKey =
+    relevantFunds.map((f) => f.id).join(",") + "|" +
+    balances.map((b) => `${b.fund_id}:${b.amount}:${b.note ?? ""}`).join(",");
   useEffect(() => {
     setDrafts((prev) => {
       const next: Record<string, Draft> = {};
       relevantFunds.forEach((f) => {
-        if (dirty.has(f.id) && prev[f.id]) { next[f.id] = prev[f.id]; return; }
+        if (dirtyRef.current.has(f.id) && prev[f.id]) { next[f.id] = prev[f.id]; return; }
         const b = byFund.get(f.id);
         const a = b ? Number(b.amount) : 0;
         next[f.id] = {
@@ -84,14 +90,15 @@ export function FundOpeningBalancesReport() {
       });
       return next;
     });
-  }, [relevantFunds, byFund, dirty]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fillKey]);
 
   function edit(fundId: string, patch: Partial<Draft>) {
     setDrafts((prev) => ({ ...prev, [fundId]: { ...prev[fundId], ...patch } }));
     setDirty((prev) => new Set(prev).add(fundId));
   }
 
-  const { data: activity = [] } = useQuery({
+  const { data: activity = EMPTY } = useQuery({
     queryKey: ["fund_activity", year],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("fund_activity", { p_year: year });
