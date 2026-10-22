@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Save } from "lucide-react";
 
 const IRRELEVANT_FUND = "לא רלוונטי";
+const EMPTY: any[] = [];
 
 export type FundOpeningBalance = {
   id: string;
@@ -42,10 +43,10 @@ export function useFundOpeningBalances(year: number) {
 export function FundOpeningBalancesReport() {
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState<number>(2026);
-  const { data: funds = [] } = useFunds();
+  const { data: funds = EMPTY } = useFunds();
   const { data: role } = useUserRole();
   const canEdit = !!role?.canEdit;
-  const { data: balances = [] } = useFundOpeningBalances(year);
+  const { data: balances = EMPTY as FundOpeningBalance[] } = useFundOpeningBalances(year);
   const qc = useQueryClient();
 
   const relevantFunds = useMemo(
@@ -91,7 +92,7 @@ export function FundOpeningBalancesReport() {
     setDirty((prev) => new Set(prev).add(fundId));
   }
 
-  const { data: activity = [] } = useQuery({
+  const { data: activity = EMPTY } = useQuery({
     queryKey: ["fund_activity", year],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("fund_activity", { p_year: year });
