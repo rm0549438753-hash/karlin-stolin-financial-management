@@ -1,3 +1,4 @@
+import { useIsMobile } from "@/hooks/use-mobile";
 import { EMPTY_ARRAY } from "@/lib/empty";
 import { useAlertCounts } from "@/hooks/use-alert-counts";
 import { useIdbQueryCache } from "@/hooks/use-idb-query-cache";
@@ -592,6 +593,7 @@ function TransactionsPage() {
   useEffect(() => { setRenderLimit(RENDER_STEP); }, [filtered, groupBy]);
   // Windowing: rows that scrolled far above the viewport are replaced by one
   // spacer row, so the number of mounted rows stays small however far you scroll.
+  const isMobile = useIsMobile();
   const tableRef = useRef<HTMLTableElement | null>(null);
   const rowHRef = useRef(30);
   const [winStart, setWinStart] = useState(0);
@@ -959,7 +961,7 @@ function TransactionsPage() {
 
               {/* Mobile: stacked cards */}
               <div className="md:hidden">
-                {isLoading ? (
+                {!isMobile ? null : isLoading ? (
                   <CardsSkeleton />
                 ) : (
                   <TransactionCardList
