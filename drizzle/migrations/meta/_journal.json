@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792663715374,
+      "tag": "0000_fund_activity_by_year",
+      "breakpoints": true
+    }
+  ]
+}
