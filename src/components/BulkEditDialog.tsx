@@ -20,10 +20,10 @@ export function BulkEditDialog({
   onDone?: () => void;
 }) {
   const qc = useQueryClient();
-  const { data: funds = [] } = useFunds();
-  const { data: expTypes = [] } = useExpenseTypes();
-  const { data: cats = [] } = useCategories();
-  const { data: subs = [] } = useSubcategories();
+  const { data: funds = EMPTY_ARRAY } = useFunds();
+  const { data: expTypes = EMPTY_ARRAY } = useExpenseTypes();
+  const { data: cats = EMPTY_ARRAY } = useCategories();
+  const { data: subs = EMPTY_ARRAY } = useSubcategories();
 
   const [fund, setFund] = useState(KEEP);
   const [exp, setExp] = useState(KEEP);

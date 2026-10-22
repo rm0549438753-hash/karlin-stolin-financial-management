@@ -23,7 +23,7 @@ export function GlobalSearch() {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const navigate = useNavigate();
-  const { data: accounts = [] } = useAccounts();
+  const { data: accounts = EMPTY_ARRAY } = useAccounts();
   const acctMap = useMemo(() => new Map(accounts.map((a) => [a.id, a.name])), [accounts]);
 
   useEffect(() => {
@@ -44,7 +44,7 @@ export function GlobalSearch() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const { data: hits = [], isFetching } = useQuery({
+  const { data: hits = EMPTY_ARRAY, isFetching } = useQuery({
     queryKey: ["global-search", q],
     enabled: open && q.trim().length >= 2,
     queryFn: async () => {

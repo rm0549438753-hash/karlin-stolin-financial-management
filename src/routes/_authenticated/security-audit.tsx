@@ -1,3 +1,4 @@
+import { EMPTY_ARRAY } from "@/lib/empty";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -44,7 +45,7 @@ function SecurityAuditHistoryPage() {
   const [running, setRunning] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const { data: runs = [], isLoading, refetch } = useQuery({
+  const { data: runs = EMPTY_ARRAY, isLoading, refetch } = useQuery({
     queryKey: ["security_audit_runs"],
     queryFn: () => list(),
   });

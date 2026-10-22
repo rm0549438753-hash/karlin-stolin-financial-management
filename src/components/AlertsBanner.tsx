@@ -9,7 +9,7 @@ import { useAlertCounts, ALERT_COUNTS_KEY } from "@/hooks/use-alert-counts";
 import { formatCurrency, formatDate } from "@/lib/format";
 
 export function AlertsBanner() {
-  const { data: accounts = [] } = useAccounts();
+  const { data: accounts = EMPTY_ARRAY } = useAccounts();
   const checksAccount = accounts.find((a: any) => a.schema_type === "checks");
   const qc = useQueryClient();
 
@@ -22,7 +22,7 @@ export function AlertsBanner() {
 
   const CACHE = { staleTime: 5 * 60_000, gcTime: 30 * 60_000, refetchOnWindowFocus: false } as const;
 
-  const { data: upcomingChecks = [] } = useQuery({
+  const { data: upcomingChecks = EMPTY_ARRAY } = useQuery({
     queryKey: ["alerts-upcoming-checks", checksAccount?.id],
     enabled: !!checksAccount,
     queryFn: async () => {

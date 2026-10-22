@@ -44,7 +44,7 @@ async function fetchCashTransactions(cashAccountId: string): Promise<CashTx[]> {
 }
 
 export function useCashBalance() {
-  const { data: accounts = [] } = useAccounts();
+  const { data: accounts = EMPTY_ARRAY } = useAccounts();
   const cashAccount = useMemo(
     () => accounts.find((a: any) => a.schema_type === "cash"),
     [accounts],

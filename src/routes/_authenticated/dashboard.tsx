@@ -43,7 +43,7 @@ type Tx = DrillTx;
 
 function DashboardPage() {
   const qc = useQueryClient();
-  const { data: summary = [], isLoading } = useDashboardSummary();
+  const { data: summary = EMPTY_ARRAY, isLoading } = useDashboardSummary();
 
   // Realtime: keep dashboard fresh when transactions change anywhere
   useTransactionsRealtime("dashboard-tx", () => {
@@ -52,11 +52,11 @@ function DashboardPage() {
     qc.invalidateQueries({ queryKey: TX_ALL_KEY, refetchType: "none" });
   });
 
-  const { data: accounts = [] } = useAccounts();
-  const { data: categories = [] } = useCategories();
-  const { data: subcategories = [] } = useSubcategories();
-  const { data: expenseTypes = [] } = useExpenseTypes();
-  const { data: funds = [] } = useFunds();
+  const { data: accounts = EMPTY_ARRAY } = useAccounts();
+  const { data: categories = EMPTY_ARRAY } = useCategories();
+  const { data: subcategories = EMPTY_ARRAY } = useSubcategories();
+  const { data: expenseTypes = EMPTY_ARRAY } = useExpenseTypes();
+  const { data: funds = EMPTY_ARRAY } = useFunds();
 
   const lookups = { accounts, categories, subcategories, expenseTypes, funds };
 
@@ -494,7 +494,7 @@ function OverviewTab({ tab, rows, lookups }: { tab: DashboardTab; rows: SummaryR
 /* ===================== Drill-down Sheet ===================== */
 function DrillSheet({ drill, onClose, lookups }: { drill: DrillQuery | null; onClose: () => void; lookups: any }) {
   const navigate = useNavigate();
-  const { data: rows = [], isFetching } = useDrillRows(drill);
+  const { data: rows = EMPTY_ARRAY, isFetching } = useDrillRows(drill);
   const catMap = new Map<string, string>(lookups.categories.map((c: any) => [c.id, c.name]));
   const etMap = new Map<string, string>(lookups.expenseTypes.map((e: any) => [e.id, e.name]));
   const acctMap = new Map<string, string>((lookups.accounts ?? []).map((a: any) => [a.id, a.name]));
@@ -644,7 +644,7 @@ function DrillSheet({ drill, onClose, lookups }: { drill: DrillQuery | null; onC
 /* ===================== Vaults Tab ===================== */
 function VaultsTab({ rows, lookups }: { rows: SummaryRow[]; lookups: any }) {
   const currentYear = new Date().getFullYear();
-  const { data: openingBalances = [] } = useFundOpeningBalances(currentYear);
+  const { data: openingBalances = EMPTY_ARRAY } = useFundOpeningBalances(currentYear);
   const openingByFund = useMemo(() => {
     const m = new Map<string, number>();
     openingBalances.forEach((b) => m.set(b.fund_id, Number(b.amount)));
@@ -663,7 +663,7 @@ function VaultsTab({ rows, lookups }: { rows: SummaryRow[]; lookups: any }) {
   const drillQuery: DrillQuery | null = openVault
     ? { title: `דוח קופה — ${openVault.name}`, tab: "vaults", fund: openVault.id, kind: "all" }
     : null;
-  const { data: openRows = [], isFetching } = useDrillRows(drillQuery);
+  const { data: openRows = EMPTY_ARRAY, isFetching } = useDrillRows(drillQuery);
 
   const goToTx = (t: Tx) => {
     const acc = lookups.accounts.find((a: any) => a.id === t.account_id)?.id ?? "";

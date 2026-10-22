@@ -77,11 +77,11 @@ function ReportsPage() {
     qc.invalidateQueries({ queryKey: ["report-rows"], refetchType: "active" });
     qc.invalidateQueries({ queryKey: ["tx-alert-counts"], refetchType: "active" });
   });
-  const { data: accounts = [] } = useAccounts();
-  const { data: funds = [] } = useFunds();
-  const { data: expenseTypes = [] } = useExpenseTypes();
-  const { data: categories = [] } = useCategories();
-  const { data: subcategories = [] } = useSubcategories();
+  const { data: accounts = EMPTY_ARRAY } = useAccounts();
+  const { data: funds = EMPTY_ARRAY } = useFunds();
+  const { data: expenseTypes = EMPTY_ARRAY } = useExpenseTypes();
+  const { data: categories = EMPTY_ARRAY } = useCategories();
+  const { data: subcategories = EMPTY_ARRAY } = useSubcategories();
 
   const lookups = { accounts, funds, expenseTypes, categories, subcategories };
 

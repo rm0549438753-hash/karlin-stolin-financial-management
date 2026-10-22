@@ -81,7 +81,7 @@ export function EmailAutomationsPanel() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
 
-  const { data: items = [], isLoading } = useQuery({
+  const { data: items = EMPTY_ARRAY, isLoading } = useQuery({
     queryKey: ["email-automations"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -93,7 +93,7 @@ export function EmailAutomationsPanel() {
     },
   });
 
-  const { data: runs = [] } = useQuery({
+  const { data: runs = EMPTY_ARRAY } = useQuery({
     queryKey: ["email-automation-runs"],
     queryFn: async () => {
       const { data, error } = await supabase

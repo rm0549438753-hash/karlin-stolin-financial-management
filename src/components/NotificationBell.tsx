@@ -1,3 +1,4 @@
+import { EMPTY_ARRAY } from "@/lib/empty";
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Bell, CheckCheck, RefreshCw, Trash2, X } from "lucide-react";
@@ -33,7 +34,7 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const navigate = useNavigate();
-  const { data: items = [], isLoading } = useNotifications();
+  const { data: items = EMPTY_ARRAY, isLoading } = useNotifications();
   const { markRead, markAllRead, remove, clearRead, invalidate } = useNotificationActions();
 
   // Viewers are read-only and receive no operational alerts.

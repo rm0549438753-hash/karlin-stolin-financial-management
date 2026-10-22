@@ -1,3 +1,4 @@
+import { EMPTY_ARRAY } from "@/lib/empty";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -32,7 +33,7 @@ export function RuleApplicationsDialog({
   const listFn = useServerFn(listRuleApplications);
   const revertFn = useServerFn(revertRuleApplications);
 
-  const { data: rows = [], isLoading } = useQuery({
+  const { data: rows = EMPTY_ARRAY, isLoading } = useQuery({
     queryKey: ["rule-applications", ruleId],
     enabled: !!ruleId,
     queryFn: () => listFn({ data: { ruleId: ruleId! } }) as Promise<any[]>,

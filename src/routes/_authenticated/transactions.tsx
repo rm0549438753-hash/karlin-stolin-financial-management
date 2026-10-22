@@ -171,11 +171,11 @@ function TransactionsPage() {
   const navigate = useNavigate();
   const urlSearch = useSearch({ from: "/_authenticated/transactions" });
   const { data: role } = useUserRole();
-  const { data: accounts = [] } = useAccounts();
-  const { data: categories = [] } = useCategories();
-  const { data: funds = [] } = useFunds();
-  const { data: expTypes = [] } = useExpenseTypes();
-  const { data: subcats = [] } = useSubcategories();
+  const { data: accounts = EMPTY_ARRAY } = useAccounts();
+  const { data: categories = EMPTY_ARRAY } = useCategories();
+  const { data: funds = EMPTY_ARRAY } = useFunds();
+  const { data: expTypes = EMPTY_ARRAY } = useExpenseTypes();
+  const { data: subcats = EMPTY_ARRAY } = useSubcategories();
 
   const [searchDesc, setSearchDesc] = useState("");
   const [searchRef, setSearchRef] = useState("");

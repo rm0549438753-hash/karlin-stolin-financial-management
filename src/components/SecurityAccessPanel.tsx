@@ -84,7 +84,7 @@ export function SecurityAccessPanel() {
     queryFn: () => fetchEvents({ data: filters }),
   });
 
-  const { data: blocked = [] } = useQuery({ queryKey: ["blocked-ips"], queryFn: () => fetchIps() });
+  const { data: blocked = EMPTY_ARRAY } = useQuery({ queryKey: ["blocked-ips"], queryFn: () => fetchIps() });
 
   const save = useMutation({
     mutationFn: async () => await setCode({ data: { code: code.trim() } }),
