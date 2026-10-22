@@ -1,3 +1,4 @@
+import { EMPTY_ARRAY } from "@/lib/empty";
 import { useAlertCounts } from "@/hooks/use-alert-counts";
 import { useIdbQueryCache } from "@/hooks/use-idb-query-cache";
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";

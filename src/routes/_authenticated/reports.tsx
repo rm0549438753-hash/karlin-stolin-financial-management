@@ -1,3 +1,4 @@
+import { EMPTY_ARRAY } from "@/lib/empty";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useTransactionsRealtime } from "@/hooks/use-tx-realtime";
 import { useEffect, useMemo, useState } from "react";

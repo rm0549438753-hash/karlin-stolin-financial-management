@@ -1,3 +1,4 @@
+import { EMPTY_ARRAY } from "@/lib/empty";
 import { useMemo, useState, useEffect } from "react";
 import { useTransactionsRealtime } from "@/hooks/use-tx-realtime";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
