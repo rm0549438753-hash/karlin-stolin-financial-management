@@ -188,12 +188,12 @@ export function FundOpeningBalancesReport() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">שנה:</span>
+          <span className="text-sm text-muted-foreground">יתרה ל:</span>
           <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
             <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
             <SelectContent>
               {years.map((y) => (
-                <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                <SelectItem key={y} value={String(y)}>סוף {y - 1}</SelectItem>
               ))}
             </SelectContent>
           </Select>
