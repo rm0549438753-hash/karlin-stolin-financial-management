@@ -1377,6 +1377,14 @@ export type Database = {
       dashboard_rows: { Args: never; Returns: Json }
       dashboard_rows_compact: { Args: never; Returns: Json }
       dashboard_summary: { Args: never; Returns: Json }
+      fund_activity: {
+        Args: { p_year: number }
+        Returns: {
+          fund_id: string
+          received: number
+          returned: number
+        }[]
+      }
       get_cron_hook_secret: { Args: never; Returns: string }
       has_any_app_role: { Args: { _uid: string }; Returns: boolean }
       has_role: {
