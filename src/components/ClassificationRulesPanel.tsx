@@ -1,3 +1,4 @@
+import { EMPTY_ARRAY } from "@/lib/empty";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -79,11 +80,11 @@ export function ClassificationRulesPanel() {
   const { data: role } = useUserRole();
   const canEdit = !!role?.isAdmin;
 
-  const { data: accounts = [] } = useAccounts();
-  const { data: funds = [] } = useFunds();
-  const { data: expenseTypes = [] } = useExpenseTypes();
-  const { data: categories = [] } = useCategories();
-  const { data: subcategories = [] } = useSubcategories();
+  const { data: accounts = EMPTY_ARRAY } = useAccounts();
+  const { data: funds = EMPTY_ARRAY } = useFunds();
+  const { data: expenseTypes = EMPTY_ARRAY } = useExpenseTypes();
+  const { data: categories = EMPTY_ARRAY } = useCategories();
+  const { data: subcategories = EMPTY_ARRAY } = useSubcategories();
 
   const nameOf = useMemo(() => {
     const map = new Map<string, string>();
@@ -93,7 +94,7 @@ export function ClassificationRulesPanel() {
     return map;
   }, [accounts, funds, expenseTypes, categories, subcategories]);
 
-  const { data: rules = [], isLoading } = useQuery({
+  const { data: rules = EMPTY_ARRAY, isLoading } = useQuery({
     queryKey: ["classification-rules"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -579,7 +580,7 @@ function SuggestionsList({ nameOf, canEdit }: { nameOf: Map<string, string>; can
   const fetchSuggestions = useServerFn(listPendingSuggestions);
   const resolve = useServerFn(resolveSuggestion);
 
-  const { data: rows = [], isLoading } = useQuery({
+  const { data: rows = EMPTY_ARRAY, isLoading } = useQuery({
     queryKey: ["classification-suggestions"],
     queryFn: () => fetchSuggestions(),
   });

@@ -1,3 +1,4 @@
+import { EMPTY_ARRAY } from "@/lib/empty";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -84,7 +85,7 @@ export function SecurityAccessPanel() {
     queryFn: () => fetchEvents({ data: filters }),
   });
 
-  const { data: blocked = [] } = useQuery({ queryKey: ["blocked-ips"], queryFn: () => fetchIps() });
+  const { data: blocked = EMPTY_ARRAY } = useQuery({ queryKey: ["blocked-ips"], queryFn: () => fetchIps() });
 
   const save = useMutation({
     mutationFn: async () => await setCode({ data: { code: code.trim() } }),

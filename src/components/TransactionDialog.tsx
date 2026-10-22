@@ -1,3 +1,4 @@
+import { EMPTY_ARRAY } from "@/lib/empty";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -71,11 +72,11 @@ export function TransactionDialog({
   lockAccount?: boolean;
 }) {
   const qc = useQueryClient();
-  const { data: accounts = [] } = useAccounts();
-  const { data: funds = [] } = useFunds();
-  const { data: expTypes = [] } = useExpenseTypes();
-  const { data: cats = [] } = useCategories();
-  const { data: subs = [] } = useSubcategories();
+  const { data: accounts = EMPTY_ARRAY } = useAccounts();
+  const { data: funds = EMPTY_ARRAY } = useFunds();
+  const { data: expTypes = EMPTY_ARRAY } = useExpenseTypes();
+  const { data: cats = EMPTY_ARRAY } = useCategories();
+  const { data: subs = EMPTY_ARRAY } = useSubcategories();
 
   // Determine the active account (for schema-driven fields)
   const activeAccountId = initial?.account_id ?? account?.id ?? "";

@@ -1,3 +1,4 @@
+import { EMPTY_ARRAY } from "@/lib/empty";
 import { Fragment, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -62,7 +63,7 @@ export function PushNotificationsPanel() {
   const [editing, setEditing] = useState<Partial<Rule> | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
 
-  const { data: rules = [], isLoading } = useQuery({
+  const { data: rules = EMPTY_ARRAY, isLoading } = useQuery({
     queryKey: ["push-notification-rules"],
     queryFn: async () => {
       const { data, error } = await supabase.from(TABLE).select("*").order("sort_order");

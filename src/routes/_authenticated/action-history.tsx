@@ -1,3 +1,4 @@
+import { EMPTY_ARRAY } from "@/lib/empty";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -113,11 +114,11 @@ function ActionHistoryPage() {
 
   const actorLabel = (id: string | null) => (id ? (actorNames?.get(id) || "משתמש לא ידוע") : "מערכת");
 
-  const { data: accounts = [] } = useAccounts();
-  const { data: funds = [] } = useFunds();
-  const { data: expenseTypes = [] } = useExpenseTypes();
-  const { data: categories = [] } = useCategories();
-  const { data: subcategories = [] } = useSubcategories();
+  const { data: accounts = EMPTY_ARRAY } = useAccounts();
+  const { data: funds = EMPTY_ARRAY } = useFunds();
+  const { data: expenseTypes = EMPTY_ARRAY } = useExpenseTypes();
+  const { data: categories = EMPTY_ARRAY } = useCategories();
+  const { data: subcategories = EMPTY_ARRAY } = useSubcategories();
 
   const lookupMaps = useMemo(() => ({
     account_id: new Map(accounts.map((x: any) => [x.id, x.name])),

@@ -1,3 +1,4 @@
+import { EMPTY_ARRAY } from "@/lib/empty";
 import { UserPasswordActions } from "@/components/UserPasswordActions";
 import { createFileRoute } from "@tanstack/react-router";
 import { createContext, useContext, useMemo, useState } from "react";
@@ -65,14 +66,14 @@ function LookupCRUD({ table, label, hasKind, hasCategory }: { table: string; lab
   const [kind, setKind] = useState("bank");
   const [catId, setCatId] = useState<string>("");
 
-  const { data: rows = [] } = useQuery({
+  const { data: rows = EMPTY_ARRAY } = useQuery({
     queryKey: [table, "all"],
     queryFn: async () => {
       const { data } = await supabase.from(table as any).select("*").order("name");
       return data ?? [];
     },
   });
-  const { data: cats = [] } = useQuery({
+  const { data: cats = EMPTY_ARRAY } = useQuery({
     queryKey: ["categories", "all"],
     queryFn: async () => (await supabase.from("categories").select("id,name").order("name")).data ?? [],
     enabled: !!hasCategory,
@@ -210,7 +211,7 @@ export function UsersPanel() {
   const [newName, setNewName] = useState("");
   const [newRole, setNewRole] = useState<"superadmin" | "admin" | "editor" | "viewer">("editor");
 
-  const { data = [] } = useQuery({
+  const { data = EMPTY_ARRAY } = useQuery({
     queryKey: ["users-with-roles"],
     queryFn: async () => await listUsers(),
   });
@@ -375,12 +376,12 @@ export function SheetsSyncPanel() {
   const addIgnoresFn = useServerFn(addSyncIgnores);
   const removeIgnoreFn = useServerFn(removeSyncIgnore);
 
-  const { data: ignores = [] } = useQuery({
+  const { data: ignores = EMPTY_ARRAY } = useQuery({
     queryKey: ["sync-ignores"],
     queryFn: async () => await listIgnoresFn(),
   });
 
-  const { data: accountsList = [] } = useQuery({
+  const { data: accountsList = EMPTY_ARRAY } = useQuery({
     queryKey: ["accounts", "for-ignores"],
     queryFn: async () => (await supabase.from("accounts").select("id,name").order("name")).data ?? [],
   });
